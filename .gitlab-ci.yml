@@ -1,0 +1,39 @@
+image: registry.acm.case.edu/cwrubotix/nasa-rmc-2017:latest
+
+variables:
+  MAVEN_OPTS: -Dmaven.repo.local=${CI_PROJECT_DIR}/.m2
+
+stages:
+  - resources
+  - build
+  - test
+  - deploy
+  
+resources_robot_state:
+  stage: resources
+  script:
+    - mvn process-resources -f glennifer/robot_state
+  artifacts:
+    paths:
+      - .m2/
+  
+build_pb:
+  stage: resources
+  script:
+    - bash ./build-pb.sh
+  artifacts:
+    untracked: true
+
+build_robot_state:
+  stage: build
+  script:
+    - mvn compile -f glennifer/robot_state
+  artifacts:
+    paths:
+      - glennifer/robot_state/target/
+    
+test_robot_state:
+  stage: test
+  script:
+    - rabbitmq-server -detached
+    - mvn test -f glennifer/robot_state

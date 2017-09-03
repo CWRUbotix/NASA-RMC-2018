@@ -1,0 +1,3 @@
+[submodule "third-party/ORB_SLAM2"]
+	path = third-party/ORB_SLAM2
+	url = https://github.com/cwruRobotics/ORB_SLAM2.git
