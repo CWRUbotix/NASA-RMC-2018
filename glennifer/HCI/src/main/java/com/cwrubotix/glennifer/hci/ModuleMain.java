@@ -7,12 +7,11 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 import jssc.SerialPortTimeoutException;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 
 public class ModuleMain {
@@ -27,32 +26,14 @@ public class ModuleMain {
 	public static void runWithConnectionExceptions() throws IOException, TimeoutException {
 		// Read connection config
 		Mechanics.initialize();
-		InputStream input = new FileInputStream("config/connection.yml");
-		Yaml yaml = new Yaml();
-		Object connectionConfigObj = yaml.load(input);
-		Map<String, String> connectionConfig = (Map<String, String>)connectionConfigObj;
-		String serverAddress = connectionConfig.get("server-addr");
-		if (serverAddress == null) {
-			throw new RuntimeException("Config file missing server-addr");
-		}
-		String serverUsername = connectionConfig.get("server-user");
-		if (serverUsername == null) {
-			throw new RuntimeException("Config file missing server-user");
-		}
-		String serverPassword = connectionConfig.get("server-pass");
-		if (serverPassword == null) {
-			throw new RuntimeException("Config file missing server-pass");
-		}
-		String exchangeName = connectionConfig.get("exchange-name");
-		if (exchangeName == null) {
-			throw new RuntimeException("Config file missing exchange-name");
-		}
 
 		//Connect and Configure AMPQ
 		ConnectionFactory factory = new ConnectionFactory();
-		factory.setHost(serverAddress); //replace local host with host name
-		factory.setUsername(serverUsername);
-		factory.setPassword(serverPassword);
+		try {
+			factory.setUri("amqp://guest:guest@localhost:5672/%2F");
+		} catch (KeyManagementException | NoSuchAlgorithmException | URISyntaxException e2) {
+			System.out.println("The URI is not defined correctly.");
+		}
 		Connection connection = factory.newConnection(); // throws
 		Channel channel = connection.createChannel(); // throws
 		String queueName = channel.queueDeclare().getQueue();
@@ -464,7 +445,7 @@ public class ModuleMain {
 		//Listen for messages
 		//if
 
-		channel.queueBind(queueName, exchangeName, motorTopic);
+		channel.queueBind(queueName, "amq.topic", motorTopic);
 
 		Consumer consumer = new DefaultConsumer(channel) {
 			@Override

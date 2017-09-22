@@ -21,10 +21,6 @@ cd autodrill
 nohup /usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java -cp target/autodrill-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.autodrill.AutoDrillModule &> "/home/cwrubotix/logs/$datestring/AutoDrillModuleOutput.log" &
 cd ..
 
-cd motor_dispatch/src/python
-nohup python3 locomotion.py &> "/home/cwrubotix/logs/$datestring/LocomotionPyOutput.log" &
-cd ../../../..
-
 cd client-cameras
 nohup python client-cam-send.py &> "/home/cwrubotix/logs/$datestring/CameraSendPyOutput.log" &
 cd ..
