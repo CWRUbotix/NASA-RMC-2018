@@ -34,30 +34,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    /*
-
-    QMap<QLineEdit*, QSlider*> lineSliders;
-
-    lineSliders.insert(ui->lineEdit_BackLeftWheel, ui->slider_BackLeftWheel);
-
-    ui->lineEdit_FrontLeftWheel->setValidator(new QIntValidator(-60, 60));
-    */
-
-    /*
-    ui->lineEdit_FrontLeftWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_FrontRightWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_BackLeftWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_BackRightWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_FrontLeftWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_FrontRightWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_BackLeftWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_BackRightWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_DepositionDump->setValidator(new QDoubleValidator(-100, 100, 0));
-    ui->lineEdit_ExcavationArm->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_ExcavationTranslation->setValidator(new QDoubleValidator(-100, 100, 0));
-    */
-
-    //ui->drill_Slider->setRange(0,);
 
     connect(ui->lineEdit_FrontLeftWheel, &IntEdit::valueEdited, ui->slider_FrontLeftWheel, &QSlider::setValue);
     connect(ui->lineEdit_FrontRightWheel, &IntEdit::valueEdited, ui->slider_FrontRightWheel, &QSlider::setValue);
@@ -229,11 +205,8 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleEStop);
     QObject::connect(ui->pushButton_EUnstop, &QPushButton::clicked,
                      this, &MainWindow::handleEUnstop);
-    /*
-    QObject::connect(ui->lineEdit_FrontLeftWheel, &QLineEdit::textChanged,
-                     ui->slider_BackLeftWheel, &QSlider::setValue)
-*/
-    //add tankPivotButtonR and tankPivotButtonL
+
+    //Add tankPivotButtonR and tankPivotButtonL
     QObject::connect(ui->tankPivotButtonR, &QPushButton::clicked,
                      this, &MainWindow::handleTankPivotR);
     QObject::connect(ui->tankPivotButtonR, &QPushButton::released,
@@ -396,62 +369,7 @@ void MainWindow::handleLocomotionRight() {
 }
 
 void MainWindow::handleLocomotionRelease() {
-    /*
-    if (0 == m_desiredConfig) { // straight
-        LocomotionControlCommandStraight msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.straight");
-
-        free(msg_buff);
-    } else if (1 == m_desiredConfig) { // turn
-        LocomotionControlCommandTurn msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.turn");
-
-        free(msg_buff);
-    } else if (2 == m_desiredConfig) { // strafe
-        LocomotionControlCommandStrafe msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.strafe");
-
-        free(msg_buff);
-    } else {
-        ui->consoleOutputTextBrowser->append("Wrong config");
-    }
-    */
+   //Method does nothing. Used for Releasing locomotion buttons
 }
 
 void MainWindow::handleLocomotionStop() {
@@ -1503,22 +1421,6 @@ void MainWindow::on_commandLinkButton_clicked()
     cameraOne->CameraOne::camFourStream();
     cameraOne->CameraOne::camFiveStream();
     cameraOne->show();
-
-    /*cameraTwo = new CameraTwo(this, m_loginStr);
-    cameraTwo->CameraTwo::camTwoStream();
-    cameraTwo->show();
-
-    cameraThree = new CameraThree(this, m_loginStr);
-    cameraThree->CameraThree::camThreeStream();
-    cameraThree->show();
-
-    cameraFour = new CameraFour(this, m_loginStr);
-    cameraFour->CameraFour::camFourStream();
-    cameraFour->show();
-
-    cameraFive = new CameraFive(this, m_loginStr);
-    cameraFive->CameraFive::camFiveStream();
-    cameraFive->show();*/
 }
 
 
