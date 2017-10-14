@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.autodrill;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -24,6 +24,14 @@ import java.util.concurrent.TimeoutException;
  *
  */
 public class AutoDrillModule {
+	/*
+	 * TODO list for NASA RMC 2018
+	 * 
+	 * 1) Keep track of depth dug, load on the hopper.
+	 * 2) Remove drill surface
+	 * 3) Come up with more errors we want to deal with inside drill module.
+	 * 
+	 */
 
 	private float currentUpperLimit = 10.0F;
 	private float currentLowerLimit = 8.0F;
