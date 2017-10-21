@@ -102,6 +102,15 @@ public class Position{
 		return Math.PI - getAngle();
 	}
 	
+	@Override
+	public boolean equals(Object obj){
+		if(obj instanceof Position){
+			if(getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
+				return true;
+		}
+		return false;
+	}
+	
 	public static final float WALL_CLEARANCE(){
 		return Position.WALL_CLEARANCE;
 	}
