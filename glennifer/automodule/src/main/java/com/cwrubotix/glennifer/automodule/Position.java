@@ -9,21 +9,19 @@ package main.java.com.cwrubotix.glennifer.automodule;
  */
 
 public class Position{
-	/*
-	 * TODO decide how/where we want to figure out the direction robot is facing
-	 */
+
 	private float x_pos;
 	private float y_pos;
 	/** 
-	 * Represent the angle the robot is facing. EX) 0 when facing north, 90 when facing to the right and so forth (clock-wise).
-	 * Range : [0, 360) unit in degrees.
+	 * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
+	 * Range : [0, 2PI) unit in degrees.
 	 * If angle is negative, the position represents a horizontal line. (For dividing up arena purpose)
 	 * 
 	 */
 	private double angle; //declared double 'cause java.lang.Math hates float angles for trigonometry.
-	private float tilt; //TODO should debate on whether we need this.
+	private float tilt;
 	private static final float WALL_CLEARANCE = 0.3F; //I set this to 30cm for now because I am scared of walls
-	private static final float ARENA_WIDTH = 3.78F;
+	private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
 	private static final float ARENA_HEIGHT = 7.38F;
 	
 	
@@ -39,7 +37,8 @@ public class Position{
 	}
 	
 	public boolean setX(float x_pos){
-		if(x_pos < ARENA_WIDTH() - WALL_CLEARANCE() && x_pos > WALL_CLEARANCE()){
+		//checking whether input is within the arena
+		if(x_pos < (ARENA_WIDTH() / 2) - WALL_CLEARANCE() && x_pos > (ARENA_WIDTH() / -2) + WALL_CLEARANCE()){
 			this.x_pos = x_pos;
 			return true;
 		}
@@ -51,7 +50,8 @@ public class Position{
 	}
 	
 	public boolean setY(float y_pos){
-		if(y_pos >= 0.0F && y_pos < 7.38F - WALL_CLEARANCE()){
+		//checking whether input is within the arena
+		if(y_pos > WALL_CLEARANCE() && y_pos < 7.38F - WALL_CLEARANCE()){
 			this.y_pos = y_pos;
 			return true;
 		}
@@ -63,6 +63,7 @@ public class Position{
 	}
 	
 	public void setAngle(double angle){
+		//checking whether angle is within the range
 		if(angle >= Math.PI * 2){
 			this.angle = angle - Math.PI * 2;
 		}
@@ -79,13 +80,26 @@ public class Position{
 		this.tilt = tilt;
 	}
 	
-	public static float getDist(Position a, Position b){
-		return (float)Math.sqrt(Math.pow(a.getX() - b.getX(), 2) + Math.pow(a.getY() - b.getY(), 2));
+	/**
+	 * Returns distance need to travel to position b
+	 * @param b destination
+	 * @return distance need to travel to position b
+	 */
+	public float getDistTo(Position b){
+		return (float)Math.sqrt(Math.pow(getX() - b.getX(), 2) + Math.pow(getY() - b.getY(), 2));
 	}
 	
-	/*TODO*/
-	public double getAngleRespectTo(Position p){
-		return 0.0;
+	/**
+	 * Returns angle the robot need to turn to face position b
+	 * @param b the destination
+	 * @return angle the robot need to turn to face position b
+	 */
+	public double getAngleTurnTo(Position b){
+		if(getAngle() >= 0 && b.getAngle() >= 0){
+			return Math.PI - Math.atan((b.getX() - getX())/(b.getY() - getY())) - getAngle();
+		}
+		//Heading to vertically down (a.k.a. position b is straight horizontal line)
+		return Math.PI - getAngle();
 	}
 	
 	public static final float WALL_CLEARANCE(){
