@@ -77,6 +77,32 @@ public class PathPlanSimulator{
 	}
 	
 	/*
+	 * Returns false when given coordinates are not valid
+	 */
+	private boolean modifyObstacle(Position obstacle, float x_pos, float y_pos){
+		if(y_pos > 1.5F && y_pos < 4.44F){ //if inside obstacle area
+			float originalX = obstacle.getX();
+			float originalY = obstacle.getY();
+			if(!obstacle.setX(x_pos) || !obstacle.setY(y_pos)){
+				obstacle.setX(originalX);
+				obstacle.setY(originalY);
+				return false;
+			}
+			else{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/*
+	 * Runs thread that looks for obstacles and add as we see them.
+	 */
+	private void findObstacles(){
+		//TODO empty method stud
+	}
+	
+	/*
 	 * Returns false when failed to create a path.
 	 * Runs a thread to dynamically change the path as we see more obstacles
 	 */
