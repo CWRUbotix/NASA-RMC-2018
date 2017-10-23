@@ -111,6 +111,11 @@ public class Position{
 		return false;
 	}
 	
+	@Override
+	public String toString(){
+		return "(" + getX() + " ," + getY() + ")";
+	}
+	
 	public static final float WALL_CLEARANCE(){
 		return Position.WALL_CLEARANCE;
 	}

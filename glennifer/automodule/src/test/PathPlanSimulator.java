@@ -1,7 +1,7 @@
 package test;
 
 import main.java.com.cwrubotix.glennifer.automodule.Position;
-//import main.java.com.cwrubotix.glennifer.automodule.Path;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
 import java.lang.Thread;
 import java.lang.Runnable;
 //TODO import GUI stuff
@@ -18,7 +18,7 @@ public class PathPlanSimulator{
 	private Position destination;
 	private Position currentPos;
 	private Thread[] threads;
-	//private LinkedList<Path> paths; //I will create Path data type unless someone really wants to...?
+	private Path[] paths = new Path[5]; //I will create Path data type unless someone really wants to...?
 	
 	/*Constants:*/
 	private final float STRAIGHT_SPEED = 0.0F;  //Will be filled when
@@ -48,6 +48,14 @@ public class PathPlanSimulator{
 	 *   
 	 *   Pretty sure java GUI is already on its own thread and has a way to access it... correct me if I am wrong.
 	 * 
+	 * For paths array:
+	 *   Again, I will just assign indexes to each path created by different algorithms to keep things organized.
+	 *   Let me know if you come up with better idea :)
+	 *   index 0: path created by midLine algorithm
+	 *   index 1: path created by modifiedAStar algorithm.
+	 *   index 2: path created by arcPath algorithm
+	 *   index 3 and more will be added as we come up with more algorithms.
+	 *   
 	 * TODO:
 	 *   1) randomObstacleGenerator method - creates 6 obstacles within the arena.
 	 *   2) pathGenerator methods - one method per algorithm constructs the field path. Should run on thread and modify path as we see more obstacles.
@@ -73,7 +81,7 @@ public class PathPlanSimulator{
 	 * The coordinate of obstacle will be center of the obstacle. Make sure that obstacle is within the arena with account of diameter.
 	 */
 	private void generateObstacles(){
-		//TODO empty method stud
+		//TODO empty method body
 	}
 	
 	/*
@@ -99,7 +107,7 @@ public class PathPlanSimulator{
 	 * Runs thread that looks for obstacles and add as we see them.
 	 */
 	private void findObstacles(){
-		//TODO empty method stud
+		//TODO empty method body
 	}
 	
 	/*
@@ -107,7 +115,7 @@ public class PathPlanSimulator{
 	 * Runs a thread to dynamically change the path as we see more obstacles
 	 */
 	private boolean midLineAlgorithm(){
-		//TODO empty method stud
+		//TODO empty method body
 		return false;
 	}
 	
@@ -116,7 +124,7 @@ public class PathPlanSimulator{
 	 * Runs a thread to dynamically change the path as we see more obstacles
 	 */
 	private boolean modifiedAStar(){
-		//TODO empty method stud
+		//TODO empty method body
 		return false;
 	}
 	
@@ -125,7 +133,7 @@ public class PathPlanSimulator{
 	 * Runs a thread to dynamically change the path as wee see more obstacles
 	 */
 	private boolean arcPathAlgorithm(){
-		//TODO empty method stud
+		//TODO empty method body
 		return false;
 	}
 	
@@ -134,12 +142,12 @@ public class PathPlanSimulator{
 	 * We should decide whether we want to show robots on different path created by different algorithms simultaneously or one at a time. 
 	 */
 	private void moveRobots(){
-		//TODO empty method stud
+		//TODO empty method body
 	}
 	
 	//To be done at last
 	public static void main(String[] args){
-		//TODO empty method stud
+		//TODO empty method body
 	}
 	
 }
