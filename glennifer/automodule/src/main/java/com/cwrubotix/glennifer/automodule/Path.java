@@ -51,7 +51,7 @@ public class Path implements Iterable<Position>{
 	}
 	
 	public boolean add(int index, Position point){
-		if(index != 0 && index != numPoints - 1){ //Should not modify first and last points.
+		if(index != 0 && index != numPoints){ //Should not modify first and last points.
 			getPath().add(index, point);
 			numPoints++;
 			return true;
