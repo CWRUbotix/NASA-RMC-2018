@@ -27,6 +27,8 @@ public class PathPlanSimulator{
 	private final float ROBOT_LENGTH = 1.0F;  // Estimate on robot size changes
 	private final float OBSTACLE_SIZE = 0.3F; //In diameter, Assume all obstacles are max-sized
 	private final float KINECT_RANGE = 2.0F; //How far we can see. Will be tested and adjusted in the future.
+	private final float OBSTACLE_AREA_HEIGHT = 2.94F;
+	private final float SAFE_AREA_HEIGHT = 1.5F;
 	
 	//add more fields/constants if necessary.
 	
@@ -87,10 +89,10 @@ public class PathPlanSimulator{
 	 */
 	private void generateObstacles(){
 		float validObstacleWidthLength = Position.ARENA_WIDTH() - 2*OBSTACLE_SIZE;
-		float validObstacleHeightLength = Position.ARENA_HEIGHT() - 2*OBSTACLE_SIZE;
+		float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - 2*OBSTACLE_SIZE;
 		for(int i=0; i<obstacles.length; i++) {
-			float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random());
-			float newObstacleY = (float) (OBSTACLE_SIZE + validObstacleHeightLength*Math.random());
+			float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
+			float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
 			Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
 			obstacles[i] = newObstacle;
 		}
