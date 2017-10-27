@@ -27,6 +27,8 @@ public class PathPlanSimulator{
 	private final float ROBOT_LENGTH = 1.0F;  // Estimate on robot size changes
 	private final float OBSTACLE_SIZE = 0.3F; //In diameter, Assume all obstacles are max-sized
 	private final float KINECT_RANGE = 2.0F; //How far we can see. Will be tested and adjusted in the future.
+	private final float OBSTACLE_AREA_HEIGHT = 2.94F;
+	private final float SAFE_AREA_HEIGHT = 1.5F;
 	
 	//add more fields/constants if necessary.
 	
@@ -75,13 +77,25 @@ public class PathPlanSimulator{
 		 */
 	}
 	
-	/*
-	 * Generates total 6 obstacles within the arena
-	 * Each obstacle is an instance of Position and should be inside the obstacle area.
-	 * The coordinate of obstacle will be center of the obstacle. Make sure that obstacle is within the arena with account of diameter.
+	/**
+	 * Generates obstacles within the arena.
+	 * <p>
+	 * Each obstacle is an instance of the position class and fits inside the arena.
+	 * <p>
+	 * This method ensures the obstacle fits in the arena by taking into account the diameter
+	 * and ensuring that the center of the obstacle is in a valid location. 
+	 * 
+	 * @author Tyler Thieding
 	 */
 	private void generateObstacles(){
-		//TODO empty method body
+		float validObstacleWidthLength = Position.ARENA_WIDTH() - 2*OBSTACLE_SIZE;
+		float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - 2*OBSTACLE_SIZE;
+		for(int i=0; i<obstacles.length; i++) {
+			float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
+			float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
+			Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
+			obstacles[i] = newObstacle;
+		}
 	}
 	
 	/*
