@@ -88,8 +88,8 @@ public class PathPlanSimulator{
 	 * @author Tyler Thieding
 	 */
 	private void generateObstacles(){
-		float validObstacleWidthLength = Position.ARENA_WIDTH() - 2*OBSTACLE_SIZE;
-		float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - 2*OBSTACLE_SIZE;
+		float validObstacleWidthLength = Position.ARENA_WIDTH() - OBSTACLE_SIZE;
+		float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - OBSTACLE_SIZE;
 		for(int i=0; i<obstacles.length; i++) {
 			float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
 			float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
