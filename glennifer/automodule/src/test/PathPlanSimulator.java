@@ -75,13 +75,25 @@ public class PathPlanSimulator{
 		 */
 	}
 	
-	/*
-	 * Generates total 6 obstacles within the arena
-	 * Each obstacle is an instance of Position and should be inside the obstacle area.
-	 * The coordinate of obstacle will be center of the obstacle. Make sure that obstacle is within the arena with account of diameter.
+	/**
+	 * Generates obstacles within the arena.
+	 * <p>
+	 * Each obstacle is an instance of the position class and fits inside the arena.
+	 * <p>
+	 * This method ensures the obstacle fits in the arena by taking into account the diameter
+	 * and ensuring that the center of the obstacle is in a valid location. 
+	 * 
+	 * @author Tyler Thieding
 	 */
 	private void generateObstacles(){
-		//TODO empty method body
+		float validObstacleWidthLength = Position.ARENA_WIDTH() - 2*OBSTACLE_SIZE;
+		float validObstacleHeightLength = Position.ARENA_HEIGHT() - 2*OBSTACLE_SIZE;
+		for(int i=0; i<obstacles.length; i++) {
+			float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random());
+			float newObstacleY = (float) (OBSTACLE_SIZE + validObstacleHeightLength*Math.random());
+			Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
+			obstacles[i] = newObstacle;
+		}
 	}
 	
 	/*
