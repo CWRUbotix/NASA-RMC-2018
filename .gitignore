@@ -49,5 +49,7 @@ nbproject/
 *.iml
 *.pyproj
 
+scratchpad.java
+
 # Maven generated files
 dependency-reduced-pom.xml
