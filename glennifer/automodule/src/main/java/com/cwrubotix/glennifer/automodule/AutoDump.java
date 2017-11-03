@@ -1,23 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
-
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-
-import com.rabbitmq.client.AMQP;
-
-import com.cwrubotix.glennifer.Messages;
-import com.cwrubotix.glennifer.Messages.LocomotionControlCommandStraight;
-import com.cwrubotix.glennifer.Messages.SpeedContolCommand;
-import com.cwrubotix.glennifer.Messages.Fault;
-import com.cwrubotix.glennifer.Messages.UnixTime;
-
-import java.io.IOException;
-import java.time.Instant;
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
+package com.cwrubotix.glennifer.automodule;
 
 public class AutoDump{
 	private float dumpAngle;
