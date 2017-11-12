@@ -9,5 +9,5 @@ protoc --cpp_out=pb/. --java_out=pb/. --python_out=pb/. \
   --cpp_out=client/. \
   --java_out=glennifer/robot_state/src/main/java/. \
   --java_out=glennifer/HCI/src/main/java/. \
-  --java_out=glennifer/autodrill/src/main/java/. \
+  --java_out=glennifer/automodule/src/main/java/. \
   messages.proto
