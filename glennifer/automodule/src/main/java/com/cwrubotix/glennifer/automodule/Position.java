@@ -1,5 +1,7 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
+import java.util.Comparator;
+
 /**
  * Data type that represents a location inside the arena.
  * If angle is negative, the instance represents horizontal line in the arena.
@@ -8,7 +10,7 @@ package main.java.com.cwrubotix.glennifer.automodule;
  *
  */
 
-public class Position{
+public class Position implements Cloneable{
 
 	private float x_pos;
 	private float y_pos;
@@ -114,6 +116,24 @@ public class Position{
 	@Override
 	public String toString(){
 		return "(" + getX() + " ," + getY() + ")";
+	}
+	
+	public static Comparator<Position> getComparatorByDistTo(final Position pos){
+		return new Comparator<Position>(){
+			public int compare(Position a, Position b){
+				if(a.getDistTo(pos) < b.getDistTo(pos))
+					return -1;
+				else if(a.getDistTo(pos) > b.getDistTo(pos))
+					return 1;
+				else
+					return 0;
+			}
+		};
+	}
+	
+	@Override
+	public Object clone(){
+		return new Position(getX(), getY(), getAngle(), getTilt());
 	}
 	
 	public static final float WALL_CLEARANCE(){

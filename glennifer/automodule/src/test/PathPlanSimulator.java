@@ -2,10 +2,7 @@ package test;
 
 import main.java.com.cwrubotix.glennifer.automodule.Position;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
-import java.lang.Thread;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.lang.Runnable;
 //TODO import GUI stuff
 
 
@@ -18,14 +15,8 @@ public class PathPlanSimulator{
 	private Position[] obstacles = new Position[6];
 	private Position[] obstaclesFound = new Position[6];
 	private final Position destination;
-	private Position currentPos;
-	private Thread obstacleDectection;
-	private Thread robotMoving;
+	private Position[] robots;
 	private Path[] paths = new Path[5];
-	
-	/*Thread Locks*/
-	private final Object LockCurrentPos = new Object();
-	private final Object LockPath = new Object();
 	
 	/*Constants:*/
 	private final float STRAIGHT_SPEED = 0.0F;  //Will be filled when
@@ -41,19 +32,6 @@ public class PathPlanSimulator{
 	
 	/*
 	 * IMPORTANT NOTE:
-	 * All methods accessing/modifying obstaclesFound, paths, threads, and currentPos have to be synchronized with same lock. 
-	 * Feel free to create any private methods you need.
-	 * 
-	 * For threads:
-	 *   Since this will be multi-thread, I will assign indexes of Thread[] threads array to different tasks to easily access/interrupt
-	 *   things on different threads efficiently and to prevent us messing with others' thread
-	 *   Let me know if you don't like this or think up with better way to organize
-	 *   
-	 *   Fields for threads:
-	 *   obstacleDetection: Thread that updates obstacles that we see
-	 *   robotMoving: Thread that moves robot in GUI
-	 *   
-	 *   Pretty sure java GUI is already on its own thread and has a way to access it... correct me if I am wrong.
 	 * 
 	 * For paths array:
 	 *   Again, I will just assign indexes to each path created by different algorithms to keep things organized.
@@ -61,7 +39,7 @@ public class PathPlanSimulator{
 	 *   index 0: path created by midLine algorithm
 	 *   index 1: path created by modifiedAStar algorithm.
 	 *   index 2: path created by arcPath algorithm
-	 *   index 3: path created by Diijkstra algorithm
+	 *   index 3: path created by Dijkstra algorithm
 	 *   index 4 and more will be added as we come up with more algorithms.
 	 *   
 	 * TODO:
@@ -73,25 +51,16 @@ public class PathPlanSimulator{
 	 *   
 	 */
 	
-	public PathPlanSimulator(Position currentPos, Position destination){
-		this.currentPos = currentPos;
+	public PathPlanSimulator(Position initialPos, Position destination){
+		for(Position robot : robots){
+			robot = (Position) initialPos.clone();
+		}
 		this.destination = destination;
 		generateObstacles();
-		
-		/*TODO
-		 *setup GUI or anything necessary 
-		 */
-	}
-	
-	private static Comparator<Position> getComparatorByDistToCurrentPos(final PathPlanSimulator simulator){
-		return new Comparator<Position>(){
-			public int compare(Position a, Position b){
-				float diffInDist = a.getDistTo(simulator.currentPos) - b.getDistTo(simulator.currentPos);
-				if(diffInDist < 0) return -1;
-				else if(diffInDist == 0) return 0;
-				else return 1;
-			}
-		};
+		setUpGUI();
+		displayObstacles();
+		promptModification();
+		displayRobots();
 	}
 	
 	/**
@@ -113,7 +82,6 @@ public class PathPlanSimulator{
 			Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
 			obstacles[i] = newObstacle;
 		}
-		Arrays.sort(obstacles, PathPlanSimulator.getComparatorByDistToCurrentPos(this));
 	}
 	
 	/*
@@ -129,68 +97,41 @@ public class PathPlanSimulator{
 				return false;
 			}
 			else{
-				Arrays.sort(obstacles, PathPlanSimulator.getComparatorByDistToCurrentPos(this));
 				return true;
 			}
 		}
 		return false;
 	}
 	
-	/*
-	 * Runs thread that looks for obstacles and add as we see them.
+	/**
+	 * Returns true if new obstacle has been detected.
+	 * @return true if new obstacle has been detected.
 	 */
-	private void findObstacles(){
-		final PathPlanSimulator simulator = this;
-		this.obstacleDectection = new Thread(new Runnable(){
-			public void run(){
-				synchronized(LockCurrentPos){
-					while(!currentPos.equals(destination)){
-						try {
-							LockCurrentPos.wait();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-
-						findObstacles();
-
-						synchronized(LockPath){
-							if(!simulator.midLineAlgorithm())
-								throw new FailedToCreatePathException("Mid Line Algorithm Failed");
-							else if(!simulator.modifiedAStar())
-								throw new FailedToCreatePathException("Modified AStar Algorithm Failed.");
-							else if(!simulator.arcPathAlgorithm())
-								throw new FailedToCreatePathException("Arc Path Algorithm Failed");
-							//ADD Diijkstra
-							else
-							  LockPath.notify();
-						}
-						LockCurrentPos.notify();
-					}
-				}
+	private boolean foundObstacles(Position robot){
+		/*Making sure obstacles are in order of distance from robot*/
+		Arrays.sort(obstacles, Position.getComparatorByDistTo(robot));
+		Arrays.sort(obstaclesFound, Position.getComparatorByDistTo(robot)); 
+		
+		int index = 0;
+		boolean done = false;
+		boolean found = false;
+		while(!done){
+			while(obstacles[index].equals(obstaclesFound[index]))
+				index++;
+			if(obstacles[index].getDistTo(robot) < KINECT_RANGE){
+				obstaclesFound[index] = obstacles[index];
+				found = true;
+				markFoundObstacles(obstaclesFound[index]);
 			}
-			
-			private boolean foundObstacles(){
-				Position[] obstaclesFound = new Position[6];
-				for(int i = 0; i < obstacles.length; i++){
-					if(obstacles[i].getDistTo(currentPos) < KINECT_RANGE)
-						obstaclesFound[i] = obstacles[i];
-					}
-				for(int i = 0; i < obstaclesFound.length; i ++){
-					if(!obstaclesFound[i].equals(simulator.obstaclesFound[i])){ // Found new obstacle.
-						Arrays.sort(obstaclesFound, PathPlanSimulator.getComparatorByDistToCurrentPos(simulator));
-						simulator.obstaclesFound = obstaclesFound;
-						return true;
-					}
-				}
-				return false;
-			}
-		});
-		this.obstacleDectection.run();
+			else
+				done = true;
+		}
+		return found;
 	}
 	
 	/*
+	 * Creates path by using MidLineAlgorithm
 	 * Returns false when failed to create a path.
-	 * Runs a thread to dynamically change the path as we see more obstacles
 	 */
 	private boolean midLineAlgorithm(){
 		//TODO empty method body
@@ -198,8 +139,8 @@ public class PathPlanSimulator{
 	}
 	
 	/*
-	 * Returns false when failed to create a path.
-	 * Runs a thread to dynamically change the path as we see more obstacles
+	 * Creates path by using ModifiedAStar algorithm
+	 * Returns false when failed to create a path
 	 */
 	private boolean modifiedAStar(){
 		//TODO empty method body
@@ -207,8 +148,8 @@ public class PathPlanSimulator{
 	}
 	
 	/*
+	 * Creates path by using ArcPath algorithm
 	 * Returns false when failed to create a path.
-	 * Runs a thread to dynamically change the path as wee see more obstacles
 	 */
 	private boolean arcPathAlgorithm(){
 		//TODO empty method body
@@ -216,28 +157,154 @@ public class PathPlanSimulator{
 	}
 	
 	/*
-	 * Runs thread to display robots moving with given speed, path and obstacles.
-	 * We should decide whether we want to show robots on different path created by different algorithms simultaneously or one at a time. 
-	 * STILL UNDER PROGRESS
+	 * Creates path by using dijkstra algorithm
+	 * Returns false when failed to create a path.
 	 */
-	private void moveRobots(){
-		this.robotMoving = new Thread(new Runnable(){
-			public void run(){
-				LockCurrentPos.notify();
-				while(!currentPos.equals(destination)){
-					if(paths[0] == null){
-						try {
-							LockPath.wait();
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+	private boolean dijkstra(){
+		//TODO empty method body
+		return false;
+	}
+	
+	/**
+	 * TODO moves given robot along the given path
+	 * @param robot a robot to move
+	 * @param path a path to move along
+	 * @return true if robot reached destination
+	 */
+	private boolean moveRobot(Position robot, Path path){
+		return false;
+	}
+	
+	/*
+	 * Move robots
+	 */
+	private void moveRobots() throws NoPossiblePathException{
+		boolean arrived = false;
+		boolean[] robotArrived = new boolean[robots.length];
+		Arrays.fill(robotArrived, false);
+		while(!arrived){ //Keeps moving till all robots arrive to location
+			for(int i = 0; i < robots.length; i++){ //Iterates through each robot
+				switch(i){
+				case 0: //first robot which is on midLine path
+					if(!robotArrived[i] && !moveRobot(robots[i], paths[i])){
+						if(foundObstacles(robots[i])){
+							if(!midLineAlgorithm())
+								throw new NoPossiblePathException(NoPossiblePathException.Cause.MIDLINE);
 						}
 					}
-					//TODO Every once in a while, call wait method and notify obstacle finding thread.
+					else{
+						robotArrived[i] = true;
+						markArrivedRobot(robots[i]);
+					}
+					break;
+				case 1: //second robot which is on modified Astar path
+					if(!robotArrived[i] && !moveRobot(robots[i], paths[i])){
+						if(foundObstacles(robots[i])){
+							if(!modifiedAStar())
+								throw new NoPossiblePathException(NoPossiblePathException.Cause.MODIFIED_ASTAR);
+						} 
+					}
+					else{
+						robotArrived[i] = true;
+						markArrivedRobot(robots[i]);
+					}
+					break;
+				case 2: //third robot which is on arc path
+					if(!robotArrived[i] && !moveRobot(robots[i], paths[i])){
+						if(foundObstacles(robots[i])){
+							if(!arcPathAlgorithm())
+								throw new NoPossiblePathException(NoPossiblePathException.Cause.ARC_PATH);
+						}
+					}
+					else{
+						robotArrived[i] = true;
+						markArrivedRobot(robots[i]);
+					}
+					break;
+				case 3: //last robot which is on dijkstra path
+					if(!robotArrived[i] && !moveRobot(robots[i], paths[i])){
+						if(foundObstacles(robots[i])){
+							if(!dijkstra())
+								throw new NoPossiblePathException(NoPossiblePathException.Cause.DIJKSTRA);
+						} 
+					}
+					else{
+						robotArrived[i] = true;
+						markArrivedRobot(robots[i]);
+					}
+					break;
+				default: break;
+				}
+				/*Checks whether all robots arrived at destination*/
+				arrived = true;
+				for(boolean b : robotArrived){
+					if(!b)
+						arrived = false;
 				}
 			}
-		});
-		robotMoving.run();
+			displayPaths();
+			displayRobots();
+		}
+	}
+	
+	/*TODO
+	 * GUI METHODS STARTS HERE
+	 * 1) setUpGUI()
+	 * 2) displayObstacles
+	 * 3) promptModification
+	 * 4) markFoundObstacles
+	 * 5) displayPaths
+	 * 6) displayRobots
+	 * 7) markFailedPath
+	 * 8) markArrivedRobot
+	 * 9) displayResult
+	 */
+	
+	private void setUpGUI(){
+		//TODO empty method body
+	}
+	
+	private void displayObstacles(){
+		//TODO empty method body
+	}
+	
+	private void promptModification(){
+		//TODO empty method body
+	}
+	
+	private void markFoundObstacles(Position obstacle){
+		//TODO empty method body
+	}
+	
+	private void displayPaths(){
+		//TODO empty method body
+	}
+	
+	private void displayRobots(){
+		//TODO empty method body
+	}
+	
+	private void markArrivedRobot(Position robot){
+		//TODO empty method body
+	}
+	
+	private void markFailedPath(NoPossiblePathException.Cause cause){
+		//TODO empty method body
+	}
+	
+	private void displayResult(){
+		//TODO empty method body
+	}
+	
+	public void runSimulation(){
+		try{
+			moveRobots();
+		}
+		catch(NoPossiblePathException e){
+			markFailedPath(e.cause);
+			runSimulation();
+		}
+		displayResult();
 	}
 	
 	//To be done at last
@@ -245,13 +312,17 @@ public class PathPlanSimulator{
 		//TODO empty method body
 	}
 	
-	private class FailedToCreatePathException extends RuntimeException{
-
+	private static class NoPossiblePathException extends Exception{
+		
 		private static final long serialVersionUID = 1L;
-
-		public FailedToCreatePathException(String message){
-			super(message);
+		private Cause cause;
+		private enum Cause{MIDLINE, MODIFIED_ASTAR, ARC_PATH, DIJKSTRA};
+		
+		public NoPossiblePathException(Cause cause){
+			super();
+			this.cause = cause;
 		}
+		
 	}
 	
 }
