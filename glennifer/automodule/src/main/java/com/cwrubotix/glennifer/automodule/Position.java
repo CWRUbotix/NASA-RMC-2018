@@ -14,9 +14,12 @@ public class Position implements Cloneable{
 
 	private float x_pos;
 	private float y_pos;
-	/** 
+	/**<p> 
 	 * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
+	 * </p>
+	 * <p>
 	 * Range : [0, 2PI) unit in degrees.
+	 * </p>
 	 * If angle is negative, the position represents a horizontal line. (For dividing up arena purpose)
 	 * 
 	 */

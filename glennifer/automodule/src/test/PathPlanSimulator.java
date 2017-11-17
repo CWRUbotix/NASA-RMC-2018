@@ -12,20 +12,43 @@ import java.util.Arrays;
  *
  */
 public class PathPlanSimulator{
+	
+	/** Array of Positions that represent obstacles in the arena*/
 	private Position[] obstacles = new Position[6];
+	/** Array of Positions that represent obstacles we found*/
 	private Position[] obstaclesFound = new Position[6];
+	/** The destination of the path*/
 	private final Position destination;
+	/** 
+	 * Array of Positions which represents locations of robots.
+	 * <p>We will have one robot per path</p>
+	 */
 	private Position[] robots;
+	/** Array of paths created by different algorithms.*/
 	private Path[] paths = new Path[5];
 	
 	/*Constants:*/
-	private final float STRAIGHT_SPEED = 0.0F;  //Will be filled when
-	private final float TURNING_SPEED = 0.0F;   //Locomotion gives us numbers.
-	private final float ROBOT_WIDTH = 0.75F;  // Will be modified whenever
-	private final float ROBOT_LENGTH = 1.0F;  // Estimate on robot size changes
-	private final float OBSTACLE_SIZE = 0.3F; //In diameter, Assume all obstacles are max-sized
-	private final float KINECT_RANGE = 2.0F; //How far we can see. Will be tested and adjusted in the future.
+	/** Stores Max straight speed of the robot. Unit: m/s*/
+	private final float MAX_STRAIGHT_SPEED = 3.32F;
+	/** Stores Max turning speed of the robot. Unit: rad/s*/
+	private final float MAX_TURNING_SPEED = (float)Math.PI;
+	/** Stores robot's width in meters*/
+	private final float ROBOT_WIDTH = 0.75F;
+	/** Stores robot's length in meters*/
+	private final float ROBOT_LENGTH = 1.0F;
+	/** Stores maximum diameter of obstacles in meters*/
+	private final float OBSTACLE_SIZE = 0.3F;
+	/** Stores the maximum reliable kinect range in meters*/
+	private final float KINECT_RANGE = 2.0F;
+	/** 
+	 * Stores the y direction length of obstacle area of the arena in meters
+	 * <p>Actual positions in the arena : y = 1.5m ~ 4.44m</p>
+	 */
 	private final float OBSTACLE_AREA_HEIGHT = 2.94F;
+	/** 
+	 * Stores the y direction length of obstacle safe area of the arena in meters
+	 * <p>Actual positions in the arena : y = 0.0m ~ 1.5m</p>
+	 */
 	private final float SAFE_AREA_HEIGHT = 1.5F;
 	
 	//add more fields/constants if necessary.
@@ -34,7 +57,7 @@ public class PathPlanSimulator{
 	 * IMPORTANT NOTE:
 	 * 
 	 * For paths array:
-	 *   Again, I will just assign indexes to each path created by different algorithms to keep things organized.
+	 *   I will just assign indexes to each path created by different algorithms to keep things organized.
 	 *   Let me know if you come up with better idea :)
 	 *   index 0: path created by midLine algorithm
 	 *   index 1: path created by modifiedAStar algorithm.
@@ -51,6 +74,14 @@ public class PathPlanSimulator{
 	 *   
 	 */
 	
+	/**
+	 * Constructor for simulator
+	 * <p>
+	 * Sets up initial locations of robots, obstacles generated, and destinations along with proper GUI setup.
+	 * </p>
+	 * @param initialPos the start point of simulation
+	 * @param destination the destination of simulation
+	 */
 	public PathPlanSimulator(Position initialPos, Position destination){
 		for(Position robot : robots){
 			robot = (Position) initialPos.clone();
@@ -84,16 +115,16 @@ public class PathPlanSimulator{
 		}
 	}
 	
-	/*
-	 * Returns false when given coordinates are not valid
+	/**
+	 * Changes position of given obstacle with given coordinates.
+	 * @param obstacle the obstacle whose position is being modified
+	 * @param x_pos the new x coordinate
+	 * @param y_pos the new y coordinate
+	 * @return false if given coordinates are invalid as an obstacle.
 	 */
 	private boolean modifyObstacle(Position obstacle, float x_pos, float y_pos){
 		if(y_pos > 1.5F && y_pos < 4.44F){ //if inside obstacle area
-			float originalX = obstacle.getX();
-			float originalY = obstacle.getY();
 			if(!obstacle.setX(x_pos) || !obstacle.setY(y_pos)){
-				obstacle.setX(originalX);
-				obstacle.setY(originalY);
 				return false;
 			}
 			else{
