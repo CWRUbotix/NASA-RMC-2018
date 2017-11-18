@@ -5,23 +5,10 @@ import java.util.LinkedList;
 
 public class Path implements Iterable<Position>{
 	private LinkedList<Position> path;
-	private final Position start;
-	private final Position destination;
-	private int currentSubDestination;
 	private int numPoints;
 	
-	public Path(Position start, Position destination){
-		this.start = start;
-		this.destination = destination;
+	public Path(){
 		path = new LinkedList<Position>();
-		add(start);
-		add(destination);
-		currentSubDestination = 1;
-	}
-	
-	private void add(Position point){
-		getPath().add(point);
-		numPoints++;
 	}
 	
 	protected LinkedList<Position> getPath(){
@@ -38,68 +25,35 @@ public class Path implements Iterable<Position>{
 		return (Position[]) getPath().toArray();
 	}
 	
-	public Position getStart(){
-		return start;
-	}
-	
-	public Position getDestination(){
-		return destination;
-	}
-	
 	public Position getPoint(int index){
 		return path.get(index);
 	}
 	
-	public boolean add(int index, Position point){
-		if(index != 0 && index != numPoints){ //Should not modify first and last points.
-			getPath().add(index, point);
-			numPoints++;
-			return true;
-		}
-		return false;
+	public int length(){
+		return numPoints;
 	}
 	
-	public boolean remove(int index){
-		if(index == 0 || index == numPoints - 1){ //Should never remove start and destination
-			return false;
-		}
-		getPath().remove(index);
-		numPoints--;
-		return true;
+	public void add(int index, Position point){
+		getPath().add(index, point);
+	}
+	
+	public Position remove(int index){
+		Position save = getPath().remove(index);
+		if(save != null)
+			numPoints--;
+		return save;
 	}
 	
 	public boolean remove(Position point){
-		if(!point.equals(getStart()) && !point.equals(getDestination())){ //Should never remove start and destination.
-			if(getPath().remove(point)){
-				numPoints--;
-				return true;
-			}
+		if(getPath().remove(point)){
+			numPoints--;
+			return true;
 		}
-		return false;
+		else
+			return false;
 	}
 	
-	
-	/*
-	 * May or may not be used..?
-	 * I thought it could be useful if we modify iterator so that we can still use for each loop even when the path is dynamically changing.
-	 * Will only work if for each loop iterating this has enough delay when moving between points and properly synchronized.
-	 */
 	public Iterator<Position> iterator(){
-		
-		return new Iterator<Position>(){
-			
-			@Override
-			public boolean hasNext() {
-				if(currentSubDestination < numPoints)
-					return true;
-				return false;
-			}
-
-			@Override
-			public Position next() {
-				return getPath().get(currentSubDestination++);
-			}
-			
-		};
+		return getPath().iterator();
 	}
 }
