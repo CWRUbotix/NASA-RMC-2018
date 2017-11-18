@@ -23,9 +23,11 @@ public class PathPlanSimulator{
 	 * Array of Positions which represents locations of robots.
 	 * <p>We will have one robot per path</p>
 	 */
-	private Position[] robots;
+	private Position[] robots = new Position[4];
 	/** Array of paths created by different algorithms.*/
-	private Path[] paths = new Path[5];
+	private Path[] paths = new Path[4];
+	/** Array whose element checks whether each robot arrived at destination*/
+	private boolean[] robotArrived = new boolean[4];
 	
 	/*Constants:*/
 	/** Stores Max straight speed of the robot. Unit: m/s*/
@@ -83,10 +85,11 @@ public class PathPlanSimulator{
 	 * @param destination the destination of simulation
 	 */
 	public PathPlanSimulator(Position initialPos, Position destination){
-		for(Position robot : robots){
-			robot = (Position) initialPos.clone();
+		for(int i = 0; i < robots.length; i ++){
+			robots[i] = (Position) initialPos.clone();
 		}
 		this.destination = destination;
+		Arrays.fill(robotArrived, false);
 		generateObstacles();
 		setUpGUI();
 		displayObstacles();
@@ -211,8 +214,6 @@ public class PathPlanSimulator{
 	 */
 	private void moveRobots() throws NoPossiblePathException{
 		boolean arrived = false;
-		boolean[] robotArrived = new boolean[robots.length];
-		Arrays.fill(robotArrived, false);
 		while(!arrived){ //Keeps moving till all robots arrive to location
 			for(int i = 0; i < robots.length; i++){ //Iterates through each robot
 				switch(i){
