@@ -38,11 +38,11 @@ public class Path implements Iterable<Position>{
 		return (Position[]) getPath().toArray();
 	}
 	
-	protected Position getStart(){
+	public Position getStart(){
 		return start;
 	}
 	
-	protected Position getDestination(){
+	public Position getDestination(){
 		return destination;
 	}
 	
@@ -78,20 +78,6 @@ public class Path implements Iterable<Position>{
 		return false;
 	}
 	
-	/*
-	 * Should be called by PathPlanSimulator before running the test to ensure all paths to be tested
-	 * have same start point and same destination.
-	 */
-	public static boolean verifySamePathGoals(Path[] paths){
-		Position start = paths[0].getStart();
-		Position destination = paths[0].getDestination();
-		boolean valid = true;
-		for(Path path : paths){
-			if(!path.getStart().equals(start) || !path.getDestination().equals(destination))
-				valid = false;
-		}
-		return valid;
-	}
 	
 	/*
 	 * May or may not be used..?

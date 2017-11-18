@@ -1,19 +1,32 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
+import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
+
+import java.util.ArrayList;
+
+
 /**
  * @author Robbie Dozier
  *
- * General interface for pathfinding algorithms to conform to. Utilizes the {@code Position} and {@code Path} modules
- * from the main.java.com.cwrubotix.glennifer.automodule package.
+ * Unfinished
+ * @param <T> Path finding algorithm
  */
-public interface PathFinder {
-    /**
-     * The algorithm itself should be implemented here. Actually computes the path that should be taken and returns
-     * a {@code Path} instance.
-     *
-     * @param startPosition Start of path (current position)
-     * @param endPosition End of path (target position)
-     * @return
-     */
-    public Path computePath(Position startPosition, Position endPosition);
+public class PathFinder<T extends PathFindingAlgorithm> {
+    private T pathFindingAlgorithm;
+    private ArrayList<Position> obstacles;
+
+    public PathFinder() {
+        obstacles = new ArrayList<Position>();
+    }
+
+    public Path getPath() {
+
+    }
+
+    public void registerObstacle(Position obstacle) {
+        obstacles.add(obstacle);
+        // pathFindingAlgorithm.computePath();
+    }
 }
