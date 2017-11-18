@@ -1,4 +1,8 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
+
+import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
 
 public class PathFinderDijkstra implements PathFinder {
     /** Position array of obstacles in arena */

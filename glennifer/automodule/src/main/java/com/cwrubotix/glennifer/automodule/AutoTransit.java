@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 public class AutoTransit{
 	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI, 0.0F);
