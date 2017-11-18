@@ -2,6 +2,7 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 import main.java.com.cwrubotix.glennifer.automodule.Path;
 import main.java.com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
 
 /**
  * @author Robbie Dozier
@@ -27,5 +28,4 @@ public interface PathFindingAlgorithm {
      * @return the new path created
      */
     public abstract Path computePath(Position currentPos, Obstacle newObstacle);
-
 }
