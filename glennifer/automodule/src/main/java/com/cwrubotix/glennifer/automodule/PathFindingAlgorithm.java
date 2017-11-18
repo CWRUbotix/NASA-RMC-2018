@@ -18,5 +18,14 @@ public interface PathFindingAlgorithm {
      * @param endPosition
      * @return
      */
-    public Path computePath(Position startPosition, Position endPosition);
+    public abstract Path computePath(Position startPosition, Position endPosition);
+    
+    /**
+     * Method that computes path when new obstacle was added
+     * @param currentPos current position of robot fed
+     * @param newObstacle new obstacle that was added
+     * @return the new path created
+     */
+    public abstract Path computePath(Position currentPos, Obstacle newObstacle);
+
 }

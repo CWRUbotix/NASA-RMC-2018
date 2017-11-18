@@ -4,7 +4,7 @@ import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.Position;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
 
-public class PathFinderDijkstra implements PathFinder {
+public class PathFinderDijkstra implements PathFindingAlgorithm {
     /** Position array of obstacles in arena */
     private Position[] obstacles;
 
@@ -30,4 +30,10 @@ public class PathFinderDijkstra implements PathFinder {
     public Path computePath(Position startPosition, Position endPosition) {
         return null;
     }
+
+	@Override
+	public Path computePath(Position currentPos, Obstacle newObstacle) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
