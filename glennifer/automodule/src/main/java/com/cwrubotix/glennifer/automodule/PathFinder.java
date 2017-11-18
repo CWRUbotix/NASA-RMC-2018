@@ -1,12 +1,15 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.automodule.Path;
-import com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 import java.util.ArrayList;
 
 
 /**
+ * @author Robbie Dozier
+ *
  * Unfinished
  * @param <T> Path finding algorithm
  */
@@ -24,6 +27,6 @@ public class PathFinder<T extends PathFindingAlgorithm> {
 
     public void registerObstacle(Position obstacle) {
         obstacles.add(obstacle);
-        pathFindingAlgorithm.computePath()
+        // pathFindingAlgorithm.computePath();
     }
 }
