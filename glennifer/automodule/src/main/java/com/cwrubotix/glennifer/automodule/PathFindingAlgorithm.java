@@ -1,8 +1,8 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
-import main.java.com.cwrubotix.glennifer.automodule.Path;
-import main.java.com.cwrubotix.glennifer.automodule.Position;
-import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
+import com.cwrubotix.glennifer.automodule.Path;
+import com.cwrubotix.glennifer.automodule.Position;
+import com.cwrubotix.glennifer.automodule.Obstacle;
 
 /**
  * @author Robbie Dozier
