@@ -7,14 +7,21 @@ public class SensorConfig {
 	boolean limitSwitch;
 	double scale;
         
-        //Copy function
-        public SensorConfig copy() {
-            SensorConfig dum = new SensorConfig();
-            dum.name = this.name;
-            dum.description = this.description;
-            dum.ID = this.ID;
-            dum.limitSwitch = this.limitSwitch;
-            dum.scale = this.scale;
-            return dum;
-        }
+    //Copy function
+    public SensorConfig copy() {
+        SensorConfig dum = new SensorConfig();
+        dum.name = this.name;
+        dum.description = this.description;
+        dum.ID = this.ID;
+        dum.limitSwitch = this.limitSwitch;
+        dum.scale = this.scale;
+        return dum;
+    }
+
+    SensorConfig(String name, int ID){
+        this.name = name;
+        this.ID = ID;
+        this.scale = 1;
+        this.limitSwitch = false;
+    }
 }
