@@ -82,7 +82,6 @@ public class ModuleMain {
 			    }
 		    };
 
-        
 		channel.basicConsume(queueName, true, consumer);
 
 		// Main loop to get sensor data
@@ -97,6 +96,8 @@ public class ModuleMain {
 						.setTimeInt(time_ms / 1000)
 						.setTimeFrac((time_ms % 1000) / (1000.0F))
 						.build();
+
+                        
                 //LEFT WHEEL RPM    
 				if (sensorDataID == 0 || sensorDataID == 2){
                     value = -(Mechanics.wheelValueToRPM(value));
