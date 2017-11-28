@@ -109,6 +109,8 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 			}
 			if(next == -1){
 				currentNode = currentNode.getPrevious();
+				if(currentNode == null)
+					throw new RuntimeException("Failed to create a path");
 			}
 			else{
 				connects[next].setPrevious(currentNode);
