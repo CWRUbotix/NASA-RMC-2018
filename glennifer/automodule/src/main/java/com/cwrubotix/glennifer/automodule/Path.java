@@ -1,5 +1,7 @@
 package com.cwrubotix.glennifer.automodule;
 
+import com.cwrubotix.glennifer.automodule.Position;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 

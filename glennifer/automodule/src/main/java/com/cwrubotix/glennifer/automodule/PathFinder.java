@@ -1,12 +1,5 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
-import com.cwrubotix.glennifer.automodule.Path;
-import com.cwrubotix.glennifer.automodule.Position;
-import com.cwrubotix.glennifer.automodule.Obstacle;
-
-import java.util.ArrayList;
-
 
 /**
  * @author Robbie Dozier

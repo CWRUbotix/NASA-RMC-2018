@@ -10,7 +10,7 @@ import java.util.Comparator;
  *
  */
 
-public class Position implements Cloneable{
+public class Position implements Cloneable {
 
 	private float x_pos;
 	private float y_pos;
@@ -110,7 +110,10 @@ public class Position implements Cloneable{
 	@Override
 	public boolean equals(Object obj){
 		if(obj instanceof Position){
-			if(getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
+            if (obj instanceof FuzzyPosition) {
+                return obj.equals(this);
+            }
+			else if (getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
 				return true;
 		}
 		return false;
@@ -138,8 +141,16 @@ public class Position implements Cloneable{
 	public Object clone(){
 		return new Position(getX(), getY(), getAngle(), getTilt());
 	}
-	
-	public static final float WALL_CLEARANCE(){
+
+    /**
+     * @return Feel free to come up with a better hashing algorithm.
+     */
+    @Override
+    public int hashCode() {
+        return (int) Double.doubleToLongBits(getX() * getY() + getAngle() * getTilt());
+    }
+
+    public static final float WALL_CLEARANCE(){
 		return Position.WALL_CLEARANCE;
 	}
 	
@@ -150,5 +161,4 @@ public class Position implements Cloneable{
 	public static final float ARENA_HEIGHT(){
 		return Position.ARENA_HEIGHT;
 	}
-	
 }

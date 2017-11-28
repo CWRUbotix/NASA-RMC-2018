@@ -1,6 +1,8 @@
 package com.cwrubotix.glennifer.automodule;
 
-public class Obstacle extends Position{
+import com.cwrubotix.glennifer.automodule.Position;
+
+public class Obstacle extends Position {
 
 	private float diameter;
 	

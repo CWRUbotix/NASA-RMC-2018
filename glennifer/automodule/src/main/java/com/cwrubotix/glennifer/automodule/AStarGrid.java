@@ -1,10 +1,8 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
-
 public class AStarGrid implements PathFindingAlgorithm {
-    public AStarGrid(float width, float height, float resolution) {
-        
+    public AStarGrid(double resolution) {
+
     }
 
     /**

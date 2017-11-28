@@ -1,20 +1,7 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-
-import com.rabbitmq.client.AMQP;
-
 import com.cwrubotix.glennifer.Messages;
-
-import java.io.IOException;
-import java.time.Instant;
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
-
+import com.cwrubotix.glennifer.automodule.Position;
 
 
 public class AutoTransit{
