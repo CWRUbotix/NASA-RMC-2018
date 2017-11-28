@@ -37,6 +37,14 @@ public class Path implements Iterable<Position>{
 		getPath().add(index, point);
 	}
 	
+	public void addFirst(Position point){
+		getPath().addFirst(point);
+	}
+	
+	public void addLast(Position point){
+		getPath().addLast(point);
+	}
+	
 	public Position remove(int index){
 		Position save = getPath().remove(index);
 		if(save != null)
