@@ -110,11 +110,9 @@ public class Position implements Cloneable {
 	@Override
 	public boolean equals(Object obj){
 		if(obj instanceof Position){
-            if (obj instanceof FuzzyPosition) {
-                return obj.equals(this);
-            }
-			else if (getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
+			if (getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
 				return true;
+			return ((Position) obj).equals(this);
 		}
 		return false;
 	}

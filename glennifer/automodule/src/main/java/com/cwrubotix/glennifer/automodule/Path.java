@@ -2,8 +2,10 @@ package com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.automodule.Position;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 public class Path implements Iterable<Position>{
 	private LinkedList<Position> path;
@@ -20,6 +22,18 @@ public class Path implements Iterable<Position>{
 		add(destination);
 		currentSubDestination = 1;
 	}
+
+    /**
+     * Hopefully this makes it so you can just pass in a list of positions and it'll work
+     * -Robbie
+     * @param path
+     */
+	public Path(List<Position> path) {
+	    this.start = path.get(0);
+	    this.destination = path.get(path.size() - 1);
+	    this.path = new LinkedList<>(path);
+	    currentSubDestination = 1;
+    }
 	
 	private void add(Position point){
 		getPath().add(point);
