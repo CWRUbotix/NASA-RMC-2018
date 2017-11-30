@@ -14,7 +14,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
     private Position startPos;
     private Position targetPos;
 
-    public PathFinder(T pathFindingAlgorithm, Position startPos, Position targetPos) {
+    public PathFinder(T pathFindingAlgorithm, Position startPos, Position targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
         this.pathFindingAlgorithm = pathFindingAlgorithm;
         this.startPos = startPos;
         this.targetPos = targetPos;
@@ -38,7 +38,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
         return targetPos;
     }
 
-    public void registerObstacle(Obstacle obstacle) {
+    public void registerObstacle(Obstacle obstacle) throws PathFindingAlgorithm.AlgorithmFailureException {
         path = pathFindingAlgorithm.computePath(currentPos, obstacle);
     }
 }
