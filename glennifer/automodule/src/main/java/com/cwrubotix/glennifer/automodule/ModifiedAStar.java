@@ -21,9 +21,9 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	/** End position for path planning*/
 	private AStarNode endPosition;
 	/** Stores all the nodes created*/
-	private LinkedList<AStarNode> nodes;
+	private LinkedList<AStarNode> nodes = new LinkedList<AStarNode>();
 	/** Last path created*/
-	private Path path;
+	private Path path = new Path();
 	/** Stores obstacles within the arena*/
 	private ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>(6);
 	
@@ -35,14 +35,14 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 * @param endPosition destination of the robot
 	 */
 	public ModifiedAStar(Position currentPos, Position endPosition){
-		AStarNode start = new AStarNode(currentPos);
 		AStarNode end = new AStarNode(endPosition);
+		this.endPosition = end;
+		AStarNode start = new AStarNode(currentPos);
+		this.startPosition = start;
 		nodes.add(start);
 		nodes.add(end);
 		start.connect(end);
 		end.connect(start);
-		startPosition = start;
-		this.endPosition = end;
 	}
 	
 	/**
@@ -81,9 +81,8 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		}
 		for(AStarNode node : nodes){
 			node.setVisited(false);
-			node.setPrevious(null);
 			node.computeHeruistic(endPosition);
-			path = null;
+			path.getPath().clear();
 		}
 	}
 	
@@ -93,6 +92,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		AStarNode current = new AStarNode(currentPos);
 		if(!nodes.contains(current)){
 			nodes.add(current);
+			setStartPosition(current);
 			connectToAll(current);
 		}
 		setEndPosition(new AStarNode(destination));
@@ -177,7 +177,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		for(AStarNode node : ((AStarNode)getEndPosition()).getConnected()){
 			node.getConnected().remove((AStarNode)getEndPosition());
 		}
-		((AStarNode)getEndPosition()).connected = null;
+		((AStarNode)getEndPosition()).connected = new LinkedList<AStarNode>();
 	}
 	
 	/**
@@ -185,7 +185,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 */
 	private class AStarNode extends Position implements Comparable<AStarNode>{
 		/** list of AStarNodes that this node is connected to*/
-		private LinkedList<AStarNode> connected;
+		private LinkedList<AStarNode> connected = new LinkedList<AStarNode>();
 		/** heruistic of the Node. Heruistic is defined to be distance between this node to destination node*/
 		private float heruistic;
 		/** stores the last node that path came from*/
@@ -202,7 +202,11 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		 */
 		private AStarNode(float x_pos, float y_pos){
 			super(x_pos, y_pos, 0.0F, 0.0F);
-			computeHeruistic(getEndPosition());
+			if(getEndPosition() == null){
+			    setHeruistic(0);
+			}
+			else
+			    computeHeruistic(getEndPosition());
 		}
 		
 		/**
@@ -246,6 +250,10 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		 */
 		private float getHeruistic(){
 			return heruistic;
+		}
+		
+		private void setHeruistic(float heruistic){
+		    this.heruistic = heruistic;
 		}
 
 		/**

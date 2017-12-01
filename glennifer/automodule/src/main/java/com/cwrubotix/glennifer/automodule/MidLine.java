@@ -6,7 +6,7 @@ public class MidLine implements PathFindingAlgorithm{
 
 	private Position start;
 	private Position end;
-	private Path path;
+	private Path path = new Path();
 	/** Stores the index where next position needs to be added to the path*/
 	private int subLocation = 1;
 	private ArrayList<Obstacle> obstacles;
@@ -25,7 +25,7 @@ public class MidLine implements PathFindingAlgorithm{
 	
 	public void setStart(Position start){
 		this.start = start;
-		path = null;
+		path = new Path();
 	}
 	
 	public Position getEnd(){
@@ -34,7 +34,7 @@ public class MidLine implements PathFindingAlgorithm{
 	
 	public void setEnd(Position end){
 		this.end = end;
-		path = null;
+		path = new Path();
 	}
 	
 	/**
