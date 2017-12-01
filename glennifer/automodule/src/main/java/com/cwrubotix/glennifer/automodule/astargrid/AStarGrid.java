@@ -1,8 +1,10 @@
 package com.cwrubotix.glennifer.automodule.astargrid;
 
 import com.cwrubotix.glennifer.automodule.*;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.util.*;
+import java.util.function.ToDoubleFunction;
 
 public class AStarGrid implements PathFindingAlgorithm {
     private FuzzyArenaGraph grid;
@@ -10,9 +12,14 @@ public class AStarGrid implements PathFindingAlgorithm {
 
     private Position startPosition;
     private Position endPosition;
+    private Path currentPath;
+
+    public AStarGrid(FuzzyArenaGraph grid) {
+        this.grid = grid;
+    }
 
     public AStarGrid(double error, double resolution) {
-        grid = new FuzzyArenaGraph(Position.ARENA_WIDTH(), Position.ARENA_HEIGHT(), error, resolution);
+        grid = new FuzzyArenaGraph(Position.ARENA_WIDTH(), Position.ARENA_HEIGHT(), error);
     }
 
     /**
@@ -37,7 +44,7 @@ public class AStarGrid implements PathFindingAlgorithm {
         HashMap<Vertex, Double> distanceList = new HashMap<>();
 
         for (Vertex<FuzzyPosition, Double> vertex : (ArrayList<Vertex>) grid.getVertices()) {
-            distanceList.put(vertex, null);
+            distanceList.put(vertex, Double.NaN);
         }
         distanceList.put(start, 0.0);
 
@@ -46,19 +53,21 @@ public class AStarGrid implements PathFindingAlgorithm {
         openSet.add(start);
 
         while (!openSet.isEmpty()) {
-            // Sort openSet by distance plus heuristic
-            openSet.sort(Comparator.comparingDouble(o -> distanceList.get(o) + heuristic.get(o)));
+            // Sort openSet
+            openSet.sort(Comparator.comparingDouble((Vertex<FuzzyPosition, Double> o)
+                    -> distanceList.get(o) + heuristic.get(o)));
 
             Vertex current = openSet.getFirst();
 
             if (current == end) {
                 LinkedList<Position> positionList = new LinkedList<>();
                 Vertex next = start;
-                while (!pathVertexList.isEmpty()) {
+                while (next != null) {
                     positionList.add((Position) next.getValue());
                     next = pathVertexList.remove(next);
                 }
-                return new Path(positionList);
+                positionList.add((Position) current.getValue());
+                return currentPath = new Path(positionList);
             }
 
             openSet.remove(current);
@@ -70,7 +79,7 @@ public class AStarGrid implements PathFindingAlgorithm {
                         openSet.add(neighbor);
 
                     double tentativeCost = distanceList.get(current) + (Double) current.getWeightFor(neighbor);
-                    if (!(distanceList.get(neighbor) == null || tentativeCost >= distanceList.get(neighbor))) {
+                    if (distanceList.get(neighbor) == null || tentativeCost < distanceList.get(neighbor)) {
                         pathVertexList.put(current, neighbor);
                         distanceList.put(neighbor, tentativeCost);
                     }
@@ -106,7 +115,13 @@ public class AStarGrid implements PathFindingAlgorithm {
             if (newObstacle.equals(vertex.getValue()))
                 grid.remove(vertex);
         }
-        return computePath();
+        Path newPath = computePath(currentPos, endPosition);
+        LinkedList<Position> newList = new LinkedList<>();
+        int i = 0;
+        while (currentPath.getList()[i] != currentPos)
+            newList.add(currentPath.getList()[i]);
+        newList.addAll(Arrays.asList(newPath.getList()));
+        return currentPath = new Path(newList);
     }
 
     private void computeHeuristic() {

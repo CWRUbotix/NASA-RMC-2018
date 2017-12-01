@@ -34,8 +34,22 @@ public class Path implements Iterable<Position>{
 	    this.path = new LinkedList<>(path);
 	    currentSubDestination = 1;
     }
-	
-	private void add(Position point){
+
+	@Override
+	public boolean equals(Object obj) {
+	    if (obj instanceof Path) {
+	        Path compare = (Path) obj;
+	        return this.path.equals(compare.path);
+        }
+		return false;
+	}
+
+    @Override
+    public String toString() {
+        return path.toString();
+    }
+
+    private void add(Position point){
 		getPath().add(point);
 		numPoints++;
 	}

@@ -84,4 +84,18 @@ public class Vertex<T, G extends Comparable<? super G>> {
     public String toString() {
         return getValue().toString();
     }
+
+    @Override
+    public int hashCode() {
+        return getValue().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Vertex) {
+            Vertex compare = (Vertex) obj;
+            return this.getValue().equals(((Vertex) obj).getValue());
+        }
+        return false;
+    }
 }

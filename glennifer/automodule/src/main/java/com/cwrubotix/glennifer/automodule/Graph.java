@@ -30,7 +30,7 @@ public class Graph<T, G extends Comparable<? super G>> {
         if (overwrite && isInGraph(child))
             remove(child);
         else if (!overwrite && isInGraph(child))
-            throw new IllegalArgumentException("Duplicate vertex value found");
+            throw new IllegalArgumentException("Duplicate vertex value found:" + child + ", " + vertices.get(child) + " " + vertices);
 
         parent.connect(child, weight);
         vertices.put((T) child.getValue(), child);

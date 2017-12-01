@@ -119,7 +119,7 @@ public class Position implements Cloneable {
 	
 	@Override
 	public String toString(){
-		return "(" + getX() + " ," + getY() + ")";
+		return "(" + getX() + ", " + getY() + ")";
 	}
 	
 	public static Comparator<Position> getComparatorByDistTo(final Position pos){
@@ -145,7 +145,8 @@ public class Position implements Cloneable {
      */
     @Override
     public int hashCode() {
-        return (int) Double.doubleToLongBits(getX() * getY() + getAngle() * getTilt());
+        int hash = Float.floatToRawIntBits(getX()) ^ Float.floatToRawIntBits(getY()) ^ Float.floatToRawIntBits((float) getAngle()) ^ Float.floatToRawIntBits(getTilt());
+        return hash;
     }
 
     public static final float WALL_CLEARANCE(){
