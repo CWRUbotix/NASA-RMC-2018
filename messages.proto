@@ -273,3 +273,89 @@ message DepositionStateDetailed {
 	required bool dump_left_retracted = 8;
 	required bool dump_right_retracted = 9;
 }
+
+// launch.transit
+message LaunchTransit {
+	required float current_length = 1;
+	required float current_angle = 2;
+	required float destination_length = 3;
+	required float destination_angle = 4;
+	required float time_allocation = 5;
+	requried UnixTime timestamp = 6;
+}
+
+// launch.drill
+messages LaunchDrill {
+	required float current_length = 1;
+	required float current_angle = 2;
+	required float destination_length = 3;
+	required float destination_angle = 4;
+	required float load_desired = 5;
+	required bool start = 6;
+	required float time_allocation = 7;
+	required UnixTime timestamp = 8;
+}
+
+// launch.dump
+messages LaunchDump {
+	required float current_length = 1;
+	required float current_angle = 2;
+	required bool start = 3;
+	required float time_allocation = 4;
+	required UnixTime timestamp = 5;
+}
+
+// progress.transit
+// progress.drill
+// progress.dump
+message ProgressReport {
+	required bool done = 1;
+	required UnixTime timestamp = 2;
+}
+
+// error.transit
+// error.drill
+// error.dump
+message ErrorReport {
+	required bool resolved = 1;
+	required UnixTime timestamp = 2;
+}
+
+// softstop.transit
+messages TransitSoftStop {
+	required float timeLeft = 1;
+	requried bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// softstop.drill
+messages DrillSoftStop {
+	required float timeLeft = 1;
+	required bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// softstop.dump
+messages DumpSoftStop {
+	required float timeLeft = 1;
+	required bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// hardstop.transit
+messages TransitHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
+
+// hardstop.drill
+messages DrillHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
+
+// hardstop.dump
+messages DumpHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
