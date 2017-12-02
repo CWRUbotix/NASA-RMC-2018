@@ -300,10 +300,11 @@ public class PathPlanSimulator{
 	    Line line2 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT), Position.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT));
 	    Line line3 = new Line(getDisplayX(0), 0.0, getDisplayX(0), Position.ARENA_HEIGHT() * 100);
 	    Rectangle bin = new Rectangle(getDisplayX(0) - 50, getDisplayY(0) - 25, 100, 50);
-	    Circle start = new Circle(getDisplayX(simulator.getInitialPos().getX()), getDisplayY(simulator.getInitialPos().getY()), 20, Color.RED);
+	    Rectangle start = new Rectangle(getDisplayX(simulator.getInitialPos().getX()), getDisplayY(simulator.getInitialPos().getY()), 75, 50);
 	    line1.setFill(Color.LIGHTGRAY);
 	    line2.setFill(Color.LIGHTGRAY);
 	    line3.setFill(Color.LIGHTGOLDENRODYELLOW);
+	    start.setFill(Color.RED);
 	    bin.setFill(Color.BLUE);
 	    arena.getChildren().addAll(line1, line2, line3, bin, start);
 	    setUpObstacles();
