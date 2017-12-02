@@ -9,6 +9,7 @@ import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 
 import javax.swing.JOptionPane;
 
@@ -51,7 +52,7 @@ public class PathPlanSimulator{
     /** Array of paths created by different algorithms.*/
     private Path[] paths = new Path[4];
     private PathFinder<? extends PathFindingAlgorithm>[] finders;
-    
+    private Position initialPos;
     /** Array whose element checks whether each robot arrived at destination*/
     private boolean[] robotArrived = new boolean[4];
     
@@ -99,12 +100,12 @@ public class PathPlanSimulator{
      * @param destination the destination of simulation
      */
     public PathPlanSimulator(Position initialPos, Position destination){
+	this.initialPos = initialPos;
 	for(int i = 0; i < robots.length; i ++){
 	    robots[i] = (Position) initialPos.clone();
 	}
 	this.destination = destination;
 	Arrays.fill(robotArrived, false);
-	
 	finders = new PathFinder[4];
 	finders[0] = new PathFinder<MidLine>(new MidLine(initialPos, destination), initialPos, destination);
 	finders[1] = new PathFinder<ModifiedAStar>(new ModifiedAStar(initialPos, destination), initialPos, destination);
@@ -113,6 +114,10 @@ public class PathPlanSimulator{
 	for(int i = 0; i < paths.length - 2; i ++)
 	    paths[i] = finders[i].getAlgorithm().computePath(initialPos, destination);
 	generateObstacles();
+    }
+    
+    public Position getInitialPos(){
+	return initialPos;
     }
     
     public Position[] getObstacles(){
@@ -168,57 +173,51 @@ public class PathPlanSimulator{
     }
     
 
-    private Position findNextEncounter(int robot){
-	Arrays.sort(obstacles, Position.getComparatorByDistTo(robots[robot]));
-	Position foundObstacle = null;
-	for(Position obs : obstacles){
-	    boolean found = true;
-	    if(robots[robot].getDistTo(obs) <= KINECT_RANGE){
-		for(int i = 0; i < obstaclesFound[robot].length; i ++){
-			if(obs.equals(obstaclesFound[robot][i]))
-			    found = false; 
-	    	}
-		if(found){
-		    foundObstacle = obs;
-		    break;
-	    	}
-	    }
+    private void moveRobot(int robot){
+	Path path = paths[robot];
+	if(path == null){
+	    paths[robot] = finders[robot].getPath();
 	}
-	return foundObstacle;
+	Position currentPos = robots[robot];
+	Position[] obstaclesFound = new Position[6];
+	int numFound = 0;
+	int subgoal = 1;
+	Path previousPath = new Path();
+	while(numFound != 6){
+	    Arrays.sort(obstacles, Position.getComparatorByDistTo(currentPos));
+	    LinkedList<Position> temp = new LinkedList<Position>();
+	    for(Position p : obstacles){
+		if(currentPos.getDistTo(p) < KINECT_RANGE)
+		    temp.add(p);
+	    }
+	    //TODO Process obstacles Found and Register found obstacles modify numFound
+	    previousPath = path;
+	    path = pathProcessing(finders[robot].getPath(), previousPath, subgoal - 1);
+	}
     }
     
-    /*NOT WORKING*/
-    private void moveRobot(int robot){
-    	Position currentpos = robots[robot];
-    	finders[robot].setCurrentPos(currentpos);
-	paths[robot] = finders[robot].getPath();
-	int subgoal = 1;
-	currentpos.setAngle(paths[robot].getPoint(0).getAngleTurnTo(paths[robot].getPoint(1)));
-	float increment = 0.05F;
-	while(!currentpos.equals(destination)){
-	    Position obsFound = findNextEncounter(robot);
-	    if(obsFound != null){
-		finders[robot].registerObstacle(new Obstacle(obsFound.getX(), obsFound.getY(), OBSTACLE_SIZE));
-		paths[robot] = finders[robot].getPath();
-		if(subgoal < paths[robot].length())
-		    currentpos.setAngle(currentpos.getAngleTurnTo(paths[robot].getPoint(subgoal)));
-	    }
-	    if(subgoal < paths[robot].length() && currentpos.getDistTo(paths[robot].getPoint(subgoal)) < increment){
-		currentpos = (Position) paths[robot].getPoint(subgoal).clone();
-		subgoal++;
-	    }
-	    else{
-		if(
-		!currentpos.setX((float) (currentpos.getX() + increment * Math.cos(currentpos.getAngle())))||
-		!currentpos.setY((float) (currentpos.getY() + increment * Math.sin(currentpos.getAngle()))))
-		    throw new RuntimeException("Trouble moving robot");
-	    }
-	    finders[robot].setCurrentPos(currentpos);
+    private Path pathProcessing(Path path, Path previousPath, int progress){
+	Path newPath = previousPath;
+	for(int i = 0; i < progress; i++){
+	    newPath.addLast(previousPath.getPoint(i));
 	}
+	int search = -1;
+	for(int i = 0; i < path.length(); i++){
+	    if(previousPath.getPoint(progress).equals(path.getPoint(i)))
+		search = i;
+	}
+	for(int i = search; i < path.length(); i++){
+	    newPath.addLast(path.getPoint(i));
+	    float distToNext = path.getPoint(i).getDistTo(path.getPoint(i+1));
+	    if(i != path.length() - 1 && distToNext > KINECT_RANGE){
+		
+	    }
+	}
+	return newPath;
     }
     
     public void runSimulation(){
-	for(int i = 1; i < robots.length - 2; i++){
+	for(int i = 0; i < robots.length; i++){
 	    moveRobot(i);
 	}
     }
@@ -280,6 +279,7 @@ public class PathPlanSimulator{
 		    simulationRun = true;
 		    simulator.runSimulation();
 		    displayPaths();
+		    //updateResults();
 		}
 	    });
 	    VBox left = new VBox();
@@ -300,17 +300,18 @@ public class PathPlanSimulator{
 	    Line line2 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT), Position.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT));
 	    Line line3 = new Line(getDisplayX(0), 0.0, getDisplayX(0), Position.ARENA_HEIGHT() * 100);
 	    Rectangle bin = new Rectangle(getDisplayX(0) - 50, getDisplayY(0) - 25, 100, 50);
+	    Circle start = new Circle(getDisplayX(simulator.getInitialPos().getX()), getDisplayY(simulator.getInitialPos().getY()), 20, Color.RED);
 	    line1.setFill(Color.LIGHTGRAY);
 	    line2.setFill(Color.LIGHTGRAY);
 	    line3.setFill(Color.LIGHTGOLDENRODYELLOW);
 	    bin.setFill(Color.BLUE);
-	    arena.getChildren().addAll(line1, line2, line3, bin);
+	    arena.getChildren().addAll(line1, line2, line3, bin, start);
 	    setUpObstacles();
 	}
 	
 	private void setUpObstacles(){
 	    for(Position p : simulator.getObstacles()){
-		Circle obstacle = new Circle(getDisplayX(p.getX()) - 15, getDisplayY(p.getY()) - 15, 15, Color.DARKGREY);
+		Circle obstacle = new Circle(getDisplayX(p.getX()), getDisplayY(p.getY()), 15, Color.DARKGREY);
 		obstacle.setOnMouseClicked(new EventHandler<MouseEvent>(){
 		    final Position obs = p;
 		    public void handle(MouseEvent e){
@@ -339,17 +340,18 @@ public class PathPlanSimulator{
 	private void displayPaths(){
 	    Path[] path = simulator.getPaths();
 	    paths = new Group[4];
+	    Color[] colors = {Color.PURPLE, Color.AQUA, Color.GREEN, Color.GOLD};
 	    for(int i = 0; i < paths.length; i++){
 		paths[i] = new Group();
 		for(int pos = 0; pos < path[i].length(); i ++){
 		    Position point = path[i].getPoint(pos);
-		    Circle circle = new Circle(getDisplayX(point.getX()) - 2.5, getDisplayY(point.getY()) - 2.5, 2.5);
-		    circle.setFill(Color.RED);
+		    Circle circle = new Circle(getDisplayX(point.getX()), getDisplayY(point.getY()), 2.5);
+		    circle.setFill(colors[i]);
 		    paths[i].getChildren().add(circle);
 		    if(pos != path[i].length() - 1){
 			Position next = path[i].getPoint(pos + 1);
 			Line line = new Line(getDisplayX(point.getX()), getDisplayY(point.getY()), getDisplayX(next.getX()), getDisplayY(next.getY()));
-			line.setFill(Color.GREEN);
+			line.setFill(Color.BLACK);
 			paths[i].getChildren().add(line);
 		    }
 		}

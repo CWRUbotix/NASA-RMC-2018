@@ -24,9 +24,7 @@ public class MidLine implements PathFindingAlgorithm{
 	}
 	
 	public void setStart(Position start){
-		this.start = start;
-		path = new Path();
-	}
+		this.start = start;	}
 	
 	public Position getEnd(){
 		return end;
@@ -34,7 +32,6 @@ public class MidLine implements PathFindingAlgorithm{
 	
 	public void setEnd(Position end){
 		this.end = end;
-		path = new Path();
 	}
 	
 	/**
