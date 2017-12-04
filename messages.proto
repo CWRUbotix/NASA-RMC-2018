@@ -8,7 +8,7 @@ package com.cwrubotix.glennifer;
  * Each comment before the message specifies what AMQP queue topics the message is used for.
  */
 
-// Used inside other messages only
+// Used inside other message only
 message UnixTime {
 	required uint64 time_int = 1;
 	required float time_frac = 2;
@@ -281,11 +281,11 @@ message LaunchTransit {
 	required float destination_length = 3;
 	required float destination_angle = 4;
 	required float time_allocation = 5;
-	requried UnixTime timestamp = 6;
+	required UnixTime timestamp = 6;
 }
 
 // launch.drill
-messages LaunchDrill {
+message LaunchDrill {
 	required float current_length = 1;
 	required float current_angle = 2;
 	required float destination_length = 3;
@@ -297,7 +297,7 @@ messages LaunchDrill {
 }
 
 // launch.dump
-messages LaunchDump {
+message LaunchDump {
 	required float current_length = 1;
 	required float current_angle = 2;
 	required bool start = 3;
@@ -322,40 +322,40 @@ message ErrorReport {
 }
 
 // softstop.transit
-messages TransitSoftStop {
+message TransitSoftStop {
 	required float timeLeft = 1;
-	requried bool stop = 2;
+	required bool stop = 2;
 	required UnixTime timestamp = 3;
 }
 
 // softstop.drill
-messages DrillSoftStop {
+message DrillSoftStop {
 	required float timeLeft = 1;
 	required bool stop = 2;
 	required UnixTime timestamp = 3;
 }
 
 // softstop.dump
-messages DumpSoftStop {
+message DumpSoftStop {
 	required float timeLeft = 1;
 	required bool stop = 2;
 	required UnixTime timestamp = 3;
 }
 
 // hardstop.transit
-messages TransitHardStop {
+message TransitHardStop {
 	required bool stop = 1;
 	required UnixTime timestamp = 2;
 }
 
 // hardstop.drill
-messages DrillHardStop {
+message DrillHardStop {
 	required bool stop = 1;
 	required UnixTime timestamp = 2;
 }
 
 // hardstop.dump
-messages DumpHardStop {
+message DumpHardStop {
 	required bool stop = 1;
 	required UnixTime timestamp = 2;
 }
