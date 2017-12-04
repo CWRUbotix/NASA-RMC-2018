@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -9,6 +9,8 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.Fault;
+import com.cwrubotix.glennifer.Messages.UnixTime;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -22,8 +24,14 @@ public class AutoTransit{
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0, 0.0F);
 	private final float CLEARANCE_DIST = 0.3F; //Setting this to 30cm for now. Will have to change it after testing locomotion.
-	private static Position currentPos;	
-	
+	private static Position currentPos;
+	private PathFinder pathFinder;
+
+	// Messaging stuff
+	private String exchangeName;
+	private Connection connection;
+	private Channel channel;
+
 	/*
 	 * TODO LIST
 	 * 
@@ -34,9 +42,82 @@ public class AutoTransit{
 	 * 5) Set up the Connection Factory
 	 * 
 	 */
-	
+
+	/////// MESSAGING
+
+	/**
+	 * Consumer class for launch command
+	 */
+	public class TransitLaunchConsumer extends DefaultConsumer {
+		public TransitLaunchConsumer(Channel channel) {
+			super(channel);
+		}
+
+		// TODO Launch tasks
+	}
+
+	/////// MODULE LOGIC
+
+	public AutoTransit() {
+		this("amq.topic");
+	}
+
+	public AutoTransit(String exchangeName) {
+		this.exchangeName = exchangeName;
+	}
+
 	public static Position getCurrentPos(){
 		return currentPos;
+	}
+
+	//amqp stuff
+	private UnixTime instantToUnixTime(Instant time) {
+		UnixTime.Builder unixTimeBuilder = UnixTime.newBuilder();
+		unixTimeBuilder.setTimeInt(time.getEpochSecond());
+		unixTimeBuilder.setTimeFrac(time.getNano() / 1000000000F);
+		return unixTimeBuilder.build();
+	}
+
+	//amqp stuff
+	private void sendFault(int faultCode, Instant time) throws IOException {
+		Fault.Builder faultBuilder = Fault.newBuilder();
+		faultBuilder.setFaultCode(faultCode);
+		faultBuilder.setTimestamp(instantToUnixTime(time));
+		Fault message = faultBuilder.build();
+		channel.basicPublish(exchangeName, "fault", null, message.toByteArray());
+	}
+
+	/////// START/STOP LOGIC
+
+	private void runWithExceptions() throws IOException, TimeoutException {
+		// Setup connection
+		ConnectionFactory factory = new ConnectionFactory();
+		factory.setHost("localhost");
+		this.connection = factory.newConnection();
+		this.channel = connection.createChannel();
+
+	}
+
+	public void start() {
+		try {
+			runWithExceptions();
+		} catch (Exception e) {
+		    try {
+		    	sendFault(999, Instant.now());
+			} catch (IOException e1) {
+		    	e.printStackTrace();
+		    	System.out.println(e.getMessage());
+			}
+		}
+	}
+
+	public void stop() {
+		try {
+			channel.close();
+			connection.close();
+		} catch (IOException | TimeoutException e) {
+			// Do nothing
+		}
 	}
 	
 }
