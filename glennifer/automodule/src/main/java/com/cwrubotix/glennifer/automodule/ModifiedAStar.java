@@ -341,6 +341,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 */
 	private void computeHeruistic(Position destination){
 	    this.heruistic = getDistTo(destination);
+
 	}
 	
 	private boolean isAroundObstacle(){
@@ -374,11 +375,13 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		if(!node.isVisited()){
 		    node.distance = getDistTo(node);
 		    return true;
+
 		}
 		else if(node.getDistance() > getDistance() + getDistTo(node)){
 		    node.distance = getDistance() + getDistTo(node);
 		    return true;
 		}
+
 	    }
 	    return false;
 	}
