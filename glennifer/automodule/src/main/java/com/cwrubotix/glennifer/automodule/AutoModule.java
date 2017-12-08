@@ -11,6 +11,9 @@ import com.rabbitmq.client.AMQP;
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.UnixTime;
 import com.cwrubotix.glennifer.Messages.Fault;
+import com.cwrubotix.glennifer.Messages.LaunchTransit;
+import com.cwrubotix.glennifer.Messages.LaunchDrill;
+import com.cwrubotix.glennifer.Messages.LaunchDump;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -32,6 +35,8 @@ import java.util.concurrent.TimeoutException;
 public class AutoModule{
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
+
+	private String exchangeName;
 	private Connection connection;
 	private Channel channel;
 	
@@ -72,16 +77,15 @@ public class AutoModule{
 		Timer taskTimer = new Timer("Task Timer");
 
 		// Tell transit to start for N minutes
-		Messages.LaunchModule msg1 = Messages.LaunchModule.newBuilder()
+		LaunchTransit msg1 = LaunchTransit.newBuilder() // TODO set message properties
 				.build();
-
 
 		taskTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				// Ask module to stop nicely.
 			}
-		}, 1800);
+		}, 1800000);
 	}
 
 	public void start() {
