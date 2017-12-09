@@ -7,8 +7,6 @@ public class MidLine implements PathFindingAlgorithm{
 	private Position start;
 	private Position end;
 	private Path path = new Path();
-	/** Stores the index where next position needs to be added to the path*/
-	private int subLocation = 1;
 	private ArrayList<Obstacle> obstacles;
 	private boolean initialized = false;
 	private final float obstacleClearance = 0.75F;
@@ -63,7 +61,12 @@ public class MidLine implements PathFindingAlgorithm{
 	public Path computePath(Position currentPos, Obstacle newObstacle) {
 		if(!initialized)
 			computePath(currentPos, getEnd());
-		path.add(subLocation++, currentPos);
+		int change = modifyPreviousPath(currentPos);
+		for(int i = change; i < path.getPath().size() - 1; i++){
+		    path.remove(i);
+		}
+		path.add(change++, currentPos);
+		path.getPath().getLast().setAngle(currentPos.getAngleTurnTo(getEnd()));
 		if(!obstacles.contains(newObstacle)){
 			obstacles.add(newObstacle);
 			Position a,b,c;
@@ -105,14 +108,48 @@ public class MidLine implements PathFindingAlgorithm{
 			if(!a.setX(a.getX()) || !a.setY(a.getY()) || !b.setX(b.getX()) || !b.setY(b.getY()) || !c.setX(c.getX()) || !c.setY(c.getY()))
 				throw new RuntimeException("failed to create a valid path");
 			
-			path.add(subLocation++, a);
-			path.add(subLocation++, b);
-			path.add(subLocation++, c);
+			path.add(change++, a);
+			path.add(change++, b);
+			path.add(change, c);
+			path.getPath().getLast().setAngle(c.getAngleTurnTo(getEnd()));
 		}
-		
 		
 		
 		return path;
 	}
+	
+	private int modifyPreviousPath(Position currentPos){
+		Position previous = null;
+		for(Position a : path.getPath()){
+		    if(previous != null){
+			if(a.getX() < previous.getX()){
+			    if(a.getY() < previous.getY()){
+				if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
+				    return path.getPath().indexOf(a);
+				}
+			    }
+			    else{
+				if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
+				    return path.getPath().indexOf(a);
+				}
+			    }
+			}
+			else{
+			    if(a.getY() < previous.getY()){
+				if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
+				    return path.getPath().indexOf(a);
+				}
+			    }
+			    else{
+				if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
+				    return path.getPath().indexOf(a);
+				}
+			    }
+			}
+		    }
+		    previous = a;
+		}
+		return -1; //should never happen;
+	    }
 	
 }
