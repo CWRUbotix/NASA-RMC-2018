@@ -8,8 +8,8 @@ import main.java.com.cwrubotix.glennifer.automodule.Path;
 import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 import javax.swing.JOptionPane;
 
@@ -40,10 +40,6 @@ public class PathPlanSimulator{
 	
     /** Array of Positions that represent obstacles in the arena*/
     private Position[] obstacles = new Position[6];
-    /** Array of Positions that represent obstacles we found*/
-    private Position[][] obstaclesFound = new Position[4][6];
-    /** The destination of the path*/
-    private final Position destination;
     /** 
      * Array of Positions which represents locations of robots.
      * <p>We will have one robot per path</p>
@@ -77,20 +73,6 @@ public class PathPlanSimulator{
      */
     private static final float SAFE_AREA_HEIGHT = 1.5F;
     
-    
-    
-    //add more fields/constants if necessary.
-    
-    /*
-     * For paths array:
-     *   I will just assign indexes to each path created by different algorithms to keep things organized.
-     *   Let me know if you come up with better idea :)
-     *   index 0: path created by midLine algorithm
-     *   index 1: path created by modifiedAStar algorithm.
-     *   index 2: path created by arcPath algorithm
-     *   index 3: path created by Dijkstra algorithm 
-     */
-    
     /**
      * Constructor for simulator
      * <p>
@@ -104,7 +86,6 @@ public class PathPlanSimulator{
 	for(int i = 0; i < robots.length; i ++){
 	    robots[i] = (Position) initialPos.clone();
 	}
-	this.destination = destination;
 	Arrays.fill(robotArrived, false);
 	finders = new PathFinder[4];
 	finders[0] = new PathFinder<MidLine>(new MidLine(initialPos, destination), initialPos, destination);
@@ -174,50 +155,35 @@ public class PathPlanSimulator{
     
 
     private void moveRobot(int robot){
-	Path path = paths[robot];
-	if(path == null){
-	    paths[robot] = finders[robot].getPath();
-	}
-	Position currentPos = robots[robot];
-	Position[] obstaclesFound = new Position[6];
-	int numFound = 0;
-	int subgoal = 1;
-	Path previousPath = new Path();
-	while(numFound != 6){
-	    Arrays.sort(obstacles, Position.getComparatorByDistTo(currentPos));
-	    LinkedList<Position> temp = new LinkedList<Position>();
-	    for(Position p : obstacles){
-		if(currentPos.getDistTo(p) < KINECT_RANGE)
-		    temp.add(p);
-	    }
-	    //TODO Process obstacles Found and Register found obstacles modify numFound
-	    previousPath = path;
-	    path = pathProcessing(finders[robot].getPath(), previousPath, subgoal - 1);
-	}
-    }
-    
-    private Path pathProcessing(Path path, Path previousPath, int progress){
-	Path newPath = previousPath;
-	for(int i = 0; i < progress; i++){
-	    newPath.addLast(previousPath.getPoint(i));
-	}
-	int search = -1;
-	for(int i = 0; i < path.length(); i++){
-	    if(previousPath.getPoint(progress).equals(path.getPoint(i)))
-		search = i;
-	}
-	for(int i = search; i < path.length(); i++){
-	    newPath.addLast(path.getPoint(i));
-	    float distToNext = path.getPoint(i).getDistTo(path.getPoint(i+1));
-	    if(i != path.length() - 1 && distToNext > KINECT_RANGE){
-		
+	ArrayList<Position> obstaclesFound = new ArrayList<Position>(6);
+	for(Position obs : obstacles){
+	    if(robots[robot].getDistTo(obs) < KINECT_RANGE){
+		obstaclesFound.add(obs);
+		finders[robot].registerObstacle(new Obstacle(obs));
 	    }
 	}
-	return newPath;
+	boolean found = false;
+	Position stop = null;
+	for(Position pos : finders[robot].getPath()){
+	    if(!found && pos.getY() > KINECT_RANGE){
+		found = true;
+		stop = pos;
+	    }
+	}
+	if(stop == null) throw new RuntimeException("Something is wrong");
+	
+	finders[robot].setCurrentPos(stop);
+	
+	for(Position obs: obstacles){
+	    if(!obstaclesFound.contains(obs)){
+		finders[robot].registerObstacle(new Obstacle(obs));
+	    }
+	}
+	paths[robot] = finders[robot].getPath();
     }
     
     public void runSimulation(){
-	for(int i = 0; i < robots.length; i++){
+	for(int i = 0; i < 2; i++){ //TODO Change as more algorithms are added
 	    moveRobot(i);
 	}
     }
@@ -279,7 +245,7 @@ public class PathPlanSimulator{
 		    simulationRun = true;
 		    simulator.runSimulation();
 		    displayPaths();
-		    //updateResults();
+		    updateResult();
 		}
 	    });
 	    VBox left = new VBox();
@@ -340,7 +306,7 @@ public class PathPlanSimulator{
 	
 	private void displayPaths(){
 	    Path[] path = simulator.getPaths();
-	    paths = new Group[4];
+	    paths = new Group[2]; // TODO Change as more algorithms are added.
 	    Color[] colors = {Color.PURPLE, Color.AQUA, Color.GREEN, Color.GOLD};
 	    for(int i = 0; i < paths.length; i++){
 		paths[i] = new Group();
@@ -371,6 +337,24 @@ public class PathPlanSimulator{
 	    result[1].appendText("ModifiedAStar Algorithm:\n");
 	    result[2].appendText("ArcPath Algorithm: \n");
 	    result[3].appendText("GridAStar Algorithm: \n");
+	}
+	
+	private void updateResult(){ //Currently this is rough estimate
+	    int track = 0;
+	    for(Path path: simulator.getPaths()){
+		Position previous = null;
+		float dist = 0.0F, angle = 0.0F;
+		for(Position pos : path){
+		    if(previous != null){
+			dist += previous.getDistTo(pos);
+			angle += previous.getAngleTurnTo(pos);
+		    }
+		    previous = pos;
+		}
+		float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
+		result[track].appendText("Total Distance : "+ dist +"\nTotal Angle Turn: "+ angle +"\nEstimate Traversal Time: " + timeTook);
+		track++;
+	    }
 	}
 	
 	private double getDisplayX(float x_pos){

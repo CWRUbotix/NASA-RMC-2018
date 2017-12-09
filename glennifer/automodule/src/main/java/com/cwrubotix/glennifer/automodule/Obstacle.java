@@ -9,6 +9,10 @@ public class Obstacle extends Position{
 		this.diameter = diameter;
 	}
 	
+	public Obstacle(Position obs) {
+    	    this(obs.getX(), obs.getY(), 0.4F);
+	}
+
 	public float getDiameter(){
 		return diameter;
 	}
