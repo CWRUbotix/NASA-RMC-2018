@@ -126,6 +126,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	Path path = new Path();
 	while(!currentNode.equals(getStartPosition())){
 	    path.addFirst(currentNode);
+	    currentNode.setAngle(currentNode.getPrevious().getAngleTurnTo(currentNode));
 	    currentNode = currentNode.getPrevious();
 	}
 	path.addFirst(currentNode);
@@ -171,6 +172,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	    Path path = new Path();
 	    while(!currentNode.equals(getStartPosition())){
 		path.addFirst(currentNode);
+		currentNode.setAngle(currentNode.getPrevious().getAngleTurnTo(currentNode));
 		currentNode = currentNode.getPrevious();
 	    }
 	    path.addFirst(currentNode);
@@ -365,23 +367,25 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	}
 	
 	private void connect(AStarNode node){
+	    node.setAngle(this.getAngleTurnTo(node));
 	    connected.add(node);
 	}
 	
 	private boolean updateDistances(){
 	    AStarNode[] connects = (AStarNode[]) connected.toArray();
 	    Arrays.sort(connects);
+	    boolean modified = false;
 	    for(AStarNode node : connects){
-		if(!node.isVisited()){
+		if(node.getDistance() == 0){
 		    node.distance = getDistTo(node);
-		    return true;
+		    modified = true;
 		}
 		else if(node.getDistance() > getDistance() + getDistTo(node)){
 		    node.distance = getDistance() + getDistTo(node);
-		    return true;
+		    modified = true;
 		}
 	    }
-	    return false;
+	    return modified;
 	}
 	
 	/**
