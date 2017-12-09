@@ -18,7 +18,7 @@ public class Position implements Cloneable{
 	 * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
 	 * </p>
 	 * <p>
-	 * Range : [0, 2PI) unit in degrees.
+	 * Range : [0, 2PI) unit in radians.
 	 * </p>
 	 * If angle is negative, the position represents a horizontal line. (For dividing up arena purpose)
 	 * 
@@ -101,7 +101,14 @@ public class Position implements Cloneable{
 	 */
 	public double getAngleTurnTo(Position b){
 		if(getAngle() >= 0 && b.getAngle() >= 0){
-			return Math.PI - Math.atan((b.getX() - getX())/(b.getY() - getY())) - getAngle();
+		    float x_diff = b.getX() - getX();
+		    float y_diff = b.getY() - getY();
+		    if(x_diff < 0 && y_diff < 0){
+			return Math.PI + Math.PI / 2 - Math.atan((double)(y_diff / x_diff));
+		    }
+		    else{
+			return Math.PI / 2 - Math.atan((double)(y_diff / x_diff));
+		    }
 		}
 		//Heading to vertically down (a.k.a. position b is straight horizontal line)
 		return Math.PI - getAngle();

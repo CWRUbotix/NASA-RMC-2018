@@ -5,7 +5,6 @@ import java.util.LinkedList;
 
 public class Path implements Iterable<Position>{
 	private LinkedList<Position> path;
-	private int numPoints;
 	
 	public Path(){
 		path = new LinkedList<Position>();
@@ -30,7 +29,7 @@ public class Path implements Iterable<Position>{
 	}
 	
 	public int length(){
-		return numPoints;
+		return getPath().size();
 	}
 	
 	public void add(int index, Position point){
@@ -47,14 +46,11 @@ public class Path implements Iterable<Position>{
 	
 	public Position remove(int index){
 		Position save = getPath().remove(index);
-		if(save != null)
-			numPoints--;
 		return save;
 	}
 	
 	public boolean remove(Position point){
 		if(getPath().remove(point)){
-			numPoints--;
 			return true;
 		}
 		else
