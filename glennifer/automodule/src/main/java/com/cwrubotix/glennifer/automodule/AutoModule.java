@@ -34,7 +34,7 @@ public class AutoModule{
 	 *	1) Decide on course of actions on possible situations (Obstacles, Path plan, Setting up Dumping position)
 	 *	2) Create appropriate Consumers, Messages system for decision making messages.
 	 *	3) Subscribe for sensor values or modules needed.
-	 *	4) Come up with Error Handling mechanism.
+	 *	4) Come up with possible errors and handling mechanism.
 	 *	5) Set up Connection Factory.
 	 */
 	
