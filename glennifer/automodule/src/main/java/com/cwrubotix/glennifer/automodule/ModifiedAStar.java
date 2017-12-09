@@ -16,6 +16,7 @@ import java.util.LinkedList;
  *
  */
 public class ModifiedAStar implements PathFindingAlgorithm{
+
     /** Start position for path planning*/
     private AStarNode startPosition;
     /** End position for path planning*/
@@ -35,14 +36,14 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @param endPosition destination of the robot
      */
     public ModifiedAStar(Position currentPos, Position endPosition){
-	AStarNode start = new AStarNode(currentPos);
-	AStarNode end = new AStarNode(endPosition);
-	nodes.add(start);
-	nodes.add(end);
-	start.connect(end);
-	end.connect(start);
-	startPosition = start;
-	this.endPosition = end;
+	    AStarNode start = new AStarNode(currentPos);
+	    AStarNode end = new AStarNode(endPosition);
+	    nodes.add(start);
+	    nodes.add(end);
+	    start.connect(end);
+	    end.connect(start);
+	    startPosition = start;
+	    this.endPosition = end;
     }
     
     /**
@@ -50,7 +51,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @return start position of the path
      */
     public Position getStartPosition(){
-	return startPosition;
+	    return startPosition;
     }
     
     /**
@@ -58,17 +59,17 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @param startPosition the start position of the robot
      */
     protected void setStartPosition(AStarNode startPosition){
-	this.startPosition = startPosition;
-	if(!nodes.contains(startPosition)){
-	    nodes.add(startPosition);
-	    connectToAll(startPosition);
-	}
-	for(AStarNode node : nodes){
-	    node.setVisited(false);
-	    node.setPrevious(null);
-	    node.computeHeruistic(endPosition);
-	    path = new Path();
-	}
+	    this.startPosition = startPosition;
+	    if(!nodes.contains(startPosition)){
+	      nodes.add(startPosition);
+	      connectToAll(startPosition);
+	    }
+	    for(AStarNode node : nodes){
+	      node.setVisited(false);
+	      node.setPrevious(null);
+	      node.computeHeruistic(endPosition);
+	      path = new Path();
+	    }
     }
     
     /**
@@ -76,7 +77,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @return destination position of the path
      */
     public Position getEndPosition(){
-	return endPosition;
+	    return endPosition;
     }
     
     /**
@@ -84,53 +85,53 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @param endPosition destination position of the path
      */
     protected void setEndPosition(AStarNode endPosition){
-	this.endPosition = endPosition;
-	if(!nodes.contains(endPosition)){
-	    nodes.add(endPosition);
-	    connectToAll(endPosition);
-	}
+	    this.endPosition = endPosition;
+	    if(!nodes.contains(endPosition)){
+	      nodes.add(endPosition);
+	      connectToAll(endPosition);
+	    }
     }
     
     
     @Override
     public Path computePath(Position startPos, Position destination) {
-	AStarNode current = new AStarNode(startPos);
-	if(!nodes.contains(current)){
-	    nodes.add(current);
-	    connectToAll(current);
-	}
-	setStartPosition(current);
-	setEndPosition(new AStarNode(destination));
+	    AStarNode current = new AStarNode(startPos);
+	    if(!nodes.contains(current)){
+	      nodes.add(current);
+	      connectToAll(current);
+	    }
+	    setStartPosition(current);
+	    setEndPosition(new AStarNode(destination));
 	
-	AStarNode currentNode = (AStarNode)getStartPosition();
-	while(!currentNode.equals(getEndPosition())){
-	    currentNode.setVisited(true);
-	    AStarNode[] connects = new AStarNode[currentNode.getConnected().size()];
-	    Arrays.sort(currentNode.getConnected().toArray(connects));
-	    int next = -1;
-	    for(int i = 0; i < connects.length && next == -1; i++){
-		if(currentNode.updateDistances())
-		    next = i;
+	    AStarNode currentNode = (AStarNode)getStartPosition();
+	    while(!currentNode.equals(getEndPosition())){
+	      currentNode.setVisited(true);
+	      AStarNode[] connects = new AStarNode[currentNode.getConnected().size()];
+	      Arrays.sort(currentNode.getConnected().toArray(connects));
+	      int next = -1;
+	      for(int i = 0; i < connects.length && next == -1; i++){
+		      if(currentNode.updateDistances())
+		        next = i;
+	      }
+	      if(next == -1){
+		      currentNode = currentNode.getPrevious();
+		      if(currentNode == null)
+		        throw new RuntimeException("Failed to create a path");
+	      }
+	      else{
+		      connects[next].setPrevious(currentNode);
+		      currentNode = connects[next];
+	      }
 	    }
-	    if(next == -1){
-		currentNode = currentNode.getPrevious();
-		if(currentNode == null)
-		    throw new RuntimeException("Failed to create a path");
-	    }
-	    else{
-		connects[next].setPrevious(currentNode);
-		currentNode = connects[next];
-	    }
-	}
 	
-	Path path = new Path();
-	while(!currentNode.equals(getStartPosition())){
+	    Path path = new Path();
+	    while(!currentNode.equals(getStartPosition())){
+	      path.addFirst(currentNode);
+	      currentNode = currentNode.getPrevious();
+	    } 
 	    path.addFirst(currentNode);
-	    currentNode = currentNode.getPrevious();
-	}
-	path.addFirst(currentNode);
-	this.path = path;
-	return path;
+	    this.path = path;
+	    return path;
     }
     
     
@@ -283,10 +284,11 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 * @param x_pos x coordinate of the Node
 	 * @param y_pos y coordinate of the Node
 	 */
+
 	private AStarNode(float x_pos, float y_pos){
 	    super(x_pos, y_pos, 0.0F, 0.0F);
 	    computeHeruistic(getEndPosition());
-	}
+  }
 	
 	/**
 	 * Creates new AStarNode with coordinates given and nodes that are connected to the node creating
@@ -341,7 +343,6 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 */
 	private void computeHeruistic(Position destination){
 	    this.heruistic = getDistTo(destination);
-
 	}
 	
 	private boolean isAroundObstacle(){
@@ -375,7 +376,6 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 		if(!node.isVisited()){
 		    node.distance = getDistTo(node);
 		    return true;
-
 		}
 		else if(node.getDistance() > getDistance() + getDistTo(node)){
 		    node.distance = getDistance() + getDistTo(node);
