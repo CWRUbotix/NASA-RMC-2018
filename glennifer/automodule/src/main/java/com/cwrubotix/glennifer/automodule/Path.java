@@ -53,8 +53,9 @@ public class Path implements Iterable<Position>{
 		getPath().add(point);
 		numPoints++;
 	}
-	
-	protected LinkedList<Position> getPath(){
+
+	// Please don't turn this back to protected
+	public LinkedList<Position> getPath(){
 		return path;
 	}
 	

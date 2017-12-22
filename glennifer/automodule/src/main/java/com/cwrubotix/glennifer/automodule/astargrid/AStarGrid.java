@@ -1,10 +1,8 @@
 package com.cwrubotix.glennifer.automodule.astargrid;
 
 import com.cwrubotix.glennifer.automodule.*;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.util.*;
-import java.util.function.ToDoubleFunction;
 
 public class AStarGrid implements PathFindingAlgorithm {
     private FuzzyArenaGraph grid;
@@ -18,7 +16,7 @@ public class AStarGrid implements PathFindingAlgorithm {
         this.grid = grid;
     }
 
-    public AStarGrid(double error, double resolution) {
+    public AStarGrid(double error) {
         grid = new FuzzyArenaGraph(Position.ARENA_WIDTH(), Position.ARENA_HEIGHT(), error);
     }
 
@@ -36,20 +34,20 @@ public class AStarGrid implements PathFindingAlgorithm {
             computeHeuristic();
 
         // Set up variables
-        Vertex start = grid.get(startPosition);
-        Vertex end = grid.get(endPosition);
-        HashMap<Vertex, Vertex> pathVertexList = new HashMap<>(); // Maps each vertex to the next one in the path
-        LinkedList<Vertex<FuzzyPosition, Double>> openSet = new LinkedList<>();
-        ArrayList<Vertex<FuzzyPosition, Double>> closedSet = new ArrayList<>();
-        HashMap<Vertex, Double> distanceList = new HashMap<>();
+        Vertex start = grid.get(startPosition); // Starting vertex
+        Vertex end = grid.get(endPosition); // Target vertex
+        HashMap<Vertex, Vertex> pathVertexList = new HashMap<>(); // Maps each vertex to the PREVIOUS one in the path
+        LinkedList<Vertex<FuzzyPosition, Double>> openSet = new LinkedList<>(); // Set of unevaluated vertices
+        ArrayList<Vertex<FuzzyPosition, Double>> closedSet = new ArrayList<>(); // Set of evaluated nodes
+        HashMap<Vertex, Double> distanceList = new HashMap<>(); // LUT of total costs, initially Double.MAX_VALUE (infinity)
 
+        // Fill distanceList with NaN values (infinity)
         for (Vertex<FuzzyPosition, Double> vertex : (ArrayList<Vertex>) grid.getVertices()) {
-            distanceList.put(vertex, Double.NaN);
+            distanceList.put(vertex, Double.MAX_VALUE);
         }
-        distanceList.put(start, 0.0);
+        distanceList.put(start, heuristic.get(start));
 
-        // Algorithm
-        Vertex currentNode = start;
+        // Astar Algorithm
         openSet.add(start);
 
         while (!openSet.isEmpty()) {
@@ -57,30 +55,40 @@ public class AStarGrid implements PathFindingAlgorithm {
             openSet.sort(Comparator.comparingDouble((Vertex<FuzzyPosition, Double> o)
                     -> distanceList.get(o) + heuristic.get(o)));
 
+            // Pick most promising vertex (first in openSet)
             Vertex current = openSet.getFirst();
 
+            // See if we've arrived at the end
             if (current == end) {
                 LinkedList<Position> positionList = new LinkedList<>();
-                Vertex next = start;
+                Vertex next = current;
                 while (next != null) {
                     positionList.add((Position) next.getValue());
                     next = pathVertexList.remove(next);
                 }
-                positionList.add((Position) current.getValue());
+                Collections.reverse(positionList);
                 return currentPath = new Path(positionList);
             }
 
+            // Transfer current from openSet to closedSet
             openSet.remove(current);
             closedSet.add(current);
 
-            for (Vertex<FuzzyPosition, Double> neighbor : (ArrayList<Vertex<FuzzyPosition, Double>>) current.getAdjacentVertices()) {
+            // Evaluate neighbors of current
+            for (Vertex<FuzzyPosition, Double> neighbor :
+                    (ArrayList<Vertex<FuzzyPosition, Double>>) current.getAdjacentVertices()) {
+                // If the neighbor is already in closedSet, skip it
                 if (!closedSet.contains(neighbor)) {
+                    // If the neighbor isn't in openSet, add it
                     if (!openSet.contains(neighbor))
                         openSet.add(neighbor);
 
-                    double tentativeCost = distanceList.get(current) + (Double) current.getWeightFor(neighbor);
-                    if (distanceList.get(neighbor) == null || tentativeCost < distanceList.get(neighbor)) {
-                        pathVertexList.put(current, neighbor);
+                    // Compute cost of neighbor
+                    double tentativeCost = (Double) current.getWeightFor(neighbor) + distanceList.get(current);
+                    // If it costs less to get to neighbor than the current value in distanceList, then update it
+                    double currentCost = distanceList.get(neighbor);
+                    if (tentativeCost < currentCost) {
+                        pathVertexList.put(neighbor, current);
                         distanceList.put(neighbor, tentativeCost);
                     }
                 }
@@ -118,9 +126,9 @@ public class AStarGrid implements PathFindingAlgorithm {
         Path newPath = computePath(currentPos, endPosition);
         LinkedList<Position> newList = new LinkedList<>();
         int i = 0;
-        while (currentPath.getList()[i] != currentPos)
-            newList.add(currentPath.getList()[i]);
-        newList.addAll(Arrays.asList(newPath.getList()));
+        while (!currentPath.getPath().toArray()[i].equals(currentPos))
+            newList.add((Position) currentPath.getPath().toArray()[i]);
+        newList.addAll(newPath.getPath());
         return currentPath = new Path(newList);
     }
 

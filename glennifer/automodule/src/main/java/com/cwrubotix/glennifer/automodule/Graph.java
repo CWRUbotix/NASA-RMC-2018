@@ -20,7 +20,7 @@ public class Graph<T, G extends Comparable<? super G>> {
      */
     public Graph(T baseVertexValue) {
         vertices = new HashMap<>();
-        vertices.put(baseVertexValue, new Vertex<T, G>(baseVertexValue));
+        vertices.put(baseVertexValue, new Vertex<>(baseVertexValue));
     }
 
     public void add(Vertex parent, Vertex child, G weight, boolean overwrite) throws IllegalArgumentException {
