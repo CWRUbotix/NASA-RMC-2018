@@ -273,3 +273,34 @@ message DepositionStateDetailed {
 	required bool dump_left_retracted = 8;
 	required bool dump_right_retracted = 9;
 }
+
+// launch.transit
+// launch.drill
+// launch.dump
+message LaunchModule {
+	required float current_x_pos = 1;
+	required float current_y_pos = 2;
+	required float current_angle = 3;
+	required float time_allocation = 4;
+	required bool start = 5;
+	optional float destination_x_pos = 6;
+	optional float destination_y_pos = 7;
+	optional float load_desired = 8;
+	required UnixTime timestamp = 9;
+}
+
+// progress.transit
+// progress.drill
+// progress.dump
+message ProgressReport {
+	required bool done = 1;
+	required UnixTime timestamp = 2;
+}
+
+// error.transit
+// error.drill
+// error.dump
+message ErrorReport {
+	required bool resolved = 1;
+	required UnixTime timestamp = 2;
+}
