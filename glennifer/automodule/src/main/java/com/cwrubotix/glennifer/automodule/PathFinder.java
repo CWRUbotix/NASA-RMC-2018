@@ -19,7 +19,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
         this.startPos = startPos;
         this.targetPos = targetPos;
         path = pathFindingAlgorithm.computePath(this.startPos, this.targetPos);
-        this.currentPos = path.getStart();
+        this.currentPos = startPos;
     }
 
     public Path getPath() {
@@ -29,11 +29,15 @@ public class PathFinder<T extends PathFindingAlgorithm> {
     public Position getCurrentPos() {
         return currentPos;
     }
+    
+    protected void setCurrentPos(Position currentPos){
+    	this.currentPos = currentPos;
+    }
 
     public Position getStartPos() {
         return startPos;
     }
-
+    
     public Position getTargetPos() {
         return targetPos;
     }
