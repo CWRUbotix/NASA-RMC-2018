@@ -41,7 +41,7 @@ public class AStarGrid implements PathFindingAlgorithm {
         ArrayList<Vertex<FuzzyPosition, Double>> closedSet = new ArrayList<>(); // Set of evaluated nodes
         HashMap<Vertex, Double> distanceList = new HashMap<>(); // LUT of total costs, initially Double.MAX_VALUE (infinity)
 
-        // Fill distanceList with NaN values (infinity)
+        // Fill distanceList with max values (infinity)
         for (Vertex<FuzzyPosition, Double> vertex : (ArrayList<Vertex>) grid.getVertices()) {
             distanceList.put(vertex, Double.MAX_VALUE);
         }
