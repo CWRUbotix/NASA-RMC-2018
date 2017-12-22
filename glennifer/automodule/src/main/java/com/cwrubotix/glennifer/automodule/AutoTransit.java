@@ -1,7 +1,7 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.Messages;
-import com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.Messages;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 
 public class AutoTransit{

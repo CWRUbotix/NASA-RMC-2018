@@ -1,10 +1,10 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 /**
  * @author Robbie Dozier
  *
  * General interface for pathfinding algorithms to conform to. Utilizes the {@code Position} and {@code Path} modules
- * from the com.cwrubotix.glennifer.automodule package.
+ * from the main.java.com.cwrubotix.glennifer.automodule package.
  */
 public interface PathFindingAlgorithm {
     /**

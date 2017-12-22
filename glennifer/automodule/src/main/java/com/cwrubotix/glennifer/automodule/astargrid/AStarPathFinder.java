@@ -1,9 +1,8 @@
-package com.cwrubotix.glennifer.automodule.astargrid;
+package main.java.com.cwrubotix.glennifer.automodule.astargrid;
 
-import com.cwrubotix.glennifer.automodule.Obstacle;
-import com.cwrubotix.glennifer.automodule.PathFinder;
-import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
-import com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
+import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 public class AStarPathFinder extends PathFinder {
     public AStarPathFinder(Position startPos, Position targetPos, double error) throws PathFindingAlgorithm.AlgorithmFailureException {

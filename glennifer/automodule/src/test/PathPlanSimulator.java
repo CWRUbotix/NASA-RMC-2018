@@ -1,7 +1,7 @@
 package test;
 
-import com.cwrubotix.glennifer.automodule.Position;
-import com.cwrubotix.glennifer.automodule.Path;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
 import java.util.Arrays;
 //TODO import GUI stuff
 

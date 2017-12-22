@@ -1,6 +1,6 @@
-package com.cwrubotix.glennifer.automodule.astargrid;
+package main.java.com.cwrubotix.glennifer.automodule.astargrid;
 
-import com.cwrubotix.glennifer.automodule.*;
+import main.java.com.cwrubotix.glennifer.automodule.*;
 
 import java.util.*;
 

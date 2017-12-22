@@ -1,10 +1,9 @@
 package unit_tests;
 
-import com.cwrubotix.glennifer.automodule.Obstacle;
-import com.cwrubotix.glennifer.automodule.Path;
-import com.cwrubotix.glennifer.automodule.Position;
-import com.cwrubotix.glennifer.automodule.astargrid.AStarGrid;
-import com.cwrubotix.glennifer.automodule.astargrid.FuzzyArenaGraph;
+import main.java.com.cwrubotix.glennifer.automodule.Path;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
+import main.java.com.cwrubotix.glennifer.automodule.astargrid.AStarGrid;
+import main.java.com.cwrubotix.glennifer.automodule.astargrid.FuzzyArenaGraph;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,6 +1,9 @@
-package com.cwrubotix.glennifer.automodule.astargrid;
+package main.java.com.cwrubotix.glennifer.automodule.astargrid;
 
-import com.cwrubotix.glennifer.automodule.*;
+import main.java.com.cwrubotix.glennifer.automodule.FuzzyPosition;
+import main.java.com.cwrubotix.glennifer.automodule.Origin;
+import main.java.com.cwrubotix.glennifer.automodule.UGraph;
+import main.java.com.cwrubotix.glennifer.automodule.Vertex;
 
 import java.util.ArrayList;
 
