@@ -1,6 +1,6 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-import main.java.com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages;
 import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 
