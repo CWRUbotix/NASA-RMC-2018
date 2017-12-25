@@ -95,15 +95,15 @@ public class Position implements Cloneable{
 	}
 	
 	/**
-	 * Returns angle the robot need to turn to face position b
+	 * Returns angle the robot need to be in order to face position b
 	 * @param b the destination
-	 * @return angle the robot need to turn to face position b
+	 * @return angle the robot need to be in order to face position b
 	 */
 	public double getAngleTurnTo(Position b){
 		if(getAngle() >= 0 && b.getAngle() >= 0){
 		    float x_diff = b.getX() - getX();
 		    float y_diff = b.getY() - getY();
-		    if(x_diff < 0 && y_diff < 0){
+		    if(x_diff < 0){
 			return Math.PI + Math.PI / 2 - Math.atan((double)(y_diff / x_diff));
 		    }
 		    else{
@@ -111,7 +111,7 @@ public class Position implements Cloneable{
 		    }
 		}
 		//Heading to vertically down (a.k.a. position b is straight horizontal line)
-		return Math.PI - getAngle();
+		return Math.PI;
 	}
 	
 	@Override
