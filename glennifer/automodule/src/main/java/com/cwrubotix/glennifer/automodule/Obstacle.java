@@ -10,7 +10,7 @@ public class Obstacle extends Position{
 	}
 	
 	public Obstacle(Position obs) {
-    	    this(obs.getX(), obs.getY(), 0.4F);
+    	    this(obs.getX(), obs.getY(), 0.3F);
 	}
 
 	public float getDiameter(){
