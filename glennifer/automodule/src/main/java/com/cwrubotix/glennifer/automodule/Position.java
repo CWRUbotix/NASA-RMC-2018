@@ -116,11 +116,14 @@ public class Position implements Cloneable{
 	
 	@Override
 	public boolean equals(Object obj){
-		if(obj instanceof Position){
-			if(getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
-				return true;
-		}
-		return false;
+	    if(obj instanceof Position){
+		Position compare = (Position)obj;
+		float x_diff = compare.getX() - getX();
+		float y_diff = compare.getY() - getY();
+		if(Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
+		    return true;
+	    }
+	    return false;
 	}
 	
 	@Override
