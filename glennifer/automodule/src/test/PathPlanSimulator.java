@@ -5,31 +5,25 @@ import main.java.com.cwrubotix.glennifer.automodule.MidLine;
 import main.java.com.cwrubotix.glennifer.automodule.ModifiedAStar;
 import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
-import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import javax.swing.JOptionPane;
-
 import javafx.application.Application;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.Scene;
-import javafx.scene.Group;
-import javafx.scene.control.Button;
-import javafx.stage.Stage;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.input.MouseEvent;
-import javafx.event.EventHandler;
-import javafx.event.ActionEvent;
-import javafx.geometry.Pos;
+import javafx.stage.Stage;
 
 /**
  * 
@@ -39,18 +33,13 @@ import javafx.geometry.Pos;
 public class PathPlanSimulator{
 	
     /** Array of Positions that represent obstacles in the arena*/
-    private Position[] obstacles = new Position[6];
-    /** 
-     * Array of Positions which represents locations of robots.
-     * <p>We will have one robot per path</p>
-     */
-    private Position[] robots = new Position[4];
+    private Obstacle[] obstacles = new Obstacle[6];
     /** Array of paths created by different algorithms.*/
-    private Path[] paths = new Path[4];
-    private PathFinder<? extends PathFindingAlgorithm>[] finders;
+    private Path[] paths = new Path[2]; //TODO Add AStarGrid
+    private PathFindingAlgorithm[] finders = new PathFindingAlgorithm[2]; //TODO Add AStarGrid
     private Position initialPos;
-    /** Array whose element checks whether each robot arrived at destination*/
-    private boolean[] robotArrived = new boolean[4];
+    private Position destination;
+
     
     /*Constants:*/
     /** Stores Max straight speed of the robot. Unit: m/s*/
@@ -83,31 +72,28 @@ public class PathPlanSimulator{
      */
     public PathPlanSimulator(Position initialPos, Position destination){
 	this.initialPos = initialPos;
-	for(int i = 0; i < robots.length; i ++){
-	    robots[i] = (Position) initialPos.clone();
-	}
-	Arrays.fill(robotArrived, false);
-	finders = new PathFinder[4];
-	finders[0] = new PathFinder<MidLine>(new MidLine(), initialPos, destination);
-	finders[1] = new PathFinder<ModifiedAStar>(new ModifiedAStar(), initialPos, destination);
-	//finders[2] = new PathFinder<ArcPath>(new ArcPath()); //Setting up arcPath
-	//finders[3] = new PathFinder<>(new ); //Setting up gridAStar
-	for(int i = 0; i < paths.length - 2; i ++)
-	    paths[i] = finders[i].getAlgorithm().computePath(initialPos, destination);
+	this.destination = destination;
 	generateObstacles();
+	finders[0] = new MidLine();
+	finders[1] = new ModifiedAStar();
+	for(int i = 0; i < paths.length; i ++){
+	    paths[i] = finders[i].computePath(initialPos, destination);
+	}
+	//TODO ADD AStarGrid
     }
     
     public Position getInitialPos(){
 	return initialPos;
     }
     
-    public Position[] getObstacles(){
+    public Position getDestination(){
+	return destination;
+    }
+    
+    public Obstacle[] getObstacles(){
 	return obstacles;
     }
     
-    public Position[] getRobots(){
-	return robots;
-    }
     
     public Path[] getPaths(){
 	return paths;
@@ -129,7 +115,7 @@ public class PathPlanSimulator{
 	for(int i=0; i<obstacles.length; i++) {
 	    float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
 	    float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
-	    Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
+	    Obstacle newObstacle = new Obstacle(newObstacleX, newObstacleY, OBSTACLE_SIZE);
 	    obstacles[i] = newObstacle;
 	}
     }
@@ -141,7 +127,7 @@ public class PathPlanSimulator{
      * @param y_pos the new y coordinate
      * @return false if given coordinates are invalid as an obstacle.
      */
-    private boolean modifyObstacle(Position obstacle, float x_pos, float y_pos){
+    private boolean modifyObstacle(Obstacle obstacle, float x_pos, float y_pos){
 	if(y_pos > SAFE_AREA_HEIGHT && y_pos < SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT){ //if inside obstacle area
 	    if(!obstacle.setX(x_pos) || !obstacle.setY(y_pos)){
 		return false;
@@ -155,37 +141,11 @@ public class PathPlanSimulator{
     
 
     private void moveRobot(int robot){
-	ArrayList<Position> obstaclesFound = new ArrayList<Position>(6);
-	for(Position obs : obstacles){
-	    if(robots[robot].getDistTo(obs) < KINECT_RANGE){
-		obstaclesFound.add(obs);
-		finders[robot].registerObstacle(new Obstacle(obs));
-	    }
-	}
-	boolean found = false;
-	Position stop = null;
-	for(Position pos : finders[robot].getPath()){
-	    if(!found && pos.getY() > KINECT_RANGE){
-		found = true;
-		stop = pos;
-	    }
-	}
-	if(stop == null) throw new RuntimeException("Something is wrong");
-	
-	finders[robot].setCurrentPos(stop);
-	
-	for(Position obs: obstacles){
-	    if(!obstaclesFound.contains(obs)){
-		finders[robot].registerObstacle(new Obstacle(obs));
-	    }
-	}
-	paths[robot] = finders[robot].getPath();
+	//TODO
     }
     
     public void runSimulation(){
-	for(int i = 0; i < 2; i++){ //TODO Change as more algorithms are added
-	    moveRobot(i);
-	}
+	//TODO
     }
     
     ///////////////////////////////////////////////////////////GUIS////////////////////////////////////////////////////////////	
@@ -200,12 +160,14 @@ public class PathPlanSimulator{
 	
 	private PathPlanSimulator simulator;
 	private Stage primaryStage;
-	private BorderPane pane;
-	private Pane arena;
+	private BorderPane pane = new BorderPane();
+	private Pane arena = new Pane();
 	private boolean modificationAllowed = true;
 	private boolean simulationRun = false;
-	private TextArea[] result;
-	private Group[] paths;
+	private Obstacle beingModifiedObs = null;
+	private Circle beingModifiedCir = null;
+	private TextArea[] result = new TextArea[2];
+	private Group[] paths = new Group[2];
 	
 	public void start(Stage primaryStage){
 	    this.primaryStage = primaryStage;
@@ -218,8 +180,8 @@ public class PathPlanSimulator{
 	private void setUpSimulation(){
 	    String[] args =  new String[getParameters().getRaw().size()];
 	    args = getParameters().getRaw().toArray(args);
-	    Position start = new Position(0.0F, 0.0F, 0.0, 0.0F);
-	    Position destination = new Position(0.0F, 0.0F, 0.0, 0.0F);
+	    Position start = new Position(0.0F, 0.0F, Math.PI / 2, 0.0F);
+	    Position destination = new Position(0.0F, 0.0F);
 	    if(!start.setX(Float.parseFloat(args[0])) || !start.setY(Float.parseFloat(args[1]))
 		    || !destination.setX(Float.parseFloat(args[2])) || !destination.setY(Float.parseFloat(args[3])))
 		throw new RuntimeException("Given coordinates are invalid to set up simulation");
@@ -230,11 +192,9 @@ public class PathPlanSimulator{
 	    primaryStage.setTitle("PathPlanSimulator");
 	    primaryStage.setHeight(Position.ARENA_HEIGHT() * 100 + 100);
 	    primaryStage.setWidth(600 + Position.ARENA_WIDTH()*100);
-	    pane = new BorderPane();
-	    arena = new Pane();
-	    arena.setPrefSize(Position.ARENA_WIDTH() * 100, Position.ARENA_HEIGHT() * 100);
+	    
+	    setUpArena();
 	    setUpResultDisplay();
-	    drawArena();
 	    Button startButton = new Button("START");
 	    startButton.setAlignment(Pos.BOTTOM_CENTER);
 	    startButton.setOnAction(new EventHandler<ActionEvent>(){
@@ -256,9 +216,32 @@ public class PathPlanSimulator{
 	    right.getChildren().addAll(result[2], result[3]);
 	    pane.setLeft(left);
 	    pane.setRight(right);
-	    pane.setCenter(arena);
 	    pane.setBottom(startButton);
+	    pane.setCenter(arena);
 	    primaryStage.setScene(new Scene(pane));
+	}
+	
+	private void setUpArena(){
+	    arena.setPrefSize(Position.ARENA_WIDTH() * 100, Position.ARENA_HEIGHT() * 100);
+	    arena.setOnMouseClicked(new EventHandler<MouseEvent>(){
+
+		@Override
+		public void handle(MouseEvent event) {
+		    if(beingModifiedObs == null)
+			return;
+		    float x = getArenaX(event.getX());
+		    float y = getArenaY(event.getY());
+		    if(simulator.modifyObstacle(beingModifiedObs, x, y)){
+			beingModifiedCir.setCenterX(event.getX());
+			beingModifiedCir.setCenterY(event.getY());
+		    }
+		    beingModifiedObs = null;
+		    beingModifiedCir = null;
+		}
+		
+	    });
+	    
+	    drawArena();
 	}
 	
 	private void drawArena(){
@@ -277,26 +260,19 @@ public class PathPlanSimulator{
 	}
 	
 	private void setUpObstacles(){
-	    for(Position p : simulator.getObstacles()){
+	    for(Obstacle p : simulator.getObstacles()){
 		Circle obstacle = new Circle(getDisplayX(p.getX()), getDisplayY(p.getY()), 15, Color.DARKGREY);
 		obstacle.setOnMouseClicked(new EventHandler<MouseEvent>(){
-		    final Position obs = p;
+		    final Obstacle obs = p;
+		    final Circle cir = obstacle;
 		    public void handle(MouseEvent e){
-			if(!modificationAllowed)
-			    return;
-			float newX, newY;
-			try{
-			    newX = Float.parseFloat(JOptionPane.showInputDialog("Enter new X_Pos coordinate"));
-			    newY = Float.parseFloat(JOptionPane.showInputDialog("Enter new Y_Pos coordinate"));
+			if(!modificationAllowed){ 
+			    beingModifiedObs = null;
+			    beingModifiedCir = null;
 			}
-			catch(NumberFormatException error){
-			    JOptionPane.showMessageDialog(null, "Wrong input, modification aborted.");
-			    return;
-			}
-			if(!simulator.modifyObstacle(obs, newX, newY))
-			    JOptionPane.showMessageDialog(null, "Wrong input, modification aborted.");
-			else {
-			    ((Circle)e.getSource()).relocate(getDisplayX(newX), getDisplayY(newY));
+			else{
+			    beingModifiedObs = obs;
+			    beingModifiedCir = cir;
 			}
 		    }
 		});
@@ -307,8 +283,10 @@ public class PathPlanSimulator{
 	private void displayPaths(){
 	    Path[] path = simulator.getPaths();
 	    paths = new Group[2]; // TODO Change as more algorithms are added.
-	    Color[] colors = {Color.PURPLE, Color.AQUA, Color.GREEN, Color.GOLD};
+	    Color[] colors = {Color.PURPLE, Color.AQUA, Color.GOLD};
 	    for(int i = 0; i < paths.length; i++){
+		if(paths[i] == null)
+		    continue;
 		paths[i] = new Group();
 		for(int pos = 0; pos < path[i].length(); i ++){
 		    Position point = path[i].getPoint(pos);
@@ -363,6 +341,14 @@ public class PathPlanSimulator{
 	
 	private double getDisplayY(float y_pos){
 	    return (double)(y_pos * 100);
+	}
+	
+	private float getArenaX(double display_x){
+	    return (float)(display_x / 100 - Position.ARENA_WIDTH() / 2);
+	}
+	
+	private float getArenaY(double display_y){
+	    return (float)(display_y / 100);
 	}
 	
 	private static void launchWrap(String[] args){
