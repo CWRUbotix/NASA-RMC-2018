@@ -102,7 +102,7 @@ public class MidLine implements PathFindingAlgorithm{
      */
     private Position getNextPos(Position current, Position end, Obstacle obs){
 	/*Angle between the tangent line of clearance range that intersects current node position and the line between current node and center of Obstacle*/
-	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getDiameter() / 2) / current.getDistTo(obs));
+	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getRadius()) / current.getDistTo(obs));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects current position*/
 	double leftBound = current.getAngleTurnTo(obs) - theta;
@@ -128,7 +128,7 @@ public class MidLine implements PathFindingAlgorithm{
 	    return null;
 	
 	/*Distance between current Position and to the next Position to go*/
-	double dist = Math.sqrt(Math.pow(Position.WALL_CLEARANCE() + obs.getDiameter() / 2, 2) + Math.pow(current.getDistTo(obs), 2));
+	double dist = Math.sqrt(Math.pow(Position.WALL_CLEARANCE() + obs.getRadius(), 2) + Math.pow(current.getDistTo(obs), 2));
 	double x,y;
 	
 	if(obs.getX() < 0){ //Should turn right

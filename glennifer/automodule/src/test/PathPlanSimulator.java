@@ -58,8 +58,8 @@ public class PathPlanSimulator{
     /** Stores Max turning speed of the robot. Unit: rad/s*/
     private static final float MAX_TURNING_SPEED = (float)Math.PI;
     /** Stores robot's width in meters*/
-    /** Stores maximum diameter of obstacles in meters*/
-    private static final float OBSTACLE_SIZE = 0.3F;
+    /** Stores maximum radius of obstacles in meters*/
+    private static final float OBSTACLE_SIZE = 0.15F;
     /** Stores the maximum reliable kinect range in meters*/
     private static final float KINECT_RANGE = 2.0F;
     /** 
@@ -124,11 +124,11 @@ public class PathPlanSimulator{
      * @author Tyler Thieding
      */
     private void generateObstacles(){
-	float validObstacleWidthLength = Position.ARENA_WIDTH() - OBSTACLE_SIZE;
-	float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - OBSTACLE_SIZE;
+	float validObstacleWidthLength = Position.ARENA_WIDTH() - (OBSTACLE_SIZE * 2);
+	float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - (OBSTACLE_SIZE * 2);
 	for(int i=0; i<obstacles.length; i++) {
-	    float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
-	    float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
+	    float newObstacleX = (float) (OBSTACLE_SIZE * 2 + validObstacleWidthLength*Math.random() - Position.ARENA_WIDTH() / 2);
+	    float newObstacleY = (float) (OBSTACLE_SIZE * 2 + SAFE_AREA_HEIGHT + validObstacleHeightLength*Math.random());
 	    Position newObstacle = new Position(newObstacleX, newObstacleY, 0, 0);
 	    obstacles[i] = newObstacle;
 	}

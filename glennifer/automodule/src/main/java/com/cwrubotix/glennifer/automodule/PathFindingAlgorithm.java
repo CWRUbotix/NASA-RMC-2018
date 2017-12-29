@@ -15,7 +15,9 @@ public interface PathFindingAlgorithm {
      *
      * @throws AlgorithmFailureException when algorithm fails
      */
-    public abstract Path computePath() throws AlgorithmFailureException;
+    public default Path computePath() throws AlgorithmFailureException{
+	throw new UnsupportedOperationException();
+    }
 
     /**
      * Call this method to update the start and end position
@@ -36,7 +38,6 @@ public interface PathFindingAlgorithm {
      */
     public abstract Path computePath(Position currentPos, Obstacle newObstacle) throws AlgorithmFailureException;
 
-    public class AlgorithmFailureException extends Exception {
-
+    public class AlgorithmFailureException extends RuntimeException {
     }
 }
