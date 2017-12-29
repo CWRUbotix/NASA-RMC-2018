@@ -1,6 +1,7 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * Complete graph implementation of A* search algorithm with account for obstacles that are not visible before attaining certain proximity.
@@ -95,7 +96,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	
 	for(int i = 0; i < 6; i++){
 	    double angle = Math.PI * i / 3;
-	    float clearance = Position.WALL_CLEARANCE() + obs.getDiameter();
+	    float clearance = Position.WALL_CLEARANCE() + obs.getDiameter() / 2;
 	    getNodes().add(new AStarNode((float)(obs.getX() + clearance * Math.cos(angle)), (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
     }
@@ -139,7 +140,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      */
     private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
-	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getDiameter()) / start.getDistTo(obs));
+	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getDiameter() / 2) / start.getDistTo(obs));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
 	double leftBound = start.getAngleTurnTo(obs) - theta;
@@ -179,8 +180,8 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	/*pre-search setup*/
 	AStarNode current = start;
 	current.updateDist(0.0F);
-	ArrayList<AStarNode> openSet = new ArrayList<>(getNodes().size());
-	ArrayList<AStarNode> closedSet = new ArrayList<>(getNodes().size());
+	LinkedList<AStarNode> openSet = new LinkedList<>();
+	LinkedList<AStarNode> closedSet = new LinkedList<>();
 	openSet.add(start);
 	start.setFound(true);
 	
@@ -211,7 +212,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      * @param openSet the given list to search
      * @return the node with minimum fScore among the nodes in the given list
      */
-    private AStarNode getMinFScore(ArrayList<AStarNode> openSet){
+    private AStarNode getMinFScore(LinkedList<AStarNode> openSet){
 	AStarNode save = null;
 	for(AStarNode neighbor : openSet){ //linear search
 	    if(save == null){
@@ -342,7 +343,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	 * @param y_pos y-coordinate position of the vertex
 	 */
 	public AStarNode(float x_pos, float y_pos) {
-	    super(x_pos, y_pos, 0.0, 0.0F);
+	    super(x_pos, y_pos);
 	}
 	
 	/**
