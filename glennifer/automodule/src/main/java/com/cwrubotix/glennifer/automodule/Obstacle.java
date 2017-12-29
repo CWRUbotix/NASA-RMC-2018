@@ -11,6 +11,10 @@ public class Obstacle extends Position {
 	
 	public float getRadius(){
 		return radius;
+  }
+	
+	public Obstacle(Position obs) {
+    	    this(obs.getX(), obs.getY(), 0.15F);
 	}
 	
 	public void setRadius(float radius){

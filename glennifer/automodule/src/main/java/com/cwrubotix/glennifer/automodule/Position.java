@@ -18,7 +18,7 @@ public class Position implements Cloneable {
 	 * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
 	 * </p>
 	 * <p>
-	 * Range : [0, 2PI) unit in degrees.
+	 * Range : [0, 2PI) unit in radians.
 	 * </p>
 	 * If angle is negative, the position represents a horizontal line. (For dividing up arena purpose)
 	 * 
@@ -29,6 +29,9 @@ public class Position implements Cloneable {
 	private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
 	private static final float ARENA_HEIGHT = 7.38F;
 	
+	public Position(float x_pos, float y_pos){
+	    this(x_pos, y_pos, 0.0, 0.0F);
+	}
 	
 	public Position(float x_pos, float y_pos, double angle, float tilt){
 		this.x_pos = x_pos;
@@ -95,26 +98,35 @@ public class Position implements Cloneable {
 	}
 	
 	/**
-	 * Returns angle the robot need to turn to face position b
+	 * Returns angle the robot need to be in order to face position b
 	 * @param b the destination
-	 * @return angle the robot need to turn to face position b
+	 * @return angle the robot need to be in order to face position b
 	 */
 	public double getAngleTurnTo(Position b){
 		if(getAngle() >= 0 && b.getAngle() >= 0){
-			return Math.PI - Math.atan((b.getX() - getX())/(b.getY() - getY())) - getAngle();
+		    float x_diff = b.getX() - getX();
+		    float y_diff = b.getY() - getY();
+		    if(x_diff < 0){
+			return Math.PI + Math.PI / 2 - Math.atan((double)(y_diff / x_diff));
+		    }
+		    else{
+			return Math.PI / 2 - Math.atan((double)(y_diff / x_diff));
+		    }
 		}
 		//Heading to vertically down (a.k.a. position b is straight horizontal line)
-		return Math.PI - getAngle();
+		return Math.PI;
 	}
 	
 	@Override
 	public boolean equals(Object obj){
-		if(obj instanceof Position){
-			if (getX() == ((Position)obj).getX() && getY() == ((Position)obj).getY())
-				return true;
-			return ((Position) obj).equals(this);
-		}
-		return false;
+	  if(obj instanceof Position){
+		  Position compare = (Position)obj;
+		  float x_diff = compare.getX() - getX();
+		  float y_diff = compare.getY() - getY();
+		  if(Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
+		    return true;
+	    }
+	  return false;
 	}
 	
 	@Override
