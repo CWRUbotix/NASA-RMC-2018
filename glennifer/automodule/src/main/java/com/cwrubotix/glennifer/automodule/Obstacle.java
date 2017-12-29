@@ -5,7 +5,7 @@ public class Obstacle extends Position{
 	private float diameter;
 	
 	public Obstacle(float x_pos, float y_pos, float diameter) {
-		super(x_pos, y_pos, 0.0F, 0.0F);
+		super(x_pos, y_pos);
 		this.diameter = diameter;
 	}
 	

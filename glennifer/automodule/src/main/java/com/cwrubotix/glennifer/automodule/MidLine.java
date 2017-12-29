@@ -1,155 +1,149 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Arrays;
 
 public class MidLine implements PathFindingAlgorithm{
+    
+    private Position start;
+    private Position end;
+    private HashMap<Obstacle, Position> currentPosSet = new HashMap<>();
 
-	private Position start;
-	private Position end;
-	private Path path = new Path();
-	private ArrayList<Obstacle> obstacles;
-	private boolean initialized = false;
-	private final float obstacleClearance = 0.75F;
-	
-	public MidLine(Position start, Position end){
-		this.start = start;
-		this.end = end;
-		obstacles = new ArrayList<Obstacle>(6);
-	}
-	
-	public Position getStart(){
-		return start;
-	}
-	
-	public void setStart(Position start){
-		this.start = start;	}
-	
-	public Position getEnd(){
-		return end;
-	}
-	
-	public void setEnd(Position end){
-		this.end = end;
-	}
-	
-	/**
-	 * computes the path for robot with given start and end positions.
-	 * For midLineAlgorithm, computePath method with startPosition and endPosition input need to be called only once at the beginning
-	 * @param startPosition the start position of the path
-	 * @param endPosition the end position of the path
-	 * @return returns the path created
-	 */
-	@Override
-	public Path computePath(Position startPosition, Position endPosition) {
-		if(!initialized) 
-			initialized = true; 
-		else 
-			return path;
-		
-		setStart(startPosition);
-		setEnd(endPosition);
-		double angle = startPosition.getAngleTurnTo(endPosition);
-		getStart().setAngle(angle);
-		getEnd().setAngle(angle);
-		path.addFirst(getStart());
-		path.addLast(getEnd());
-		
-		return path;
-	}
+    @Override
+    public Path computePath(Position startPosition, Position endPosition) {
+	start = startPosition;
+	end = endPosition;
+	Path path =  midLine(start, end);
+	setAngles(path);
+	return path;
+    }
 
-	@Override
-	public Path computePath(Position currentPos, Obstacle newObstacle) {
-		if(!initialized)
-			computePath(currentPos, getEnd());
-		int change = modifyPreviousPath(currentPos);
-		for(int i = change; i < path.getPath().size() - 1; i++){
-		    path.remove(i);
-		}
-		path.add(change++, currentPos);
-		path.getPath().getLast().setAngle(currentPos.getAngleTurnTo(getEnd()));
-		if(!obstacles.contains(newObstacle)){
-			obstacles.add(newObstacle);
-			Position a,b,c;
-			if(currentPos.getX() <= 0){//turn right
-				float x = (float)(Math.sqrt((Math.pow(currentPos.getDistTo(newObstacle), 2) - Math.pow(obstacleClearance, 2))));
-				double theta = Math.PI / 2 - currentPos.getAngleTurnTo(newObstacle) + currentPos.getAngle();
-				a = new Position((float)(currentPos.getX() + x * Math.cos(theta)), 
-										  (float)(currentPos.getY() + x * Math.sin(theta)), 
-										  0.0F, 0.0F);
-				a.setAngle(currentPos.getAngleTurnTo(a));
-				x = (float)(Math.sqrt((Math.pow(getEnd().getDistTo(newObstacle), 2) - Math.pow(obstacleClearance, 2))));
-				theta = Math.PI / 2 - getEnd().getAngleTurnTo(newObstacle) + currentPos.getAngle();
-				c = new Position((float)(currentPos.getX() + x * Math.cos(theta)), 
-										  (float)(currentPos.getY() + x * Math.sin(theta)), 
-										  0.0F, 0.0F);
-				c.setAngle(a.getAngleTurnTo(c));
-				double x_pos = a.getX() * Math.tan(Math.PI / 2 - a.getAngle()) - a.getY() - c.getX() * Math.tan(c.getAngle()) + c.getY();
-				double y_pos = c.getY() + Math.tan(c.getAngle()) * (x - c.getX());
-				b = new Position((float)x_pos, (float)y_pos, a.getAngle(), 0.0F);
-			}
-			else{//turn left
-				float x = (float)(Math.sqrt((Math.pow(currentPos.getDistTo(newObstacle), 2) - Math.pow(obstacleClearance, 2))));
-				double theta = 5 * Math.PI / 2 - (currentPos.getAngleTurnTo(newObstacle)) - Math.atan(obstacleClearance / x);
-				a = new Position((float)(currentPos.getX() + x * Math.cos(theta)), 
-										  (float)(currentPos.getY() + x * Math.sin(theta)), 
-										  0.0F, 0.0F);
-				a.setAngle(currentPos.getAngleTurnTo(a));
-				x = (float)(Math.sqrt((Math.pow(getEnd().getDistTo(newObstacle), 2) - Math.pow(obstacleClearance, 2))));
-				theta = 5 * Math.PI / 2 - (getEnd().getAngleTurnTo(newObstacle)) - Math.atan(obstacleClearance / x);
-				c = new Position((float)(currentPos.getX() + x * Math.cos(theta)), 
-										  (float)(currentPos.getY() + x * Math.sin(theta)), 
-										  0.0F, 0.0F);
-				c.setAngle(a.getAngleTurnTo(c));
-				double x_pos = a.getX() * Math.tan(Math.PI / 2 - a.getAngle()) - a.getY() - c.getX() * Math.tan(c.getAngle()) + c.getY();
-				double y_pos = c.getY() + Math.tan(c.getAngle()) * (x - c.getX());
-				b = new Position((float)x_pos, (float)y_pos, a.getAngle(), 0.0F);
-			}
-			//verifying the path
-			if(!a.setX(a.getX()) || !a.setY(a.getY()) || !b.setX(b.getX()) || !b.setY(b.getY()) || !c.setX(c.getX()) || !c.setY(c.getY()))
-				throw new RuntimeException("failed to create a valid path");
-			
-			path.add(change++, a);
-			path.add(change++, b);
-			path.add(change, c);
-			path.getPath().getLast().setAngle(c.getAngleTurnTo(getEnd()));
-		}
-		
-		
-		return path;
-	}
+    @Override
+    public Path computePath(Position currentPos, Obstacle newObstacle) {
+	currentPosSet.put(newObstacle, currentPos);
+	Path firstHalf = midLine(start, currentPos);
+	Path secondHalf = midLine(currentPos, end);
+	Path path = firstHalf;
+	boolean skipped = false;
 	
-	private int modifyPreviousPath(Position currentPos){
-		Position previous = null;
-		for(Position a : path.getPath()){
-		    if(previous != null){
-			if(a.getX() < previous.getX()){
-			    if(a.getY() < previous.getY()){
-				if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
-				    return path.getPath().indexOf(a);
-				}
-			    }
-			    else{
-				if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
-				    return path.getPath().indexOf(a);
-				}
-			    }
-			}
-			else{
-			    if(a.getY() < previous.getY()){
-				if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
-				    return path.getPath().indexOf(a);
-				}
-			    }
-			    else{
-				if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
-				    return path.getPath().indexOf(a);
-				}
-			    }
-			}
-		    }
-		    previous = a;
-		}
-		return -1; //should never happen;
+	for(Position p : secondHalf){
+	    if(!skipped){ //skipping first position so that there are no two current position nodes in the path
+		skipped = true;
 	    }
+	    else{
+		path.addLast(p);
+	    }
+	}
 	
+	setAngles(path);
+	return path;
+    }
+    
+    protected Path midLine(Position start, Position end){
+	Obstacle[] obstacles = currentPosSet.keySet().toArray(new Obstacle[0]);
+	Position current = start;
+	Path path = new Path();
+	
+	while(current != end){
+	    path.addLast(current);
+	    Arrays.sort(obstacles, Position.getComparatorByDistTo(current));
+	    Obstacle avoided = null;
+	    for(Obstacle obs : obstacles){
+		Position temp = getNextPos(current, end, obs);
+		if(temp != null){
+		    path.addLast(currentPosSet.get(obs));
+		    path.addLast(temp);
+		    current = temp;
+		    avoided = obs;
+		    break;
+		}
+	    }
+	    if(avoided != null)
+		remove(avoided, obstacles);
+	    else{
+		current = end;
+	    }
+	}
+	path.addLast(end);
+	
+	return path;
+    }
+    
+    private Position getNextPos(Position start, Position end, Obstacle obs){
+	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
+	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getDiameter() / 2) / start.getDistTo(obs));
+	
+	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
+	double leftBound = start.getAngleTurnTo(obs) - theta;
+	double rightBound = start.getAngleTurnTo(obs) + theta;
+	
+	if(rightBound > Math.PI * 2) rightBound = rightBound - 2 * Math.PI; // In case the angle bounds
+	if(leftBound < 0) leftBound = leftBound + 2 * Math.PI;              // exceed the angle range
+	
+	double angle = start.getAngleTurnTo(end); // absolute angle position of end node relative to the start node
+	
+	boolean onTheWay = false;
+	
+	if(leftBound < rightBound){ // Normal case
+	    if(angle > leftBound && angle < rightBound) onTheWay = false;
+	    else onTheWay = true;
+	}
+	else{ // Special case, when either leftBound or rightBound value exceeded angle range
+	    if(angle > rightBound && angle < leftBound) onTheWay = true;
+	    else onTheWay = false;
+	}
+	
+	if(!onTheWay)
+	    return null;
+	
+	double dist = Math.sqrt(Math.pow(Position.WALL_CLEARANCE() + obs.getDiameter() / 2, 2) + Math.pow(start.getDistTo(obs), 2));
+	double x,y;
+	
+	if(obs.getX() < 0){
+	    x = start.getX() + dist * Math.sin(rightBound);
+	    y = start.getY() + dist * Math.cos(rightBound);
+	}
+	else{
+	    x = start.getX() + dist * Math.sin(leftBound);
+	    y = start.getY() + dist * Math.cos(leftBound);
+	}
+	
+	return new Position((float)x, (float)y);
+    }
+    
+    private void remove(Obstacle obs, Obstacle[] obstacles){
+	for(int i = 0; i < obstacles.length; i++){
+	    if(obstacles[i].equals(obs)){
+		Obstacle[] newList = new Obstacle[obstacles.length - 1];
+		boolean copying = true;
+		for(int j = 0; j < newList.length; j++){
+		    if(copying){
+			newList[j] = obstacles[j];
+			if(j + 1 == i) copying = false;
+		    }
+		    else{
+			newList[j] = obstacles[j + 1];
+		    }
+		}
+		return;
+	    }
+	}
+    }
+    
+    /**
+     * Iterates through nodes in the given path and sets up angle fields
+     * @param path the path whose nodes needs their angle field set up.
+     */
+    private void setAngles(Path path){
+	if(path == null) return;
+	Position previous = path.getPoint(0);
+	boolean skipFirst = false;
+	for(Position p : path){
+	    if(!skipFirst)
+		skipFirst = true;
+	    else{
+		p.setAngle(previous.getAngleTurnTo(p));
+	    }
+	}
+    }
 }

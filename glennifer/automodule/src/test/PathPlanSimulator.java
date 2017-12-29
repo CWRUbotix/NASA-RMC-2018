@@ -88,7 +88,7 @@ public class PathPlanSimulator{
 	}
 	Arrays.fill(robotArrived, false);
 	finders = new PathFinder[4];
-	finders[0] = new PathFinder<MidLine>(new MidLine(initialPos, destination), initialPos, destination);
+	finders[0] = new PathFinder<MidLine>(new MidLine(), initialPos, destination);
 	finders[1] = new PathFinder<ModifiedAStar>(new ModifiedAStar(), initialPos, destination);
 	//finders[2] = new PathFinder<ArcPath>(new ArcPath()); //Setting up arcPath
 	//finders[3] = new PathFinder<>(new ); //Setting up gridAStar

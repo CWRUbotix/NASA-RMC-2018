@@ -29,6 +29,9 @@ public class Position implements Cloneable{
 	private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
 	private static final float ARENA_HEIGHT = 7.38F;
 	
+	public Position(float x_pos, float y_pos){
+	    this(x_pos, y_pos, 0.0, 0.0F);
+	}
 	
 	public Position(float x_pos, float y_pos, double angle, float tilt){
 		this.x_pos = x_pos;
