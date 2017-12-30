@@ -20,7 +20,8 @@ public class Obstacle extends Position {
     public void setRadius(float radius){
 	this.radius = radius;
     }
-
+    
+    /*// Infinite recursion in this method
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Position) {
@@ -28,5 +29,5 @@ public class Obstacle extends Position {
             return this.getDistTo(pos) <= radius || pos.equals(this);
         }
         return false;
-    }
+    }*/
 }
