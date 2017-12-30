@@ -1,6 +1,6 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-public class UGraph<T, G extends Comparable> extends Graph {
+public class UGraph<T, G extends Comparable<? super G>> extends Graph {
 
     public UGraph(T baseVertexValue) {
         super(baseVertexValue);

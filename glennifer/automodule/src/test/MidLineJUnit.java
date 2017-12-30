@@ -19,8 +19,8 @@ public class MidLineJUnit{
 	
 	verifyPath(pathFinder.computePath(start, end), start, end);
 	
-	Obstacle o1 = new Obstacle(-0.75F, 1.0F, 0.3F);
-	Obstacle o2 = new Obstacle(0.0F, 3.0F, 0.3F);
+	Obstacle o1 = new Obstacle(-0.75F, 1.0F, 0.15F);
+	Obstacle o2 = new Obstacle(0.0F, 3.0F, 0.15F);
 	Position cp1 = new Position(-0.5F, 1.5F, 0.0, 0.0F);
 	Position cp2 = new Position(-0.3F, 2.0F, 0.0, 0.0F);
 	
