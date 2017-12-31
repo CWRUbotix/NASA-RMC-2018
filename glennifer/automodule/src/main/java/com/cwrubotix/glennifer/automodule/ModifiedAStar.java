@@ -96,7 +96,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	
 	for(int i = 0; i < 6; i++){
 	    double angle = Math.PI * i / 3;
-	    float clearance = Position.WALL_CLEARANCE() + obs.getDiameter() / 2;
+	    float clearance = Position.WALL_CLEARANCE() + obs.getRadius();
 	    getNodes().add(new AStarNode((float)(obs.getX() + clearance * Math.cos(angle)), (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
     }
@@ -140,7 +140,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      */
     private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
-	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getDiameter() / 2) / start.getDistTo(obs));
+	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getRadius()) / start.getDistTo(obs));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
 	double leftBound = start.getAngleTurnTo(obs) - theta;

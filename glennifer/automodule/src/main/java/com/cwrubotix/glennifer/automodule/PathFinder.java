@@ -1,12 +1,5 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
-import main.java.com.cwrubotix.glennifer.automodule.Path;
-import main.java.com.cwrubotix.glennifer.automodule.Position;
-import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
-
-import java.util.ArrayList;
-
 
 /**
  * @author Robbie Dozier
@@ -21,7 +14,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
     private Position startPos;
     private Position targetPos;
 
-    public PathFinder(T pathFindingAlgorithm, Position startPos, Position targetPos) {
+    public PathFinder(T pathFindingAlgorithm, Position startPos, Position targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
         this.pathFindingAlgorithm = pathFindingAlgorithm;
         this.startPos = startPos;
         this.targetPos = targetPos;
@@ -53,7 +46,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
         return targetPos;
     }
 
-    public void registerObstacle(Obstacle obstacle) {
+    public void registerObstacle(Obstacle obstacle) throws PathFindingAlgorithm.AlgorithmFailureException {
         path = pathFindingAlgorithm.computePath(currentPos, obstacle);
     }
 }

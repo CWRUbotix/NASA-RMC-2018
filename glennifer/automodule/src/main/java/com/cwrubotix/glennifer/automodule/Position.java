@@ -10,7 +10,7 @@ import java.util.Comparator;
  *
  */
 
-public class Position implements Cloneable{
+public class Position implements Cloneable {
 
 	private float x_pos;
 	private float y_pos;
@@ -119,19 +119,19 @@ public class Position implements Cloneable{
 	
 	@Override
 	public boolean equals(Object obj){
-	    if(obj instanceof Position){
-		Position compare = (Position)obj;
-		float x_diff = compare.getX() - getX();
-		float y_diff = compare.getY() - getY();
-		if(Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
+	  if(obj instanceof Position){
+		  Position compare = (Position)obj;
+		  float x_diff = compare.getX() - getX();
+		  float y_diff = compare.getY() - getY();
+		  if(Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
 		    return true;
 	    }
-	    return false;
+	  return false;
 	}
 	
 	@Override
 	public String toString(){
-		return "(" + getX() + " ," + getY() + ")";
+		return "(" + getX() + ", " + getY() + ")";
 	}
 	
 	public static Comparator<Position> getComparatorByDistTo(final Position pos){
@@ -151,8 +151,17 @@ public class Position implements Cloneable{
 	public Object clone(){
 		return new Position(getX(), getY(), getAngle(), getTilt());
 	}
-	
-	public static final float WALL_CLEARANCE(){
+
+    /**
+     * @return Feel free to come up with a better hashing algorithm.
+     */
+    @Override
+    public int hashCode() {
+        int hash = Float.floatToRawIntBits(getX()) ^ Float.floatToRawIntBits(getY()) ^ Float.floatToRawIntBits((float) getAngle()) ^ Float.floatToRawIntBits(getTilt());
+        return hash;
+    }
+
+    public static final float WALL_CLEARANCE(){
 		return Position.WALL_CLEARANCE;
 	}
 	
@@ -163,5 +172,4 @@ public class Position implements Cloneable{
 	public static final float ARENA_HEIGHT(){
 		return Position.ARENA_HEIGHT;
 	}
-	
 }
