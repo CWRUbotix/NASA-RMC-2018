@@ -37,6 +37,11 @@ public class ModifiedAStar implements PathFindingAlgorithm{
     }
     
     @Override
+    public Path computePath(){
+	return aStar(start, end);
+    }
+    
+    @Override
     public Path computePath(Position startPosition, Position endPosition) {
 	
 	/*Setting up fields and nodes*/
@@ -96,7 +101,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	
 	for(int i = 0; i < 6; i++){
 	    double angle = Math.PI * i / 3;
-	    float clearance = Position.WALL_CLEARANCE() + obs.getRadius();
+	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
 	    getNodes().add(new AStarNode((float)(obs.getX() + clearance * Math.cos(angle)), (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
     }
@@ -140,7 +145,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
      */
     private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
-	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getRadius()) / start.getDistTo(obs));
+	double theta = Math.atan((0.75F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
 	double leftBound = start.getAngleTurnTo(obs) - theta;
@@ -152,12 +157,12 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	double angle = start.getAngleTurnTo(end); // absolute angle position of end node relative to the start node
 	
 	if(leftBound < rightBound){ // Normal case
-	    if(angle > leftBound && angle < rightBound) return false;
-	    else return true;
+	    if(angle > leftBound && angle < rightBound) return true;
+	    else return false;
 	}
 	else{ // Special case, when either leftBound or rightBound value exceeded angle range
-	    if(angle > rightBound && angle < leftBound) return true;
-	    else return false;
+	    if(angle > rightBound && angle < leftBound) return false;
+	    else return true;
 	}
 
     }
@@ -202,7 +207,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	}
 	
 	/*If search ends without returning a path, there is no possible path.*/
-	throw new RuntimeException("Failed to create a path");
+	throw new PathFindingAlgorithm.AlgorithmFailureException();
     }
     
     /*Helper methods for astar(start, end) method*/
