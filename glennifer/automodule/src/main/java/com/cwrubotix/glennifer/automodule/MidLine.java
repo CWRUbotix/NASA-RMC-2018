@@ -1,7 +1,8 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.HashMap;
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.ArrayList;
 
 /**
  * MidLine path planning algorithm.
@@ -25,9 +26,16 @@ public class MidLine implements PathFindingAlgorithm{
     private Position end;
     /** The map of Obstacles found and the locations they were found.*/
     private HashMap<Obstacle, Position> currentPosSet = new HashMap<>();
+    private LinkedList<Obstacle> obstaclesAvoided = new LinkedList<>();
+    
+    @Override
+    public Path computePath(){
+	return midLine(start, end);
+    }
 
     @Override
     public Path computePath(Position startPosition, Position endPosition) {
+	obstaclesAvoided = new LinkedList<>();
 	start = startPosition;
 	end = endPosition;
 	Path path =  midLine(start, end);
@@ -37,6 +45,7 @@ public class MidLine implements PathFindingAlgorithm{
 
     @Override
     public Path computePath(Position currentPos, Obstacle newObstacle) {
+	obstaclesAvoided = new LinkedList<>();
 	currentPosSet.put(newObstacle, currentPos);
 	Path firstHalf = midLine(start, currentPos);
 	Path secondHalf = midLine(currentPos, end);
@@ -63,26 +72,29 @@ public class MidLine implements PathFindingAlgorithm{
      * @return the Path created by MidLine algorithm
      */
     protected Path midLine(Position start, Position end){
-	Obstacle[] obstacles = currentPosSet.keySet().toArray(new Obstacle[0]); //array of found obstacles
+	ArrayList<Obstacle> obstacles = new ArrayList<>(currentPosSet.keySet()); //array of found obstacles
 	Position current = start;
 	Path path = new Path();
 	
 	while(!current.equals(end)){
 	    path.addLast(current);
-	    Arrays.sort(obstacles, Position.getComparatorByDistTo(current)); //sorts the obstacles by the order of encounters
+	    obstacles.sort(Position.getComparatorByDistTo(current)); //sorts the obstacles by the order of encounters
 	    Obstacle avoided = null;
 	    for(Obstacle obs : obstacles){
-		Position temp = getNextPos(current, end, obs);
-		if(temp != null){ //If the obstacle needs to be avoided
-		    path.addLast(currentPosSet.get(obs));
-		    path.addLast(temp);
-		    current = temp;
-		    avoided = obs;
-		    break; //Ends the loop
+		if(!obstaclesAvoided.contains(obs)){
+		    Position temp = getNextPos(current, end, obs);
+		    if(temp != null){ //If the obstacle needs to be avoided
+			path.addLast(currentPosSet.get(obs));
+			path.addLast(temp);
+			current = temp;
+			avoided = obs;
+			obstaclesAvoided.add(avoided);
+			break; //Ends the loop
+		    }
 		}
 	    }
 	    if(avoided != null)
-		remove(avoided, obstacles); //remove the obstacle that is already avoided from the list
+		obstacles.remove(avoided); //remove the obstacle that is already avoided from the list
 	    else{
 		current = end; //No more obstacle to avoid
 	    }
@@ -102,7 +114,7 @@ public class MidLine implements PathFindingAlgorithm{
      */
     private Position getNextPos(Position current, Position end, Obstacle obs){
 	/*Angle between the tangent line of clearance range that intersects current node position and the line between current node and center of Obstacle*/
-	double theta = Math.atan((Position.WALL_CLEARANCE() + obs.getRadius()) / current.getDistTo(obs));
+	double theta = Math.atan((0.75F / 2 + obs.getRadius()) / Math.abs(current.getDistTo(obs)));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects current position*/
 	double leftBound = current.getAngleTurnTo(obs) - theta;
@@ -116,55 +128,31 @@ public class MidLine implements PathFindingAlgorithm{
 	boolean onTheWay = false; //Marks whether the obstacle is in between the two positions given
 	
 	if(leftBound < rightBound){ // Normal case
-	    if(angle > leftBound && angle < rightBound) onTheWay = false;
-	    else onTheWay = true;
+	    if(angle > leftBound && angle < rightBound) onTheWay = true;
+	    else onTheWay = false;
 	}
 	else{ // Special case, when either leftBound or rightBound value exceeded angle range
-	    if(angle > rightBound && angle < leftBound) onTheWay = true;
-	    else onTheWay = false;
+	    if(angle > rightBound && angle < leftBound) onTheWay = false;
+	    else onTheWay = true;
 	}
 	
 	if(!onTheWay) //In this case, there is no need to worry about this obstacle
 	    return null;
 	
 	/*Distance between current Position and to the next Position to go*/
-	double dist = Math.sqrt(Math.pow(Position.WALL_CLEARANCE() + obs.getRadius(), 2) + Math.pow(current.getDistTo(obs), 2));
+	double dist = Math.sqrt(Math.pow(0.75F / 2 + obs.getRadius(), 2) + Math.pow(current.getDistTo(obs), 2));
 	double x,y;
 	
-	if(obs.getX() < 0){ //Should turn right
-	    x = current.getX() + dist * Math.sin(rightBound);
-	    y = current.getY() + dist * Math.cos(rightBound);
-	}
-	else{ //Should turn left
+	if(current.getX() < 0){ //Should turn right
 	    x = current.getX() + dist * Math.sin(leftBound);
 	    y = current.getY() + dist * Math.cos(leftBound);
 	}
+	else{ //Should turn left
+	    x = current.getX() + dist * Math.sin(rightBound);
+	    y = current.getY() + dist * Math.cos(rightBound);
+	}
 	
 	return new Position((float)x, (float)y);
-    }
-    
-    /**
-     * Helper method to remove obstacle from the list
-     * @param obs obstacle to remove
-     * @param obstacles the list manipulated
-     */
-    private void remove(Obstacle obs, Obstacle[] obstacles){
-	for(int i = 0; i < obstacles.length; i++){
-	    if(obstacles[i].equals(obs)){
-		Obstacle[] newList = new Obstacle[obstacles.length - 1];
-		boolean copying = true;
-		for(int j = 0; j < newList.length; j++){
-		    if(copying){
-			newList[j] = obstacles[j];
-			if(j + 1 == i) copying = false;
-		    }
-		    else{
-			newList[j] = obstacles[j + 1];
-		    }
-		}
-		return;
-	    }
-	}
     }
     
     /**

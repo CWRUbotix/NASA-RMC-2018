@@ -7,6 +7,7 @@ import main.java.com.cwrubotix.glennifer.automodule.Position;
 import main.java.com.cwrubotix.glennifer.automodule.astargrid.AStarPathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
 import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
+import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
 import java.util.ArrayList;
 
@@ -79,7 +80,7 @@ public class PathPlanSimulator{
 	    generateObstacles();
 	    finders[0] = new PathFinder<MidLine>(new MidLine(), initialPos, destination);
 	    finders[1] = new PathFinder<ModifiedAStar>(new ModifiedAStar(), initialPos, destination);
-	    finders[2] = new AStarPathFinder(initialPos, destination, 5e-2);//TODO Add AStarGrid
+	    finders[2] = new AStarPathFinder(initialPos, destination, 5e-2);
 	    for(int i = 0; i < paths.length; i ++){
 	      if(finders[i] == null)
 		      continue;
@@ -106,6 +107,10 @@ public class PathPlanSimulator{
     
     public String getErrorMessages(){
 	    return errorMessages;
+    }
+    
+    public PathFinder<?>[] getFinders(){
+	return finders;
     }
     
     /**
@@ -154,6 +159,8 @@ public class PathPlanSimulator{
     
 
     private void moveRobot(int robot){
+	/*MidLine does not work :( Causes infinite loop too often*/
+	if(robot == 0) throw new PathFindingAlgorithm.AlgorithmFailureException(); 
 	boolean arrived = false;
 	PathFinder<?> finder = finders[robot];
 	Path path = finder.getPath();
@@ -164,9 +171,7 @@ public class PathPlanSimulator{
 	    obstacles.add(getObstacles()[i]);
 	}
 	while(!arrived){
-	    System.out.println("Sorting started");
 	    obstacles.sort(Position.getComparatorByDistTo(currentPos));
-	    System.out.println("Sorting Ended");
 	    Obstacle encountered = null;
 	    for(Obstacle obs : obstacles){
 		Position temp = getEncounter(path, progress, obs);
@@ -175,20 +180,21 @@ public class PathPlanSimulator{
 		    finder.setCurrentPos(currentPos);
 		    finder.registerObstacle(obs);
 		    path = finder.getPath();
-		    encountered = obs;
-		    System.out.println("Path modified");
+    		    encountered = obs;
 		    break;
 		}
 	    }
 	    if(encountered != null){
 		obstacles.remove(encountered);
-		progress = path.getPath().indexOf(currentPos);
+		progress = 0;
 	    }
 	    else{
-		arrived = true;
+		if(progress == path.length() - 2)
+		    arrived = true;
+		else
+		    progress++;
 	    }
 	}
-	System.out.println("Robot arrived");
 	paths[robot] = path;
     }
     
@@ -206,16 +212,14 @@ public class PathPlanSimulator{
 	double y_intercept = y1 - slope * x1;
 	
 	double a = 1 + Math.pow(slope, 2);
-	double b = 2 * slope * (y_intercept - cy) - 2 * cx;
+	double b = -2 * (cx - slope * (y_intercept - cy));
 	double c = (Math.pow(cx, 2) + Math.pow((y_intercept - cy), 2)) - Math.pow(KINECT_RANGE, 2) / 4;
 	
 	double check = Math.pow(b, 2) - 4 * a * c;
 
 	if(check < 0){
-	    System.out.println("Didn't find obstacle");
 	    return null;
 	}
-	System.out.println("Found Obstacle");
 	float rx1 = (float)((-b + Math.sqrt(check)) / (2 * a));
 	float ry1 = (float)(slope * rx1 + y_intercept);
 	float rx2 = (float)((-b - Math.sqrt(check)) / (2 * a));
@@ -224,10 +228,28 @@ public class PathPlanSimulator{
 	Position r1 = new Position(rx1, ry1);
 	Position r2 = new Position(rx2, ry2);
 	
-	if(p1.getDistTo(r1) < p1.getDistTo(r2))
-	    return r1;
-	else
+	if(rx1 < Math.min(x1, x2) || rx1 > Math.max(x1, x2))
+	    r1 = null;
+	if(rx2 < Math.min(x1, x2) || rx2 > Math.max(x1, x2))
+	    r2 = null;
+	
+	if(r1 == null && r2 == null){
+	    return null;
+	}
+	else if(r1 == null){
 	    return r2;
+	}
+	else if(r2 == null){
+	    return r1;
+	}
+	else{
+	    if(r1.getDistTo(p1) < r2.getDistTo(p2)){
+		return r1;
+	    }
+	    else{
+		return r2;
+	    }
+	}
     }
     
     public void runSimulation(){
@@ -235,14 +257,14 @@ public class PathPlanSimulator{
 	    try{
 		moveRobot(i);
 	    }
-	    catch(RuntimeException e){ //TODO Switch to AlgorithmFailure Exception
+	    catch(RuntimeException e){ 
 		String failedOne = "";
 		switch(i){
 		case 0: failedOne = "MidLine"; break;
 		case 1: failedOne = "ModifiedAStar"; break;
 		case 2: failedOne = "AStarGrid"; break;
 		}
-		errorMessages = errorMessages + failedOne + ": \n" + e.getMessage() + "\n\n";
+		errorMessages = errorMessages + failedOne + ": \n" + e.toString() + "\n\n";
 		paths[i] = null; //Marking the path that failed.
 	    }
 	}
@@ -303,8 +325,24 @@ public class PathPlanSimulator{
 		    if(simulationRun)
 			return;
 		    modificationAllowed = false;
-		    simulationRun = true;
 		    simulator.runSimulation();
+		    displayPaths();
+		    updateResult();
+		    simulationRun = true;
+		}
+	    });
+	    
+	    Button reRunAlgorithmButton = new Button("Re-run algorithm");
+	    reRunAlgorithmButton.setOnAction(new EventHandler<ActionEvent>(){
+		public void handle(ActionEvent e){
+		    if(!simulationRun)
+			return;
+		    for(int i = 0; i < simulator.getPaths().length; i ++){
+			if(simulator.getPaths()[i] != null){
+			    simulator.getFinders()[i].runAlgorithm();
+			    simulator.getPaths()[i] = simulator.getFinders()[i].getPath();
+			}
+		    }
 		    displayPaths();
 		    updateResult();
 		}
@@ -314,10 +352,10 @@ public class PathPlanSimulator{
 	    errorMessages.setPrefSize(300, Position.ARENA_HEIGHT() * 50);
 	    VBox left = new VBox();
 	    left.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
-	    left.getChildren().addAll(result[0], result[1]);
+	    left.getChildren().addAll(result[0], result[1], startButton);
 	    VBox right = new VBox();
 	    right.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
-	    right.getChildren().addAll(result[2], errorMessages, startButton);
+	    right.getChildren().addAll(result[2], errorMessages, reRunAlgorithmButton);
 	    left.setAlignment(Pos.CENTER);
 	    right.setAlignment(Pos.CENTER);
 	    pane.setLeft(left);
@@ -388,6 +426,11 @@ public class PathPlanSimulator{
 	}
 	
 	private void displayPaths(){
+	    if(simulationRun){
+		for(Group g : paths){
+		    g.setVisible(false);
+		}
+	    }
 	    Path[] path = simulator.getPaths();
 	    paths = new Group[3];
 	    Color[] colors = {Color.PURPLE, Color.AQUA, Color.GOLD};
@@ -428,25 +471,27 @@ public class PathPlanSimulator{
 	}
 	
 	private void markFailed(int failed){
-	    result[failed].appendText("The algorithm failed to create a path");
+	    result[failed].appendText("The algorithm failed to create a path\n");
 	}
 	
 	private void updateResult(){ //Currently this is rough estimate
 	    int track = 0;
 	    for(Path path: simulator.getPaths()){
-		if(path == null)
+		if(path == null){
+		    track++;
 		    continue;
+		}
 		Position previous = null;
 		float dist = 0.0F, angle = 0.0F;
 		for(Position pos : path){
 		    if(previous != null){
 			dist += previous.getDistTo(pos);
-			angle += previous.getAngleTurnTo(pos);
+			angle += Math.abs(previous.getAngle() - pos.getAngle());
 		    }
 		    previous = pos;
 		}
 		float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
-		result[track].appendText("Total Distance : "+ dist +"\nTotal Angle Turn: "+ angle +"\nEstimate Traversal Time: " + timeTook + "s");
+		result[track].appendText("Total Distance : "+ dist +"m\nTotal Angle Turn: "+ angle +"rad\nEstimate Traversal Time: " + timeTook + "s\n");
 		track++;
 	    }
 	}

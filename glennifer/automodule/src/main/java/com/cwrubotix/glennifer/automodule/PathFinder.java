@@ -45,6 +45,10 @@ public class PathFinder<T extends PathFindingAlgorithm> {
     public Position getTargetPos() {
         return targetPos;
     }
+    
+    public void runAlgorithm(){
+	path = pathFindingAlgorithm.computePath();
+    }
 
     public void registerObstacle(Obstacle obstacle) throws PathFindingAlgorithm.AlgorithmFailureException {
         path = pathFindingAlgorithm.computePath(currentPos, obstacle);
