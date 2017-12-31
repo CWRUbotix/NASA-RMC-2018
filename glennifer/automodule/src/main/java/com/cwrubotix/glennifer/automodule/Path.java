@@ -8,13 +8,13 @@ public class Path implements Iterable<Position>{
     private LinkedList<Position> path;
     
     public Path(){
-	path = new LinkedList<Position>();
+	    path = new LinkedList<Position>();
     }
 	
     public Path(Position start, Position destination){
-	path = new LinkedList<Position>();
-	path.add(start);
-	path.add(destination);
+	    path = new LinkedList<Position>();
+	    path.add(start);
+	    path.add(destination);
     }
 
     /**
@@ -23,12 +23,12 @@ public class Path implements Iterable<Position>{
      * @param path
      */
     public Path(List<Position> path) {
-	this.path = new LinkedList<>(path);
+	    this.path = new LinkedList<>(path);
     }
 
     // Please don't turn this back to protected
     public LinkedList<Position> getPath(){
-	return path;
+	    return path;
     }
 	
     /*
@@ -38,42 +38,42 @@ public class Path implements Iterable<Position>{
      * Should not be used for other purpose and will be removed once PathPlanSimulator is done.
      */
     public Position[] getList(){
-	return (Position[]) getPath().toArray();
+	    return (Position[]) getPath().toArray();
     }
 
     public Position getPoint(int index){
-	return path.get(index);
+	    return path.get(index);
     }
     
     public int length(){
-	return getPath().size();
+	    return getPath().size();
     }
     
     public void add(int index, Position point){
-	getPath().add(index, point);
+	    getPath().add(index, point);
     }
 	
     public void addFirst(Position point){
-	getPath().addFirst(point);
+	    getPath().addFirst(point);
     }
 	
     public void addLast(Position point){
-	getPath().addLast(point);
+	    getPath().addLast(point);
     }
 	
     public Position remove(int index){
-	Position save = getPath().remove(index);
-	return save;
+	    Position save = getPath().remove(index);
+	    return save;
     }
 	
     public boolean remove(Position point){
-	if(getPath().remove(point)){
-	    return true;
-	}
-	return false;
+	    if(getPath().remove(point)){
+	      return true;
+	    }
+	    return false;
     }
 	
     public Iterator<Position> iterator(){
-	return getPath().iterator();
+	    return getPath().iterator();
     }
 }

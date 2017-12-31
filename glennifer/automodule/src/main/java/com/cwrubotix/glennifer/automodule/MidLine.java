@@ -67,7 +67,7 @@ public class MidLine implements PathFindingAlgorithm{
 	Position current = start;
 	Path path = new Path();
 	
-	while(current != end){
+	while(!current.equals(end)){
 	    path.addLast(current);
 	    Arrays.sort(obstacles, Position.getComparatorByDistTo(current)); //sorts the obstacles by the order of encounters
 	    Obstacle avoided = null;
