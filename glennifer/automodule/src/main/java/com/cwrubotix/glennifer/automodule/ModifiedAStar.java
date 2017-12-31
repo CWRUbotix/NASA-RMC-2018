@@ -101,7 +101,7 @@ public class ModifiedAStar implements PathFindingAlgorithm{
 	
 	for(int i = 0; i < 6; i++){
 	    double angle = Math.PI * i / 3;
-	    float clearance = 0.80F / 2 + obs.getRadius();
+	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
 	    getNodes().add(new AStarNode((float)(obs.getX() + clearance * Math.cos(angle)), (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
     }
