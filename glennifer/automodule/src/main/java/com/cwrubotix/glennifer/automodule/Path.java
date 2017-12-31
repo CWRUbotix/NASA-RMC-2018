@@ -10,7 +10,7 @@ public class Path implements Iterable<Position>{
 		path = new LinkedList<Position>();
 	}
 	
-	protected LinkedList<Position> getPath(){
+	public LinkedList<Position> getPath(){
 		return path;
 	}
 	
