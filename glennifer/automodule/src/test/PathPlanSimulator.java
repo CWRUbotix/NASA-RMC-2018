@@ -206,7 +206,7 @@ public class PathPlanSimulator{
 	    obstacles.sort(Position.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
 	    Obstacle encountered = null;
 	    for(Obstacle obs : obstacles){
-		Position temp = getEncounter(path, progress, obs); //returns position if the robot sees the obstacle
+		Position temp = getEncounter(path, progress, obs, robot); //returns position if the robot sees the obstacle
 		if(temp != null){
 		    currentPos = temp; // where robot is currently standing
 		    finder.setCurrentPos(currentPos); //
@@ -242,7 +242,11 @@ public class PathPlanSimulator{
      * @param obs the obstacle being evaluated
      * @return the Position where the robot sees the obstacle given if the robot encounters the obstacle.
      */
-    private Position getEncounter(Path path, int progress, Obstacle obs){
+    private Position getEncounter(Path path, int progress, Obstacle obs, int robot){
+	/*For AStarGrid*/
+	if(robot == 2)
+	    return gridGetEncounter(path.getPoint(progress), obs);
+
 	Position p1 = path.getPoint(progress); //current position
 	Position p2 = path.getPoint(progress + 1); //next position
 	float x1 = p1.getX(); // current position
@@ -259,7 +263,7 @@ public class PathPlanSimulator{
 	/*coefficients of quadratic equation formed by line = circle(the range that robot can see the obstacle centered at obstacle)*/
 	double a = 1 + Math.pow(slope, 2);
 	double b = -2 * (cx - slope * (y_intercept - cy));
-	double c = (Math.pow(cx, 2) + Math.pow((y_intercept - cy), 2)) - Math.pow(KINECT_RANGE, 2) / 4;
+	double c = (Math.pow(cx, 2) + Math.pow((y_intercept - cy), 2)) - Math.pow(KINECT_RANGE, 2);
 	
 	double check = Math.pow(b, 2) - 4 * a * c; // to check whether quadratic equation has roots
 
@@ -277,9 +281,9 @@ public class PathPlanSimulator{
 	Position r2 = new Position(rx2, ry2);
 	
 	/*Checking whether the points calculated are between current position and next position*/
-	if(rx1 < Math.min(x1, x2) || rx1 > Math.max(x1, x2))
+	if(rx1 < Math.min(x1, x2) || rx1 > Math.max(x1, x2) || Double.isNaN(rx1) || Double.isNaN(ry1))
 	    r1 = null;
-	if(rx2 < Math.min(x1, x2) || rx2 > Math.max(x1, x2))
+	if(rx2 < Math.min(x1, x2) || rx2 > Math.max(x1, x2) || Double.isNaN(rx2) || Double.isNaN(ry2))
 	    r2 = null;
 	
 	/* Returning appropriate position.*/
@@ -300,6 +304,25 @@ public class PathPlanSimulator{
 		return r2;
 	    }
 	}
+    }
+    
+    /**
+     * FOR ASTARGRID ONLY
+     * For AStarGrid, the distances between consecutive positions inside the path are too small to use getEncounter method above.
+     * Therefore, this method checks whether the robot sees the obstacle at the current position and returns the position if it does, 
+     * and null if it does not
+     * @param currentPos current position of the robot
+     * @param obs the obstacle being evaluated
+     * @return the currentPos if the robot sees the obstacle, null if it does not
+     */
+    private Position gridGetEncounter(Position currentPos, Obstacle obs){
+	/*The distance squared value from currentPos to center of the Obstacle*/
+	double check = Math.pow(currentPos.getX() - obs.getX(), 2) + Math.pow(currentPos.getY() - obs.getY(), 2);
+	/*If the distance squared is less than the Kinect range squred, the robot saw the obstacle.*/
+	if(check < Math.pow(KINECT_RANGE, 2))
+	    return currentPos;
+	else
+	    return null;
     }
     
     /**
