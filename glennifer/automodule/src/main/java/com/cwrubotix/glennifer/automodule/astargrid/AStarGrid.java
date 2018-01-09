@@ -119,16 +119,26 @@ public class AStarGrid implements PathFindingAlgorithm {
      * @return the new path created
      */
     public Path computePath(Position currentPos, Obstacle newObstacle) throws AlgorithmFailureException {
+        System.out.println("New obstacle " + newObstacle);
         for (Vertex<FuzzyPosition, Double> vertex : (ArrayList<Vertex<FuzzyPosition, Double>>) grid.getVertices()) {
-            if (newObstacle.equals(vertex.getValue()))
+            // if (newObstacle.equals(vertex.getValue()))
+            if (newObstacle.getDistTo(vertex.getValue()) <= newObstacle.getRadius() + vertex.getValue().getError() * Math.sqrt(2.) + 0.8) {
+                System.out.println("Rerouting to avoid position " + vertex.getValue());
                 grid.remove(vertex);
+            }
         }
-        Path newPath = computePath(currentPos, endPosition);
+        Path oldPath = currentPath;
+        computePath(currentPos, endPosition);
         LinkedList<Position> newList = new LinkedList<>();
-        int i = 0;
-        while (!currentPath.getPath().toArray()[i].equals(currentPos))
-            newList.add((Position) currentPath.getPath().toArray()[i]);
-        newList.addAll(newPath.getPath());
+        boolean found = false;
+        for (int i = 0; i < oldPath.length(); i++) {
+            if (currentPos.equals(oldPath.getPath().get(i)))
+                found = true;
+            if (!found)
+                newList.add(oldPath.getPath().get(i));
+        }
+        newList.addAll(currentPath.getPath());
+        System.out.println("Path from " + newList.getFirst() + " to " + newList.getLast());
         return currentPath = new Path(newList);
     }
 

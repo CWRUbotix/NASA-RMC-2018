@@ -3,7 +3,7 @@
 //import org.junit.jupiter.api.Test;
 //
 //import javafx.scene.shape.Path;
-//package main.java.com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.lang.Object;
 
@@ -148,7 +148,7 @@ public class ArcPath implements PathFindingAlgorithm
 	
 	}
 	
-	private Position[] getCheckpoints();
+	private Position[] getCheckpoints()
 	{
 		//returns positon array containing the points closest to the centerline of the arena - the y-axis
 		Position[] positions = [6];
@@ -201,7 +201,7 @@ public class ArcPath implements PathFindingAlgorithm
 		float yo = o.getY();
 		
 		float clearance = ROBOT_WIDTH/2;
-		float objectClearance = Math.sqrt( Math.pow((xo-xr), 2) + Math.pow((yo-yr), 2));
+		float objectClearance = (float) Math.sqrt( Math.pow((xo-xr), 2) + Math.pow((yo-yr), 2));
 		
 		return objectClearance <= clearance;	
 	}

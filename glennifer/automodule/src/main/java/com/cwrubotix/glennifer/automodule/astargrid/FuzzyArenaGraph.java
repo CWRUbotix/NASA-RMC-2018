@@ -46,6 +46,7 @@ public class FuzzyArenaGraph extends UGraph<FuzzyPosition, Double> {
             }
         }
 
+
         // connect adjacent nodes
         for (Vertex vertex : (ArrayList<Vertex>) this.getVertices()) {
             FuzzyPosition position = (FuzzyPosition) vertex.getValue();
@@ -69,6 +70,43 @@ public class FuzzyArenaGraph extends UGraph<FuzzyPosition, Double> {
                     this.get(new FuzzyPosition(position.getX() - (float) delta, position.getY(), error));
             if (west != null)
                 this.connect(vertex, west, delta);
+
+            // connect Northwest
+            Vertex northWest =
+                    this.get(new FuzzyPosition(position.getX() - (float) delta, position.getY() + (float) delta, error));
+            if (northWest != null)
+                this.connect(vertex, northWest, delta * Math.sqrt(2));
+            // connect Northeast
+            Vertex northEast =
+                    this.get(new FuzzyPosition(position.getX() + (float) delta, position.getY() + (float) delta, error));
+            if (northEast != null)
+                this.connect(vertex, northEast, delta * Math.sqrt(2));
+            // connect Southwest
+            Vertex southWest =
+                    this.get(new FuzzyPosition(position.getX() - (float) delta, position.getY() - (float) delta, error));
+            if (southWest != null)
+                this.connect(vertex, southWest, delta * Math.sqrt(2));
+            // connect Southeast
+            Vertex southEast =
+                    this.get(new FuzzyPosition(position.getX() + (float) delta, position.getY() - (float) delta, error));
+            if (southEast != null)
+                this.connect(vertex, southEast, delta * Math.sqrt(2));
+
         }
+
+        /*
+        // Complete graph (quadratic time, may take a while but should only be run once)
+        for (Vertex vertex : (ArrayList<Vertex>) this.getVertices()) {
+            for (Vertex otherVertex : (ArrayList<Vertex>) this.getVertices()) {
+                if (!vertex.equals(otherVertex)) {
+                    FuzzyPosition position = (FuzzyPosition) vertex.getValue();
+                    FuzzyPosition otherPosition = (FuzzyPosition) otherVertex.getValue();
+                    vertex.connect(otherVertex,
+                            Math.sqrt(Math.pow(position.getX() - otherPosition.getX(), 2)
+                                    + Math.pow(position.getY() - otherPosition.getY(), 2)));
+                }
+            }
+        }
+        */
     }
 }

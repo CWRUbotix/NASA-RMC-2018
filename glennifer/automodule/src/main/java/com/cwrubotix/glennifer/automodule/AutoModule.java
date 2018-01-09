@@ -8,7 +8,7 @@ import com.rabbitmq.client.Envelope;
 
 import com.rabbitmq.client.AMQP;
 
-import com.cwrubotix.glennifer.Messages;
+import main.java.com.cwrubotix.glennifer.Messages;
 
 import java.io.IOException;
 import java.time.Instant;

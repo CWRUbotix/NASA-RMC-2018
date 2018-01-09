@@ -1,4 +1,4 @@
-package test;
+// package test;
 
 import main.java.com.cwrubotix.glennifer.automodule.MidLine;
 import main.java.com.cwrubotix.glennifer.automodule.ModifiedAStar;
@@ -206,16 +206,16 @@ public class PathPlanSimulator{
 	    obstacles.sort(Position.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
 	    Obstacle encountered = null;
 	    for(Obstacle obs : obstacles){
-		Position temp = getEncounter(path, progress, obs, robot); //returns position if the robot sees the obstacle
-		if(temp != null){
-		    currentPos = temp; // where robot is currently standing
-		    finder.setCurrentPos(currentPos); //
-		    finder.registerObstacle(obs);     // Running path plan algorithm
-		    path = finder.getPath();          //
-    		    encountered = obs;
-		    break;			      // Break out of the loop so that the simulation handles one obstacle at a time
-		}
-	    }
+			Position temp = getEncounter(path, progress, obs, robot); //returns position if the robot sees the obstacle
+				if(temp != null){
+					currentPos = temp; // where robot is currently standing
+					finder.setCurrentPos(currentPos); //
+					finder.registerObstacle(obs);     // Running path plan algorithm
+					path = finder.getPath();          //
+						encountered = obs;
+					break;			      // Break out of the loop so that the simulation handles one obstacle at a time
+				}
+			}
 	    if(encountered != null){
 		obstacles.remove(encountered);// remove the obstacle already found from the list
 		progress = 0;		      // start evaluating from the beginning making sure the newly created path does not run into obstacle
@@ -309,7 +309,7 @@ public class PathPlanSimulator{
     /**
      * FOR ASTARGRID ONLY
      * For AStarGrid, the distances between consecutive positions inside the path are too small to use getEncounter method above.
-     * Therefore, this method checks whether the robot sees the obstacle at the current position and returns the position if it does, 
+     * Therefore, this method checks whether the robot sees the obstacle at the current position and returns the position if it does,
      * and null if it does not
      * @param currentPos current position of the robot
      * @param obs the obstacle being evaluated
@@ -324,7 +324,7 @@ public class PathPlanSimulator{
 	else
 	    return null;
     }
-    
+
     /**
      * Runs simulation.
      */
@@ -333,7 +333,7 @@ public class PathPlanSimulator{
 	    try{
 		moveRobot(i);
 	    }
-	    catch(RuntimeException e){ //When algorithm fails
+	    catch(PathFindingAlgorithm.AlgorithmFailureException e){ //When algorithm fails
 		String failedOne = "";
 		switch(i){
 		case 0: failedOne = "MidLine"; break;
@@ -510,22 +510,22 @@ public class PathPlanSimulator{
 	 */
 	private void setUpObstacles(){
 	    for(Obstacle p : simulator.getObstacles()){
-		Circle obstacle = new Circle(getDisplayX(p.getX()), getDisplayY(p.getY()), 15, Color.DARKGREY);
-		obstacle.setOnMousePressed(new EventHandler<MouseEvent>(){
-		    final Obstacle obs = p;
-		    final Circle cir = obstacle;
-		    public void handle(MouseEvent e){
-			if(!modificationAllowed){ 
-			    beingModifiedObs = null;
-			    beingModifiedCir = null;
-			}
-			else{
-			    beingModifiedObs = obs;
-			    beingModifiedCir = cir;
-			}
-		    }
-		});
-		arena.getChildren().add(obstacle);
+			Circle obstacle = new Circle(getDisplayX(p.getX()), getDisplayY(p.getY()), 15, Color.DARKGREY);
+			obstacle.setOnMousePressed(new EventHandler<MouseEvent>(){
+				final Obstacle obs = p;
+				final Circle cir = obstacle;
+				public void handle(MouseEvent e){
+				if(!modificationAllowed){
+					beingModifiedObs = null;
+					beingModifiedCir = null;
+				}
+				else{
+					beingModifiedObs = obs;
+					beingModifiedCir = cir;
+				}
+				}
+			});
+			arena.getChildren().add(obstacle);
 	    }
 	}
 	
