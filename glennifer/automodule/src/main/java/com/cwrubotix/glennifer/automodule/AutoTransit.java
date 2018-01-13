@@ -18,7 +18,11 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 
-
+/**
+ * Module for controlling movement
+ *
+ * @author Imran Hossain
+ */
 public class AutoTransit{
 	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI, 0.0F);
 	/*Horizontal line representing where digging arena starts.*/
@@ -53,7 +57,32 @@ public class AutoTransit{
 			super(channel);
 		}
 
-		// TODO Launch tasks
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+		    // TODO: Implement launch handler
+        }
+	}
+
+	public class TransitSoftStopConsumer extends DefaultConsumer {
+		public TransitSoftStopConsumer(Channel channel) {
+			super(channel);
+		}
+
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			// TODO: Implement soft stop handler
+		}
+	}
+
+	public class TransitHardStopConsumer extends DefaultConsumer {
+		public TransitHardStopConsumer(Channel channel) {
+			super(channel);
+		}
+
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			// TODO: Implement hard stop handler
+		}
 	}
 
 	/////// MODULE LOGIC
@@ -96,6 +125,18 @@ public class AutoTransit{
 		this.connection = factory.newConnection();
 		this.channel = connection.createChannel();
 
+		// Listener for launch command
+		String queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "launch.transit");
+		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "softstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "hardstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
 	}
 
 	public void start() {
