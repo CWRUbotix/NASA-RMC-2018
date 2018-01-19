@@ -1,4 +1,4 @@
-// package test;
+package test;
 
 import main.java.com.cwrubotix.glennifer.automodule.MidLine;
 import main.java.com.cwrubotix.glennifer.automodule.ModifiedAStar;
