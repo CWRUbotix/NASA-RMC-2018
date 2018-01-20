@@ -116,7 +116,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
 		getNodes().add(new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
-
+    }
 
     /**
      * Reconstructs the graph making sure that no edge has an obstacle in the way

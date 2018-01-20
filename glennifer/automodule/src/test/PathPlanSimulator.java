@@ -34,10 +34,11 @@ import javafx.stage.Stage;
  */
 public class PathPlanSimulator {
 
+    private int NUM_OBSTACLE = 6;
     /**
      * Array of Positions that represent obstacles in the arena
      */
-    private Obstacle[] obstacles = new Obstacle[10];
+    private Obstacle[] obstacles = new Obstacle[NUM_OBSTACLE];
     /**
      * Array of paths created by different algorithms.
      */
@@ -224,8 +225,8 @@ public class PathPlanSimulator {
         Path path = finder.getPath();
         Position currentPos = path.getPoint(0);
         int progress = 0;
-        ArrayList<Obstacle> obstacles = new ArrayList<>(6); // Copying obstacles in to new list
-        for (int i = 0; i < 6; i++) {
+        ArrayList<Obstacle> obstacles = new ArrayList<>(NUM_OBSTACLE); // Copying obstacles in to new list
+        for (int i = 0; i < NUM_OBSTACLE; i++) {
             obstacles.add(getObstacles()[i]);
         }
         while (!arrived) { //While the robot is on transit
