@@ -2,7 +2,7 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 /**
  * @author Robbie Dozier
- *
+ * <p>
  * General interface for pathfinding algorithms to conform to. Utilizes the {@code Position} and {@code Path} modules
  * from the main.java.com.cwrubotix.glennifer.automodule package.
  */
@@ -12,11 +12,10 @@ public interface PathFindingAlgorithm {
      * a {@code Path} instance. Returns null if no start or end position is specified.
      *
      * @return
-     *
      * @throws AlgorithmFailureException when algorithm fails
      */
-    public default Path computePath() throws AlgorithmFailureException{
-	throw new UnsupportedOperationException();
+    public default Path computePath() throws AlgorithmFailureException {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -28,10 +27,11 @@ public interface PathFindingAlgorithm {
      * @throws AlgorithmFailureException when algorithm fails
      */
     public abstract Path computePath(Position startPosition, Position endPosition) throws AlgorithmFailureException;
-    
+
     /**
      * Method that computes path when new obstacle was added
-     * @param currentPos current position of robot fed (do we need this? --Robbie)
+     *
+     * @param currentPos  current position of robot fed (do we need this? --Robbie)
      * @param newObstacle new obstacle that was added
      * @return the new path created (FULL path, not just from currentPos to the obstacle)
      * @throws AlgorithmFailureException when algorithm fails

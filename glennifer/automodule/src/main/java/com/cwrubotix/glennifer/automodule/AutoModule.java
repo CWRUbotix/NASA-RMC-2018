@@ -16,19 +16,20 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 /**
- * 
  * Autonomous Module which controls robot's movements through mining cycles.
  * AutoModule is a state function which switches back and forth between Transit state,
  * Digging state, Dumping state. AutoModule should be able to decide robot's current/next actions,
  * depending on which state it is in.
- * 
- * @author Seohyun Jung
  *
+ * @author Seohyun Jung
  */
-public class AutoModule{
-	private Stage currentStage;
-	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
-	
+public class AutoModule {
+    private Stage currentStage;
+
+    private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY}
+
+    ;
+
 	/*
 	 *TODO list
 	 *	1) Decide on course of actions on possible situations (Obstacles, Path plan, Setting up Dumping position)
@@ -37,5 +38,5 @@ public class AutoModule{
 	 *	4) Come up with possible errors and handling mechanism.
 	 *	5) Set up Connection Factory.
 	 */
-	
+
 }

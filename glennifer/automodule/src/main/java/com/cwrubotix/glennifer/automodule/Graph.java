@@ -10,7 +10,9 @@ import java.util.HashMap;
  * @param <G> graph edge weight type
  */
 public class Graph<T, G extends Comparable<? super G>> {
-    /** List of all vertices in graph */
+    /**
+     * List of all vertices in graph
+     */
     public HashMap<T, Vertex<T, G>> vertices;
 
     /**

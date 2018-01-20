@@ -3,6 +3,7 @@ package main.java.com.cwrubotix.glennifer.automodule.astargrid;
 import main.java.com.cwrubotix.glennifer.automodule.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AStarGrid implements PathFindingAlgorithm {
     private FuzzyArenaGraph grid;
@@ -75,6 +76,13 @@ public class AStarGrid implements PathFindingAlgorithm {
             closedSet.add(current);
 
             // Evaluate neighbors of current
+            List neighborList = (List) current.getAdjacentVertices()
+                    .stream()
+                    .map(n -> ((Position) current.getValue()).getDistTo(((Vertex<Position, Double>) n).getValue()))
+                    .filter(n -> (Float) n > 2)
+                    .collect(Collectors.toList());
+            if (!neighborList.isEmpty())
+                System.out.println(current + ", " + neighborList);
             for (Vertex<FuzzyPosition, Double> neighbor :
                     (ArrayList<Vertex<FuzzyPosition, Double>>) current.getAdjacentVertices()) {
                 // If the neighbor is already in closedSet, skip it
@@ -122,7 +130,8 @@ public class AStarGrid implements PathFindingAlgorithm {
         System.out.println("New obstacle " + newObstacle);
         for (Vertex<FuzzyPosition, Double> vertex : (ArrayList<Vertex<FuzzyPosition, Double>>) grid.getVertices()) {
             // if (newObstacle.equals(vertex.getValue()))
-            if (newObstacle.getDistTo(vertex.getValue()) <= newObstacle.getRadius() + vertex.getValue().getError() * Math.sqrt(2.) + 0.8) {
+            if (newObstacle.getDistTo(vertex.getValue()) <=
+                    newObstacle.getRadius() + vertex.getValue().getError() * Math.sqrt(2.) + 0.75) {
                 System.out.println("Rerouting to avoid position " + vertex.getValue());
                 grid.remove(vertex);
             }
