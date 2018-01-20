@@ -1,4 +1,4 @@
-package test.unit_tests;
+package unit_tests;
 
 import main.java.com.cwrubotix.glennifer.automodule.Path;
 import main.java.com.cwrubotix.glennifer.automodule.Position;

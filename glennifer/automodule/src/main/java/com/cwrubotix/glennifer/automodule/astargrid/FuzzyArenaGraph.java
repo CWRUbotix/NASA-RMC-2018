@@ -46,6 +46,12 @@ public class FuzzyArenaGraph extends UGraph<FuzzyPosition, Double> {
             }
         }
 
+        for (Vertex vertex : (ArrayList<Vertex>) this.getVertices()) {
+            for (Vertex neighbor : (ArrayList<Vertex>) vertex.getAdjacentVertices()) {
+                vertex.disconnect(neighbor);
+            }
+        }
+
 
         // connect adjacent nodes
         for (Vertex vertex : (ArrayList<Vertex>) this.getVertices()) {
@@ -94,19 +100,5 @@ public class FuzzyArenaGraph extends UGraph<FuzzyPosition, Double> {
 
         }
 
-        /*
-        // Complete graph (quadratic time, may take a while but should only be run once)
-        for (Vertex vertex : (ArrayList<Vertex>) this.getVertices()) {
-            for (Vertex otherVertex : (ArrayList<Vertex>) this.getVertices()) {
-                if (!vertex.equals(otherVertex)) {
-                    FuzzyPosition position = (FuzzyPosition) vertex.getValue();
-                    FuzzyPosition otherPosition = (FuzzyPosition) otherVertex.getValue();
-                    vertex.connect(otherVertex,
-                            Math.sqrt(Math.pow(position.getX() - otherPosition.getX(), 2)
-                                    + Math.pow(position.getY() - otherPosition.getY(), 2)));
-                }
-            }
-        }
-        */
     }
 }

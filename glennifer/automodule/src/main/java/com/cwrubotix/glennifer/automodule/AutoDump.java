@@ -19,10 +19,10 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-public class AutoDump{
-	private float dumpAngle;
-	private float load;
-	
+public class AutoDump {
+    private float dumpAngle;
+    private float load;
+
 	/*
 	 * TODO list
 	 * 1) Subscribe to appropriate sensors (load cells, dumping angle)
@@ -31,5 +31,5 @@ public class AutoDump{
 	 * 4) set up connection factory
 	 * 
 	 */
-	
+
 }

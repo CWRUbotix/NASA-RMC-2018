@@ -18,8 +18,7 @@ public class FuzzyPosition extends Position {
             FuzzyPosition compare = (FuzzyPosition) obj;
             double error = (this.error < compare.error) ? this.error : compare.error;
             return Math.abs(this.getX() - compare.getX()) <= error && Math.abs(this.getY() - compare.getY()) <= error;
-        }
-        else if (obj instanceof Position) {
+        } else if (obj instanceof Position) {
             Position compare = (Position) obj;
             return Math.abs(this.getX() - compare.getX()) <= error && Math.abs(this.getY() - compare.getY()) <= error;
         }
