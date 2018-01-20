@@ -2,6 +2,7 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 /**
  * Complete graph implementation of A* search algorithm with account for obstacles that are not visible before attaining certain proximity.
@@ -106,14 +107,16 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      *
      * @param obs
      */
-    private void createNodes(Obstacle obs) {
+    private void createNodes(Obstacle obs){
+	
+	for(int i = 0; i < 6; i++){
+	    double angle = Math.PI * i / 3;
+	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
+	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
+	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
+		getNodes().add(new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
+	}
 
-        for (int i = 0; i < 6; i++) {
-            double angle = Math.PI * i / 3;
-            float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
-            getNodes().add(new AStarNode((float) (obs.getX() + clearance * Math.cos(angle)), (float) (obs.getY() + clearance * Math.sin(angle))));
-        }
-    }
 
     /**
      * Reconstructs the graph making sure that no edge has an obstacle in the way
@@ -154,7 +157,20 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * @param obs   the Obstacle being evaluated
      * @return true if the obstacle is between two nodes with account for clearance for robot
      */
-    private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs) {
+
+    private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
+	/*Making sure whether obstacle even has a chance to be on the way*/
+	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - 0.75;
+	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + 0.75;
+	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - 0.75;
+	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + 0.75;
+	
+	/*If it is not within the range we should worry about, return false*/
+	if(obs.getX() < x_left_bound || obs.getX() > x_right_bound || obs.getY() < y_top_bound || obs.getY() > y_bottom_bound){
+	    return false;
+	}
+	
+
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
         double theta = Math.atan((0.75F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
 	
