@@ -32,7 +32,7 @@ abstract class Module {
         channel.basicPublish(exchangeName, "fault", null, message.toByteArray());
     }
 
-    abstract protected void runWithExceptions();
+    abstract protected void runWithExceptions() throws IOException, TimeoutException;
 
     public void start(){
         try{

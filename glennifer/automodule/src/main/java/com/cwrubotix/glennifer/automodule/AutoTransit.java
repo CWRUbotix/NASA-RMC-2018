@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 
 
-public class AutoTransit{
+public class AutoTransit extends Module {
 	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI, 0.0F);
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0, 0.0F);
@@ -38,5 +38,14 @@ public class AutoTransit{
 	public static Position getCurrentPos(){
 		return currentPos;
 	}
-	
+
+    @Override
+    protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+
+        // Listen for commands...
+    }
 }
