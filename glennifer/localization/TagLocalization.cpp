@@ -30,8 +30,7 @@ using namespace std;
 
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
-//#include <amqp.h>
-//#include <amqp_tcp_socket.h>
+#include "messages.pb.h"
 
 //#include "utils.h"
 
@@ -458,11 +457,11 @@ public:
 		}
 
 		// print out each detection
-		//cout << detections.size() << " Camera 1 tags detected:" << endl;
+		cout << detections.size() << " Camera 1 tags detected:" << endl;
 		bool ret = false;
-		//cout << "detections.size: "<< detections.size() << endl;
+		cout << "detections.size: "<< detections.size() << endl;
 		for (int i=0; i<detections.size(); i++){
-			//print_detection(detections[i]); //previously commented out
+			print_detection(detections[i]); //previously commented out
 			ret = true;
 		}
 
@@ -618,7 +617,7 @@ public:
 
 			//checking time with last seen apriltag
 			if(tic() - time_last_located >= 5.0){
-				cout << "Time Alloted without detection, turning on all cameras" << endl;
+				//cout << "Time Alloted without detection, turning on all cameras" << endl;
 				if(!procPort){
 					procPort = true;
 				}

@@ -273,3 +273,9 @@ message DepositionStateDetailed {
 	required bool dump_left_retracted = 8;
 	required bool dump_right_retracted = 9;
 }
+
+//localization vector
+message	LocalizationPosition {
+	required float x_position = 1;
+	required float y_position = 2;
+}
