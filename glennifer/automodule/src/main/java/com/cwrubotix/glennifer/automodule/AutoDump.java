@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-public class AutoDump{
+public class AutoDump extends Module {
 	private float dumpAngle;
 	private float load;
 	
@@ -31,5 +31,14 @@ public class AutoDump{
 	 * 4) set up connection factory
 	 * 
 	 */
-	
+
+	@Override
+	protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+
+        // Listen for commands...
+	}
 }
