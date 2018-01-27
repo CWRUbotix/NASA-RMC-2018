@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-public class AutoDumpextends Module{
+public class AutoDump extends Module{
 	private float dumpAngle;
 	private float load;
 	
