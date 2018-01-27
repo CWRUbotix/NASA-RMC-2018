@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
  * @author Seohyun Jung
  *
  */
-public class AutoModule{
+public class AutoModule extends Module {
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
 	
@@ -37,5 +37,14 @@ public class AutoModule{
 	 *	4) Come up with possible errors and handling mechanism.
 	 *	5) Set up Connection Factory.
 	 */
-	
+
+	@Override
+	protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+
+        // Listen for commands...
+	}
 }
