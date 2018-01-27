@@ -1,410 +1,542 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 /**
- * PathFinder class that uses ModifiedAStar algorithm
- * @author Seohyun Jung
- * 
- * <p>
- * ModifiedAStar algorithm is a traditional AStar search algorithm with account for the fact that
- * not all obstacles in the arena are visible before attaining certain proximity to them. 
- * This ModifiedAStar class has methods that can be used to update obstacle locations and modify path accordingly.
- * </p>
+ * Complete graph implementation of A* search algorithm with account for obstacles that are not visible before attaining certain proximity.
  *
+ * @author Seohyun Jung
  */
-public class ModifiedAStar implements PathFindingAlgorithm{
+public class ModifiedAStar implements PathFindingAlgorithm {
 
-    /** Start position for path planning*/
-    private AStarNode startPosition;
-    /** End position for path planning*/
-    private AStarNode endPosition;
-    /** Stores all the nodes created*/
-    private LinkedList<AStarNode> nodes;
-    /** Last path created*/
-    private Path path;
-    /** Stores obstacles within the arena*/
-    private ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>(6);
-    
-    private final float obstacleClearance = 0.75F;
-    
     /**
-     * Creates new ModifiedAStar PathFindingAlgorithm with current position and end position
-     * @param currentPos current position of the robot
-     * @param endPosition destination of the robot
+     * ArrayList storing obstacles found in the arena
      */
-    public ModifiedAStar(Position currentPos, Position endPosition){
-	    AStarNode start = new AStarNode(currentPos);
-	    AStarNode end = new AStarNode(endPosition);
-	    nodes.add(start);
-	    nodes.add(end);
-	    start.connect(end);
-	    end.connect(start);
-	    startPosition = start;
-	    this.endPosition = end;
-    }
-    
+    private ArrayList<Obstacle> obstacles = new ArrayList<>(6);
     /**
-     * returns start position of the path
-     * @return start position of the path
+     * ArrayList storing all nodes that are created during the run
      */
-    public Position getStartPosition(){
-	    return startPosition;
-    }
-    
+    private ArrayList<AStarNode> nodes = new ArrayList<>(50);
     /**
-     * sets start position of the path if needed to be changed
-     * @param startPosition the start position of the robot
+     * AStarNode that represents start point
      */
-    protected void setStartPosition(AStarNode startPosition){
-	    this.startPosition = startPosition;
-	    if(!nodes.contains(startPosition)){
-	      nodes.add(startPosition);
-	      connectToAll(startPosition);
-	    }
-	    for(AStarNode node : nodes){
-	      node.setVisited(false);
-	      node.setPrevious(null);
-	      node.computeHeruistic(endPosition);
-	      path = new Path();
-	    }
-    }
-    
+    private AStarNode start;
     /**
-     * gets destination position of the path
-     * @return destination position of the path
+     * AStarNode that represents end point
      */
-    public Position getEndPosition(){
-	    return endPosition;
-    }
-    
+    private AStarNode end;
+
     /**
-     * sets destination position of the path
-     * @param endPosition destination position of the path
+     * Returns the list of obstacles
+     *
+     * @return the list of obstacle
      */
-    protected void setEndPosition(AStarNode endPosition){
-	    this.endPosition = endPosition;
-	    if(!nodes.contains(endPosition)){
-	      nodes.add(endPosition);
-	      connectToAll(endPosition);
-	    }
+    protected ArrayList<Obstacle> getObstacles() {
+        return obstacles;
     }
-    
-    
+
+    /**
+     * Returns the list of nodes created during the run
+     *
+     * @return the list of nodes created during the run
+     */
+    protected ArrayList<AStarNode> getNodes() {
+        return nodes;
+    }
+
     @Override
-    public Path computePath(Position startPos, Position destination) {
-	    AStarNode current = new AStarNode(startPos);
-	    if(!nodes.contains(current)){
-	      nodes.add(current);
-	      connectToAll(current);
-	    }
-	    setStartPosition(current);
-	    setEndPosition(new AStarNode(destination));
-	
-	    AStarNode currentNode = (AStarNode)getStartPosition();
-	    while(!currentNode.equals(getEndPosition())){
-	      currentNode.setVisited(true);
-	      AStarNode[] connects = new AStarNode[currentNode.getConnected().size()];
-	      Arrays.sort(currentNode.getConnected().toArray(connects));
-	      int next = -1;
-	      for(int i = 0; i < connects.length && next == -1; i++){
-		      if(currentNode.updateDistances())
-		        next = i;
-	      }
-	      if(next == -1){
-		      currentNode = currentNode.getPrevious();
-		      if(currentNode == null)
-		        throw new RuntimeException("Failed to create a path");
-	      }
-	      else{
-		      connects[next].setPrevious(currentNode);
-		      currentNode = connects[next];
-	      }
-	    }
-	
-	    Path path = new Path();
-	    while(!currentNode.equals(getStartPosition())){
-	      path.addFirst(currentNode);
-	      currentNode = currentNode.getPrevious();
-	    } 
-	    path.addFirst(currentNode);
-	    currentNode.setAngle(currentNode.getPrevious().getAngleTurnTo(currentNode));
-	    currentNode = currentNode.getPrevious();
-	path.addFirst(currentNode);
-	this.path = path;
-	return path;
-
+    public Path computePath() {
+        return aStar(start, end);
     }
-    
-    
+
+    @Override
+    public Path computePath(Position startPosition, Position endPosition) {
+
+	/*Setting up fields and nodes*/
+        start = new AStarNode(startPosition);
+        start.setAngle(startPosition.getAngle());
+        end = new AStarNode(endPosition);
+        start.connect(end);
+        end.connect(start);
+        getNodes().add(start);
+        getNodes().add(end);
+	
+	/*Calls aStar method*/
+        Path result = aStar(start, end);
+	
+	/*Post processing*/
+        setAngles(result);
+        return result;
+    }
+
     @Override
     public Path computePath(Position currentPos, Obstacle newObstacle) {
-	AStarNode current = new AStarNode(currentPos);
-	if(!obstacles.contains(newObstacle)){
-	    obstacles.add(newObstacle);
-	    addNodesAroundObs(newObstacle);
-	    disconnectFromEnd();
-	    connectToAll((AStarNode)getEndPosition());
-	    if(!nodes.contains(current)){
-		nodes.add(current);
-		connectToAll(current);
-	    }
-	    modifyPreviousPath(current);
-	    AStarNode currentNode = current;
-	    while(!currentNode.equals(getEndPosition())){
-		currentNode.setVisited(true);
-		AStarNode[] connects = new AStarNode[currentNode.getConnected().size()];
-		Arrays.sort(currentNode.getConnected().toArray(connects));
-		int next = -1;
-		for(int i = 0; i < connects.length && next == -1; i++){
-		    if(currentNode.updateDistances())
-			next = i;
-		}
-		if(next == -1){
-		    currentNode = currentNode.getPrevious();
-		    if(currentNode == null)
-			throw new RuntimeException("Failed to create a path");
-		}
-		else{
-		    connects[next].setPrevious(currentNode);
-		    currentNode = connects[next];
-		}
-	    }
-	    
-	    Path path = new Path();
-	    while(!currentNode.equals(getStartPosition())){
-		path.addFirst(currentNode);
-		currentNode.setAngle(currentNode.getPrevious().getAngleTurnTo(currentNode));
-		currentNode = currentNode.getPrevious();
-	    }
-	    path.addFirst(currentNode);
-	    this.path = path;
-	    return path;
-	}
-	else
-	    return this.path;
+
+        AStarNode cp = new AStarNode(currentPos); //Parses currentPos in the AStarNode
+        getObstacles().add(newObstacle);          //Adding obstacle to the list
+        createNodes(newObstacle);                 //Creates new AStarNodes around the obstacle registered.
+        getNodes().add(cp);
+
+        connectToAll(); // Reconstructs the graph to make sure no edges run into obstacles.
+	
+	/*Calls aStar method. Making sure that the Path created contains current position.*/
+        Path firstHalf = aStar(start, cp);
+        Path secondHalf = aStar(cp, end);
+	
+	/*Post processing*/
+        Path result = firstHalf;
+
+        boolean skipped = false;
+        for (Position p : secondHalf) {
+            if (!skipped) { //skipping first position so that there are no two current position nodes in the path
+                skipped = true;
+            } else {
+                result.addLast(p);
+            }
+        }
+        setAngles(result); //Setting up angles
+        return result;
     }
     
-    private void modifyPreviousPath(AStarNode currentPos){
-	AStarNode previous = null;
-	for(Position a : path.getPath()){
-	    if(previous != null){
-		if(a.getX() < previous.getX()){
-		    if(a.getY() < previous.getY()){
-			if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
-			    currentPos.setPrevious(previous);
-			    ((AStarNode)a).setPrevious(currentPos);
-			    return;
-			}
-		    }
-		    else{
-			if(currentPos.getX() > a.getX() && currentPos.getX() < previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
-			    currentPos.setPrevious(previous);
-			    ((AStarNode)a).setPrevious(currentPos);
-			    return;
-			}
-		    }
-		}
-		else{
-		    if(a.getY() < previous.getY()){
-			if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() > a.getY() && currentPos.getY() < previous.getY()){
-			    currentPos.setPrevious(previous);
-			    ((AStarNode)a).setPrevious(currentPos);
-			    return;
-			}
-		    }
-		    else{
-			if(currentPos.getX() < a.getX() && currentPos.getX() > previous.getX() && currentPos.getY() < a.getY() && currentPos.getY() > previous.getY()){
-			    currentPos.setPrevious(previous);
-			    ((AStarNode)a).setPrevious(currentPos);
-			    return;
-			}
-		    }
-		}
-	    }
-	    previous = (AStarNode) a;
-	}
-    }
-    
-    private boolean isValidConnection(AStarNode start, AStarNode end){
-	if(start.isAroundObstacle() && !end.isAroundObstacle())
-	    return isValidConnection(end, start);
-	boolean result = true;
-	for(Obstacle obs : obstacles){
-	    double theta = Math.asin(obstacleClearance / start.getDistTo(obs));
-	    double alpha = start.getAngleTurnTo(obs);
-	    if(start.getAngleTurnTo(end) >= alpha - theta && start.getAngleTurnTo(end) <= alpha + theta){
-		result = false;
-	    }
-	}
-	return result;
-    }
-    
-    private void addNodesAroundObs(Obstacle newObstacle){
-	for(double i = 0; i < 2 * Math.PI; i = i + Math.PI / 4){
-	    AStarNode temp = new AStarNode((float)(newObstacle.getX() + obstacleClearance * Math.cos(i)), (float)(newObstacle.getY() + obstacleClearance  * Math.sin(i)));
-	    nodes.add(temp);
-	    temp.setAroundObstacle();
-	    connectToAll(temp);
-	}
-    }
-    
-    private void connectToAll(AStarNode node){
-	for(AStarNode other : nodes){
-	    if(isValidConnection(node, other)){
-		node.connect(other);
-		other.connect(node);
-	    }
-	}
-    }
-    
-    private void disconnectFromEnd(){
-	for(AStarNode node : ((AStarNode)getEndPosition()).getConnected()){
-	    node.getConnected().remove((AStarNode)getEndPosition());
-	}
-	((AStarNode)getEndPosition()).connected = null;
-    }
-    
+    /*Helper methods for computePath(currentPos, newObstacle) method*/
+
     /**
-     * AStarNode represents each data point of AStar algorithm
+     * Creates 6 nodes around the obstacle given
+     *
+     * @param obs
      */
-    private class AStarNode extends Position implements Comparable<AStarNode>{
-	/** list of AStarNodes that this node is connected to*/
-	private LinkedList<AStarNode> connected;
-	/** heruistic of the Node. Heruistic is defined to be distance between this node to destination node*/
-	private float heruistic;
-	/** stores the last node that path came from*/
-	private AStarNode previous;
-	/** indicates whether this node was visited or not*/
-	private boolean visited = false;
-	/** indicates whether hits node is around the obstacle*/
-	private boolean aroundObstacle = false;
-	/** stores distance of shortest path found so far to this node*/
-	private float distance = 0;
+    private void createNodes(Obstacle obs){
 	
-	/** 
-	 * Creates new AStarNode with coordinates given
-	 * @param x_pos x coordinate of the Node
-	 * @param y_pos y coordinate of the Node
-	 */
+	for(int i = 0; i < 6; i++){
+	    double angle = Math.PI * i / 3;
+	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
+	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
+	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
+		getNodes().add(new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
+	}
+    }
 
-	private AStarNode(float x_pos, float y_pos){
-	    super(x_pos, y_pos, 0.0F, 0.0F);
-	    computeHeruistic(getEndPosition());
-  }
-	
-	/**
-	 * Creates new AStarNode with coordinates given and nodes that are connected to the node creating
-	 * @param x_pos x coordinate of the Node
-	 * @param y_pos y coordinate of the Node
-	 * @param connected list of nodes that this node is connected to
-	 */
-	private AStarNode(float x_pos, float y_pos, LinkedList<AStarNode> connected){
-	    this(x_pos, y_pos);
-	    this.connected = connected;
-	}
-	
-	/**
-	 * Creates new AStarNode with Position instance indicating position of the node
-	 * @param pos position instance that represents coordinate of the node
-	 */
-	private AStarNode(Position pos){
-	    this(pos.getX(), pos.getY());
-	}
-	
-	/**
-	 * Checks whether the node has been visited by pathfinding algorithm
-	 * @return whether the node has been visited by pathfinding algorithm
-	 */
-	private boolean isVisited(){
-	    return visited;
-	}
-	
-	/**
-	 * sets the node as visited or not visited
-	 * @param visited whether the node has been visited
-	 */
-	private void setVisited(boolean visited){
-	    this.visited = visited;
-	}
-	
-	/**
-	 * returns the heruistic of the node
-	 * @return the heruistic of the node
-	 */
-	private float getHeruistic(){
-	    return heruistic;
-	}	
-	
-	private float getDistance(){
-	    return distance;
-	}
+    /**
+     * Reconstructs the graph making sure that no edge has an obstacle in the way
+     */
+    private void connectToAll() {
 
-	/**
-	 * takes in destination position and computes heruistic of the node
-	 * @param destination
-	 */
-	private void computeHeruistic(Position destination){
-	    this.heruistic = getDistTo(destination);
-	}
-	
-	private boolean isAroundObstacle(){
-	    return aroundObstacle;
-	}
-	
-	private void setAroundObstacle(){
-	    aroundObstacle = true;
-	}
-	
-	private AStarNode getPrevious(){
-	    return previous;
-	}
-	
-	private void setPrevious(AStarNode previous){
-	    this.previous = previous;
-	}
-	
-	private LinkedList<AStarNode> getConnected(){
-	    return connected;
-	}
-	
-	private void connect(AStarNode node){
-	    node.setAngle(this.getAngleTurnTo(node));
-	    connected.add(node);
-	}
-	
-	private boolean updateDistances(){
-	    AStarNode[] connects = (AStarNode[]) connected.toArray();
-	    Arrays.sort(connects);
-	    boolean modified = false;
-	    for(AStarNode node : connects){
-		if(node.getDistance() == 0){
-		    node.distance = getDistTo(node);
-		    modified = true;
-		}
-		else if(!node.isVisited() && node.getDistance() > getDistance() + getDistTo(node)){
-		    node.distance = getDistance() + getDistTo(node);
-		    modified = true;
-		}
+        for (AStarNode node : getNodes()) {
+            node.resetConnection();
+            for (AStarNode connect : getNodes()) {
+                if (isValid(node, connect)) {
+                    node.connect(connect);
+                }
+            }
+        }
+    }
 
-	    }
-	    return modified;
+    /**
+     * Checks whether the edge between the nodes given is valid.
+     *
+     * @param start start node
+     * @param end   end node
+     * @return true if there is no obstacle that is between the two nodes given
+     */
+    private boolean isValid(AStarNode start, AStarNode end) {
+        boolean check = true;
+        for (Obstacle obs : getObstacles()) {
+            if (isOnTheWay(start, end, obs))
+                check = false;
+        }
+        return check;
+    }
+
+    /**
+     * Calculates and determines whether give obstacle is in the way between two AStarNodes given
+     *
+     * @param start the start node
+     * @param end   the end node
+     * @param obs   the Obstacle being evaluated
+     * @return true if the obstacle is between two nodes with account for clearance for robot
+     */
+
+    private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
+	/*Making sure whether obstacle even has a chance to be on the way*/
+	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - 0.75;
+	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + 0.75;
+	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - 0.75;
+	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + 0.75;
+	
+	/*If it is not within the range we should worry about, return false*/
+	if(obs.getX() < x_left_bound || obs.getX() > x_right_bound || obs.getY() < y_top_bound || obs.getY() > y_bottom_bound){
+	    return false;
 	}
 	
-	/**
-	 * compares two AStarNodes with its heruistic
-	 * @return negative when current instance has higher (lower value) heruistic
-	 */
-	@Override
-	public int compareTo(AStarNode a){
-	    if(getHeruistic() - a.getHeruistic() < 0)
-		return -1;
-	    else if(getHeruistic() - a.getHeruistic() > 0)
-		return 1;
-	    else
-		return 0;
-	}
+
+	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
+        double theta = Math.atan((0.75F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
+	
+	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
+        double leftBound = start.getAngleTurnTo(obs) - theta;
+        double rightBound = start.getAngleTurnTo(obs) + theta;
+
+        if (rightBound > Math.PI * 2) rightBound = rightBound - 2 * Math.PI; // In case the angle bounds
+        if (leftBound < 0) leftBound = leftBound + 2 * Math.PI;              // exceed the angle range
+
+        double angle = start.getAngleTurnTo(end); // absolute angle position of end node relative to the start node
+
+        if (leftBound < rightBound) { // Normal case
+            if (angle > leftBound && angle < rightBound) return true;
+            else return false;
+        } else { // Special case, when either leftBound or rightBound value exceeded angle range
+            if (angle > rightBound && angle < leftBound) return false;
+            else return true;
+        }
+
+    }
+    
+    /*Main A* implementation method*/
+
+    /**
+     * Creates path using AStar algorithm with given start and end points.
+     *
+     * @param start start point of the path
+     * @param end   end point of the path
+     * @return the path created
+     */
+    protected Path aStar(AStarNode start, AStarNode end) {
+
+        resetVisited();        //
+        resetFound();             // Resetting
+        resetDistances();      // Field values
+        updateHeruistics(end); //
+	
+	/*pre-search setup*/
+        AStarNode current = start;
+        current.updateDist(0.0F);
+        LinkedList<AStarNode> openSet = new LinkedList<>();
+        LinkedList<AStarNode> closedSet = new LinkedList<>();
+        openSet.add(start);
+        start.setFound(true);
+
+        while (!openSet.isEmpty()) { // While there are nodes to evaluate
+            if (current.equals(end)) // When reached the destination
+                return createPath(start, end);
+            openSet.remove(current);  // Removes the node whose shortest distance from start position is determined
+            closedSet.add(current);   // from openSet list and adds it to the closedSet list.
+            current.setVisited(true); // marking the field that is added to closedSet
+            updateDistances(current); // evaluating adjacent nodes
+            for (AStarNode neighbor : current.getConnections()) { // adding adjacent nodes to openSet list
+                if (!neighbor.isVisited() && !neighbor.found()) { // if it is not in both lists
+                    openSet.add(neighbor);
+                    neighbor.setFound(true);
+                }
+            }
+            current = getMinFScore(openSet); // setting next node as a node with minimum fScore.
+        }
+	
+	/*If search ends without returning a path, there is no possible path.*/
+        throw new PathFindingAlgorithm.AlgorithmFailureException();
+    }
+    
+    /*Helper methods for astar(start, end) method*/
+
+    /**
+     * Returns the node with minimun fScore among the nodes in the given list
+     *
+     * @param openSet the given list to search
+     * @return the node with minimum fScore among the nodes in the given list
+     */
+    private AStarNode getMinFScore(LinkedList<AStarNode> openSet) {
+        AStarNode save = null;
+        for (AStarNode neighbor : openSet) { //linear search
+            if (save == null) {
+                save = neighbor;
+            } else {
+                if (save.getFScore() > neighbor.getFScore())
+                    save = neighbor;
+            }
+        }
+        return save;
+    }
+
+    /**
+     * Iterates through the connected nodes of the given AStarNode and updates the distance field.
+     *
+     * @param current a node whose connected neighbors are being evaluated
+     */
+    private void updateDistances(AStarNode current) {
+        for (AStarNode node : current.getConnections()) {
+            float tempGScore = current.getDist() + current.getDistTo(node);
+            if (node.getDist() > tempGScore) {
+                node.updateDist(tempGScore);
+                node.setPrevious(current);
+            }
+        }
+    }
+    
+    
+    
+    /*Helper methods for pre-setup for new search*/
+
+    /**
+     * Iterates through all nodes and updates Heruisitics field according to given end point
+     *
+     * @param end
+     */
+    private void updateHeruistics(AStarNode end) {
+        for (AStarNode node : getNodes()) {
+            node.setHeruistic(end);
+        }
+    }
+
+    /**
+     * Iterates through all nodes and resets visited field
+     */
+    private void resetVisited() {
+        for (AStarNode node : getNodes()) {
+            node.setVisited(false);
+        }
+    }
+
+    /**
+     * Iterates through all nodes and resets found field
+     */
+    private void resetFound() {
+        for (AStarNode node : getNodes()) {
+            node.setFound(false);
+        }
+    }
+
+    /**
+     * Iterates through all nodes and sets distance field as default value
+     */
+    private void resetDistances() {
+        for (AStarNode node : getNodes()) {
+            node.updateDist(Float.POSITIVE_INFINITY);
+        }
+    }
+    
+    /*Post-search processing*/
+
+    /**
+     * Called after path search to construct path with given destination
+     *
+     * @param start the start node
+     * @param end   the destination node
+     * @return the result path created
+     */
+    private Path createPath(AStarNode start, AStarNode end) {
+        Path path = new Path();
+        AStarNode ptr = end;
+        while (!ptr.equals(start)) {
+            path.addFirst(ptr);
+            ptr = ptr.getPrevious();
+        }
+        path.addFirst(start);
+
+        return path;
+    }
+
+    /**
+     * Iterates through nodes in the given path and sets up angle fields
+     *
+     * @param path the path whose nodes needs their angle field set up.
+     */
+    private void setAngles(Path path) {
+        boolean skipFirst = false;
+        for (Position p : path) {
+            if (!skipFirst)
+                skipFirst = true;
+            else {
+                ((AStarNode) p).setAngle();
+            }
+        }
+    }
+
+    /**
+     * Class that represents the vertex of the graph in A* search
+     *
+     * @author Seohyun Jung
+     * @see Position
+     */
+    private class AStarNode extends Position {
+
+        /**
+         * list that store neighboring vertexes
+         */
+        private ArrayList<AStarNode> connected = new ArrayList<>(50);
+        /**
+         * the vertex to reach this vertex with shortest distance
+         */
+        private AStarNode previous;
+        /**
+         * the total distance from start point to this vertex
+         */
+        private float distance;
+        /**
+         * the heruistic value of this vertex
+         */
+        private float heruistic;
+        /**
+         * indicator of whether this node belongs to closed set during each A* search
+         */
+        private boolean visited = false;
+        /**
+         * indicator of whether this node belongs to open set during each A* search
+         */
+        private boolean found = false;
+
+        /**
+         * Creates AStarNode with given coordinate positions
+         *
+         * @param x_pos x-coordinate position of the vertex
+         * @param y_pos y-coordinate position of the vertex
+         */
+        public AStarNode(float x_pos, float y_pos) {
+            super(x_pos, y_pos);
+        }
+
+        /**
+         * Creates AStarNode with given position
+         *
+         * @param pos the position of the vertex
+         */
+        public AStarNode(Position pos) {
+            this(pos.getX(), pos.getY());
+        }
+
+        /**
+         * Adds given AStarNode to the neighboring list
+         *
+         * @param connect the vertex to add to the neighboring list
+         */
+        public void connect(AStarNode connect) {
+            connected.add(connect);
+        }
+
+        /**
+         * Resets the neighboring list
+         */
+        public void resetConnection() {
+            connected = new ArrayList<>(50);
+        }
+	
+	/*Getter methods*/
+
+        /**
+         * Returns the previous node to reach this node with shortest distance from the start node
+         *
+         * @return the previous node to reach this node with shortest distance from the start node
+         */
+        public AStarNode getPrevious() {
+            return previous;
+        }
+
+        /**
+         * Returns list of neighboring nodes
+         *
+         * @return list of neighboring nodes
+         */
+        public ArrayList<AStarNode> getConnections() {
+            return connected;
+        }
+
+        /**
+         * Returns the known shortest distance from the start node to this node
+         *
+         * @return the known shortest distance from the start node to this node
+         */
+        public float getDist() {
+            return distance;
+        }
+
+        /**
+         * Returns the heruistic value of the node
+         *
+         * @return the heruistic value of the node
+         */
+        public float getHeruistic() {
+            return heruistic;
+        }
+
+        /**
+         * Returns the fscore of this node. fscore is calculated by summing up the known shortest distance from the start node and heruistic value together
+         *
+         * @return the fscore of this node
+         */
+        public float getFScore() {
+            return getDist() + getHeruistic();
+        }
+
+        /**
+         * Returns whether this node belongs to closed set during A* search
+         *
+         * @return whether this node belongs to closed set during A* search
+         */
+        public boolean isVisited() {
+            return visited;
+        }
+
+        /**
+         * Returns whether this node belongs to open set during A* search
+         *
+         * @return whether this node belongs to open set during A* search
+         */
+        public boolean found() {
+            return found;
+        }
+	
+	/*Setter methods*/
+
+        /**
+         * Sets previous field with given AStarNode
+         *
+         * @param previous the node that this node came from to attain shortest distance from the start node
+         */
+        public void setPrevious(AStarNode previous) {
+            this.previous = previous;
+        }
+
+        /**
+         * Sets the distance field with given distance
+         *
+         * @param distance the known shortest distance from the start node
+         */
+        public void updateDist(float distance) {
+            this.distance = distance;
+        }
+
+        /**
+         * Calculates and updates new heruistic value with given destination position
+         *
+         * @param end the destination of the path search
+         */
+        public void setHeruistic(AStarNode end) {
+            this.heruistic = this.getDistTo(end);
+        }
+
+        /**
+         * Calculates and updates angle value using the previous AStarNode
+         */
+        public void setAngle() {
+            super.setAngle(getPrevious().getAngleTurnTo(this)); //The absolute angle position that robot needs to face to reach this position
+        }
+
+        /**
+         * Marks whether this node has been added to closed set during A* search
+         *
+         * @param visited
+         */
+        public void setVisited(boolean visited) {
+            this.visited = visited;
+        }
+
+        /**
+         * Marks whether this ndoe has been added to open set during A* search
+         *
+         * @param found
+         */
+        public void setFound(boolean found) {
+            this.found = found;
+        }
     }
 }

@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-public class AutoDump extends Module {
+public class AutoDumpextends Module{
 	private float dumpAngle;
 	private float load;
 	
@@ -31,7 +31,6 @@ public class AutoDump extends Module {
 	 * 4) set up connection factory
 	 * 
 	 */
-
 	@Override
 	protected void runWithExceptions() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
