@@ -40,7 +40,9 @@ abstract class Module {
         } catch(Exception e){
             try{
                 sendFault(999, Instant.now());
-            } catch(Exception e1){}
+            } catch(Exception e1){
+                // Do nothing
+            }
             e.printStackTrace();
             System.out.println(e.getMessage());
         }
