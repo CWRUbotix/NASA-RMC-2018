@@ -14,6 +14,7 @@ import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.LaunchTransit;
 import com.cwrubotix.glennifer.Messages.LaunchDrill;
 import com.cwrubotix.glennifer.Messages.LaunchDump;
+import com.cwrubotix.glennifer.Messages.TransitSoftStop;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -78,12 +79,20 @@ public class AutoModule{
 
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder() // TODO set message properties
+                .setTimeAllocation(180)
 				.build();
+		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
+		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
+				.build();
 		taskTimer.schedule(new TimerTask() {
 			@Override
 			public void run() {
-				// Ask module to stop nicely.
+				try {
+					AutoModule.this.channel.basicPublish(exchangeName, "softstop.transit", null, msg2.toByteArray());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}, 1800000);
 	}
