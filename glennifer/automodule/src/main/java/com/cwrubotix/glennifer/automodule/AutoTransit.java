@@ -59,6 +59,7 @@ public class AutoTransit{
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 		    // TODO: Implement launch handler
         }
 	}
@@ -70,6 +71,7 @@ public class AutoTransit{
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			Messages.TransitSoftStop cmd = Messages.TransitSoftStop.parseFrom(body);
 			// TODO: Implement soft stop handler
 		}
 	}
@@ -81,7 +83,28 @@ public class AutoTransit{
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+		    Messages.TransitHardStop cmd = Messages.TransitHardStop.parseFrom(body);
 			// TODO: Implement hard stop handler
+		}
+	}
+
+	public class TransitNewObstacleConsumer extends DefaultConsumer {
+		public TransitNewObstacleConsumer(Channel channel) {
+			super(channel);
+		}
+
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			// Parse message
+			Messages.TransitNewObstacle cmd = Messages.TransitNewObstacle.parseFrom(body);
+
+			// Construct obstacle data
+			float obsXPos = cmd.getXPos();
+			float obsYPos = cmd.getXPos();
+			float obsDiameter = cmd.getDiameter();
+			Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
+
+			pathFinder.registerObstacle(newObs);
 		}
 	}
 
@@ -132,11 +155,15 @@ public class AutoTransit{
 
 		queueName = channel.queueDeclare().getQueue();
 		channel.queueBind(queueName, exchangeName, "softstop.transit");
-		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
+		channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
 
 		queueName = channel.queueDeclare().getQueue();
 		channel.queueBind(queueName, exchangeName, "hardstop.transit");
-		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
+		channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "newobstacle.transit");
+		channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 	}
 
 	public void start() {
