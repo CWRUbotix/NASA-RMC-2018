@@ -60,7 +60,19 @@ public class AutoTransit{
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
-		    // TODO: Implement launch handler
+			// Get current position
+			Position currentPos = new Position(
+					cmd.getCurXPos(),
+					cmd.getCurYPos(),
+					cmd.getCurHeading(),
+					0f);
+
+			Position destinationPos = new Position(
+					cmd.getDestXPos(),
+					cmd.getDestYPos(),
+					0f, 0f);
+
+			// TODO Construct pathFinder when algorithms available
         }
 	}
 
