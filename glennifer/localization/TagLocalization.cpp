@@ -410,15 +410,46 @@ public:
 		double yaw, pitch, roll;
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
+		double a, b, c;
+		a = yaw; b = pitch; c = roll;
+		//a = pitch; b = roll; c = yaw;
+		//a = roll; b = yaw; c = pitch;
+		//a = yaw; b = roll; c = pitch;
+		//a = roll; b = pitch; c = yaw;
+		//a = pitch; b = yaw; c = roll;
+
+
+		//Testing the creation of a vector for the standardization.
+		Eigen::Quaterniond q;
+	    // Abbreviations for the various angular functions
+		double cy = cos(a * 0.5);
+		double sy = sin(a * 0.5);
+		double cr = cos(c * 0.5);
+		double sr = sin(c * 0.5);
+		double cp = cos(b * 0.5);
+		double sp = sin(b * 0.5);
+
+		q.w() = (cy * cr * cp + sy * sr * sp);
+		q.x() = (cy * sr * cp - sy * cr * sp);
+		q.y() = (cy * cr * sp + sy * sr * cp);
+		q.z() = (sy * cr * cp - cy * sr * sp);
+
+		//Outputting the vector components to the AprilTag
 		cout << "  distance=" << translation.norm()
         		 << "m, x=" << translation(0)
 				 << ", y=" << translation(1)
 				 << ", z=" << translation(2)
-				 << ", yaw=" << yaw
-				 << ", pitch=" << pitch
-				 << ", roll=" << roll;
+				 << ", yaw(x)=" << yaw
+				 << ", pitch(z)=" << pitch
+				 << ", roll(y)=" << roll;
 		cout   << endl; //added ; cout to fix eclipse bug
 
+		//Q components
+		cout << "    qw=" << q.w()
+				<< ", qx=" << q.x()
+				<< ", qy=" << q.y()
+				<< ", qz=" << q.z();
+		cout << endl;
 
 		//AMQP
 
@@ -433,6 +464,26 @@ public:
 		// use reprojection error of corner points, because the noise in
 		// this relative pose is very non-Gaussian; see iSAM source code
 		// for suitable factors.
+	}
+
+	//From wikipedia, this is for testing. again, ask chad
+	//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+	Eigen::Quaterniond toQuaternion(double pitch, double roll, double yaw)
+	{
+		Eigen::Quaterniond q;
+	    // Abbreviations for the various angular functions
+		double cy = cos(yaw * 0.5);
+		double sy = sin(yaw * 0.5);
+		double cr = cos(roll * 0.5);
+		double sr = sin(roll * 0.5);
+		double cp = cos(pitch * 0.5);
+		double sp = sin(pitch * 0.5);
+
+		q.w() = cy * cr * cp + sy * sr * sp;
+		q.x() = cy * sr * cp - sy * cr * sp;
+		q.y() = cy * cr * sp + sy * sr * cp;
+		q.z() = sy * cr * cp - cy * sr * sp;
+		return q;
 	}
 
 	bool processImage(cv::Mat& image, cv::Mat& image_gray) {

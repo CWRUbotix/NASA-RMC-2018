@@ -106,26 +106,26 @@ while True:
 	    			img_fg = cv2.bitwise_and(depth_frame.asarray(),depth_frame.asarray(),mask = mask)
 				#img_fg = cv2.blur(img_fg,5)
 				img_fg = cv2.medianBlur(img_fg,5)
-				mean_val = cv2.mean(img_fg) 
-				min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(img_fg)
+				mean_val = cv2.mean(img_fg)
+				min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
 				moment = cv2.moments(cntr)
 				cx = int(moment['m10']/moment['m00'])
 				cy = int(moment['m01']/moment['m00'])
-				
-				# Rule of 57 Attempt
-				mm_diameter = (1.0/57.0) * (equi_diameter/6.006) * max_val
-				
-				#mm_diameter = 2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * max_val
-				#(equi_diameter / w) * (2.0 * max_val * math.tan(/2.0)) # ~FOV
-				
+
+				# Rule of 57 -- Finding the approximate object diameter
+				mm_diameter = (1.0/42.0) * (equi_diameter/6.006) * distance_to_object
+
+				#mm_diameter = 2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object
+				#(equi_diameter / w) * (2.0 * distance_to_object * math.tan(/2.0)) # ~FOV
+
 				ellipse = cv2.fitEllipse(cntr)
 		    		img = cv2.ellipse(img,ellipse,(255,255,255),2)
 				font = cv2.FONT_HERSHEY_SIMPLEX
-				cv2.putText(img, str(max_val), (cx,cy+25), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+				cv2.putText(img, str(distance_to_object), (cx,cy+25), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
 				cv2.putText(img, str(mm_diameter), (cx,cy+50), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
 		except:
 			print "Failed to fit ellipse"
-      
+
 
 	# NOTE for visualization:
 	# cv2.imshow without OpenGL backend seems to be quite slow to draw all
@@ -145,7 +145,7 @@ while True:
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
 		break
-		
+
 cv2.destroyAllWindows()
 device.stop()
 device.close()
