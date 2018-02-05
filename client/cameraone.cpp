@@ -1,12 +1,12 @@
 #include "cameraone.h"
 #include "ui_cameraone.h"
 #include "consumerthread.h"
-#include <opencv/cv.h>
-#include <opencv2/cvconfig.h>
-#include <opencv2/imgcodecs/imgcodecs.hpp>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
+//#include <opencv/cv.h>
+//#include <opencv2/cvconfig.h>
+//#include <opencv2/imgcodecs/imgcodecs.hpp>
+//#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <io.h>
+//#include <io.h>
 #include <iostream>
 #include <QPainter>
 

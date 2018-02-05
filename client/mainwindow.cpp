@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -1414,13 +1414,13 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_commandLinkButton_clicked()
 {
     //reset frame and img to make sure it is not conflicting
-    cameraOne = new CameraOne(this, m_loginStr);
+    /*cameraOne = new CameraOne(this, m_loginStr);
     cameraOne->CameraOne::camOneStream();
     cameraOne->CameraOne::camTwoStream();
     cameraOne->CameraOne::camThreeStream();
     cameraOne->CameraOne::camFourStream();
     cameraOne->CameraOne::camFiveStream();
-    cameraOne->show();
+    cameraOne->show();*/
 }
 
 

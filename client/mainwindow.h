@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
