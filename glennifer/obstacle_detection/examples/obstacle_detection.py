@@ -104,25 +104,51 @@ while True:
 	    			cv2.drawContours(mask,[cntr],0,255,-1)
 	    			pixelpoints = np.transpose(np.nonzero(mask))
 	    			img_fg = cv2.bitwise_and(depth_frame.asarray(),depth_frame.asarray(),mask = mask)
+				
 				#img_fg = cv2.blur(img_fg,5)
 				img_fg = cv2.medianBlur(img_fg,5)
+
+				# Experimenting with different blur settings
+				#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
+
 				mean_val = cv2.mean(img_fg)
 				min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
+				
+				# Experimenting with object distance
+				#distance_to_object = cv2.mean(img_fg)
+				#print img_fg[50]
+
 				moment = cv2.moments(cntr)
 				cx = int(moment['m10']/moment['m00'])
 				cy = int(moment['m01']/moment['m00'])
 
 				# Rule of 57 -- Finding the approximate object diameter
-				mm_diameter = (1.0/42.0) * (equi_diameter/6.006) * distance_to_object
+                # ^ Note: This is a really bad way to do it, advise using tangent
+                # Due to how Kinect probably returns each pixel distance
+				#mm_diameter = (1.0/42.0) * (equi_diameter/6.006) * distance_to_object
 
-				#mm_diameter = 2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object
+                # Preferred Options:
+				#mm_diameter = (2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object)
 				#(equi_diameter / w) * (2.0 * distance_to_object * math.tan(/2.0)) # ~FOV
+
+				# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
+				mm_diameter = equi_diameter
+
+				# Unconfirmed: this distance tries to get the unmodified distance
+				# Reminder: For this, it's Height x Width
+				actualDistmm = depth_frame.asarray()
+				cv2.flip(actualDistmm, 1)
+				dist_to_centroid = actualDistmm[cy][cx]
 
 				ellipse = cv2.fitEllipse(cntr)
 		    		img = cv2.ellipse(img,ellipse,(255,255,255),2)
 				font = cv2.FONT_HERSHEY_SIMPLEX
-				cv2.putText(img, str(distance_to_object), (cx,cy+25), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-				cv2.putText(img, str(mm_diameter), (cx,cy+50), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+
+				cv2.putText(img, str(distance_to_object), (cx,cy+10), font, 0.4, (100, 5, 5), 1, cv2.LINE_AA)
+				cv2.putText(img, str(mm_diameter), (cx,cy+20), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+				
+				# Distance to centroid point(?)
+				cv2.putText(img, str(dist_to_centroid), (cx,cy+30), font, 0.4, (100, 5, 5), 1, cv2.LINE_AA)
 		except:
 			print "Failed to fit ellipse"
 
@@ -135,12 +161,14 @@ while True:
 	#cv2.imwrite("thresh.png", thresh)
 	#cv2.imwrite("gradient.png", gradient)
 	#cv2.imshow("thresh", thresh)
-	cv2.imshow("unknown", unknown)
+	#cv2.imshow("unknown", unknown)
 	#cv2.imshow("gradient", gradient)
 	cv2.imshow("depth", img)
 	#break
 
 	listener.release(frames)
+
+	# Use the key 'q' to end!
 
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
