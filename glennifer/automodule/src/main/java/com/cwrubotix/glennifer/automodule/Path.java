@@ -4,15 +4,15 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Path implements Iterable<Position> {
-    private LinkedList<Position> path;
+public class Path implements Iterable<RobotPosition> {
+    private LinkedList<RobotPosition> path;
 
     public Path() {
-        path = new LinkedList<Position>();
+        path = new LinkedList<RobotPosition>();
     }
 
-    public Path(Position start, Position destination) {
-        path = new LinkedList<Position>();
+    public Path(RobotPosition start, RobotPosition destination) {
+        path = new LinkedList<RobotPosition>();
         path.add(start);
         path.add(destination);
     }
@@ -23,12 +23,12 @@ public class Path implements Iterable<Position> {
      *
      * @param path
      */
-    public Path(List<Position> path) {
+    public Path(List<RobotPosition> path) {
         this.path = new LinkedList<>(path);
     }
 
     // Please don't turn this back to protected
-    public LinkedList<Position> getPath() {
+    public LinkedList<RobotPosition> getPath() {
         return path;
     }
 
@@ -38,11 +38,11 @@ public class Path implements Iterable<Position> {
      * Use this to check whether your path generator method is working properly.
      * Should not be used for other purpose and will be removed once PathPlanSimulator is done.
      */
-    public Position[] getList() {
-        return (Position[]) getPath().toArray();
+    public RobotPosition[] getList() {
+        return (RobotPosition[]) getPath().toArray();
     }
 
-    public Position getPoint(int index) {
+    public RobotPosition getPoint(int index) {
         return path.get(index);
     }
 
@@ -50,31 +50,31 @@ public class Path implements Iterable<Position> {
         return getPath().size();
     }
 
-    public void add(int index, Position point) {
+    public void add(int index, RobotPosition point) {
         getPath().add(index, point);
     }
 
-    public void addFirst(Position point) {
+    public void addFirst(RobotPosition point) {
         getPath().addFirst(point);
     }
 
-    public void addLast(Position point) {
+    public void addLast(RobotPosition point) {
         getPath().addLast(point);
     }
 
-    public Position remove(int index) {
-        Position save = getPath().remove(index);
+    public RobotPosition remove(int index) {
+        RobotPosition save = getPath().remove(index);
         return save;
     }
 
-    public boolean remove(Position point) {
+    public boolean remove(RobotPosition point) {
         if (getPath().remove(point)) {
             return true;
         }
         return false;
     }
 
-    public Iterator<Position> iterator() {
+    public Iterator<RobotPosition> iterator() {
         return getPath().iterator();
     }
 

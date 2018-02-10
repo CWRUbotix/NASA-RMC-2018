@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.Comparator;
 
@@ -13,30 +13,14 @@ public class Position implements Cloneable {
 
     private float x_pos;
     private float y_pos;
-    /**
-     * <p>
-     * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
-     * </p>
-     * <p>
-     * Range : [0, 2PI) unit in radians.
-     * </p>
-     * If angle is negative, the position represents a horizontal line. (For dividing up arena purpose)
-     */
-    private double angle; //declared double 'cause java.lang.Math hates float angles for trigonometry.
-    private float tilt;
+    
     private static final float WALL_CLEARANCE = 0.3F; //I set this to 30cm for now because I am scared of walls
     private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
     private static final float ARENA_HEIGHT = 7.38F;
 
     public Position(float x_pos, float y_pos) {
-        this(x_pos, y_pos, 0.0, 0.0F);
-    }
-
-    public Position(float x_pos, float y_pos, double angle, float tilt) {
         this.x_pos = x_pos;
         this.y_pos = y_pos;
-        this.angle = angle;
-        this.tilt = tilt;
     }
 
     public float getX() {
@@ -65,27 +49,6 @@ public class Position implements Cloneable {
         return false;
     }
 
-    public double getAngle() {
-        return angle;
-    }
-
-    public void setAngle(double angle) {
-        //checking whether angle is within the range
-        if (angle >= Math.PI * 2) {
-            this.angle = angle - Math.PI * 2;
-        } else {
-            this.angle = angle;
-        }
-    }
-
-    public float getTilt() {
-        return tilt;
-    }
-
-    public void setTilt(float tilt) {
-        this.tilt = tilt;
-    }
-
     /**
      * Returns distance need to travel to position b
      *
@@ -96,25 +59,7 @@ public class Position implements Cloneable {
         return (float) Math.sqrt(Math.pow(getX() - b.getX(), 2) + Math.pow(getY() - b.getY(), 2));
     }
 
-    /**
-     * Returns angle the robot need to be in order to face position b
-     *
-     * @param b the destination
-     * @return angle the robot need to be in order to face position b
-     */
-    public double getAngleTurnTo(Position b) {
-        if (getAngle() >= 0 && b.getAngle() >= 0) {
-            float x_diff = b.getX() - getX();
-            float y_diff = b.getY() - getY();
-            if (x_diff < 0) {
-                return Math.PI + Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
-            } else {
-                return Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
-            }
-        }
-        //Heading to vertically down (a.k.a. position b is straight horizontal line)
-        return Math.PI;
-    }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -148,7 +93,7 @@ public class Position implements Cloneable {
 
     @Override
     public Object clone() {
-        return new Position(getX(), getY(), getAngle(), getTilt());
+        return new Position(getX(), getY());
     }
 
     /**
@@ -156,7 +101,7 @@ public class Position implements Cloneable {
      */
     @Override
     public int hashCode() {
-        int hash = Float.floatToRawIntBits(getX()) ^ Float.floatToRawIntBits(getY()) ^ Float.floatToRawIntBits((float) getAngle()) ^ Float.floatToRawIntBits(getTilt());
+        int hash = Float.floatToRawIntBits(getX()) ^ Float.floatToRawIntBits(getY());
         return hash;
     }
 

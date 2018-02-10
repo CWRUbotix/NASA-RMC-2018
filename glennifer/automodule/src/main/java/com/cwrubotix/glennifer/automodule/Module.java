@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;

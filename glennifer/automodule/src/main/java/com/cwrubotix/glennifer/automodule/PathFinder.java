@@ -7,14 +7,14 @@ package main.java.com.cwrubotix.glennifer.automodule;
  * <p>
  * Unfinished
  */
-public class PathFinder<T extends PathFindingAlgorithm> {
-    private T pathFindingAlgorithm;
+public class PathFinder {
+    private ModifiedAStar pathFindingAlgorithm;
     private Path path;
-    private Position currentPos;
-    private Position startPos;
-    private Position targetPos;
+    private RobotPosition currentPos;
+    private RobotPosition startPos;
+    private RobotPosition targetPos;
 
-    public PathFinder(T pathFindingAlgorithm, Position startPos, Position targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
+    public PathFinder(ModifiedAStar pathFindingAlgorithm, RobotPosition startPos, RobotPosition targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
         this.pathFindingAlgorithm = pathFindingAlgorithm;
         this.startPos = startPos;
         this.targetPos = targetPos;
@@ -34,7 +34,7 @@ public class PathFinder<T extends PathFindingAlgorithm> {
         return currentPos;
     }
 
-    public void setCurrentPos(Position currentPos) {
+    public void setCurrentPos(RobotPosition currentPos) {
         this.currentPos = currentPos;
     }
 

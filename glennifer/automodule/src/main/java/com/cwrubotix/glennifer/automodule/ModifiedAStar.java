@@ -2,7 +2,6 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-import main.java.com.cwrubotix.glennifer.automodule.Position;
 
 /**
  * Complete graph implementation of A* search algorithm with account for obstacles that are not visible before attaining certain proximity.
@@ -52,7 +51,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     }
 
     @Override
-    public Path computePath(Position startPosition, Position endPosition) {
+    public Path computePath(RobotPosition startPosition, RobotPosition endPosition) {
 
 	/*Setting up fields and nodes*/
         start = new AStarNode(startPosition);
@@ -72,7 +71,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     }
 
     @Override
-    public Path computePath(Position currentPos, Obstacle newObstacle) {
+    public Path computePath(RobotPosition currentPos, Obstacle newObstacle) {
 
         AStarNode cp = new AStarNode(currentPos); //Parses currentPos in the AStarNode
         getObstacles().add(newObstacle);          //Adding obstacle to the list
@@ -89,7 +88,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         Path result = firstHalf;
 
         boolean skipped = false;
-        for (Position p : secondHalf) {
+        for (RobotPosition p : secondHalf) {
             if (!skipped) { //skipping first position so that there are no two current position nodes in the path
                 skipped = true;
             } else {
@@ -358,7 +357,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * @author Seohyun Jung
      * @see Position
      */
-    private class AStarNode extends Position {
+    private class AStarNode extends RobotPosition {
 
         /**
          * list that store neighboring vertexes
