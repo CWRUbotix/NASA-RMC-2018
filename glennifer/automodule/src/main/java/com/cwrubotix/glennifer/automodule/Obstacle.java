@@ -1,6 +1,6 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-public class Obstacle extends Position {
+public class Obstacle extends Coordinate {
 
     private float radius;
 

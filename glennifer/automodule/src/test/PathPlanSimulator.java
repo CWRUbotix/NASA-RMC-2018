@@ -2,7 +2,7 @@ package test;
 
 import main.java.com.cwrubotix.glennifer.automodule.ModifiedAStar;
 import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
-import main.java.com.cwrubotix.glennifer.automodule.RobotPosition;
+import main.java.com.cwrubotix.glennifer.automodule.Position;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
 import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
 import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
@@ -48,11 +48,11 @@ public class PathPlanSimulator {
     /**
      * The initial position of the robot
      */
-    private RobotPosition initialPos;
+    private Position initialPos;
     /**
      * The destination of the robot
      */
-    private RobotPosition destination;
+    private Position destination;
     /**
      * Stores errorMessages created during simulation
      */
@@ -95,7 +95,7 @@ public class PathPlanSimulator {
      * @param initialPos  the start point of simulation
      * @param destination the destination of simulation
      */
-    public PathPlanSimulator(RobotPosition initialPos, RobotPosition destination) {
+    public PathPlanSimulator(Position initialPos, Position destination) {
         this.initialPos = initialPos;
         this.destination = destination;
         generateObstacles();
@@ -108,7 +108,7 @@ public class PathPlanSimulator {
      *
      * @return the start point of the simulation
      */
-    public RobotPosition getInitialPos() {
+    public Position getInitialPos() {
         return initialPos;
     }
 
@@ -117,7 +117,7 @@ public class PathPlanSimulator {
      *
      * @return the destination point of the simulation
      */
-    public RobotPosition getDestination() {
+    public Position getDestination() {
         return destination;
     }
 
@@ -172,10 +172,10 @@ public class PathPlanSimulator {
      * @author Tyler Thieding
      */
     private void generateObstacles() {
-        float validObstacleWidthLength = RobotPosition.ARENA_WIDTH() - (OBSTACLE_SIZE * 2);
+        float validObstacleWidthLength = Position.ARENA_WIDTH() - (OBSTACLE_SIZE * 2);
         float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - (OBSTACLE_SIZE * 2);
         for (int i = 0; i < obstacles.length; i++) {
-            float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength * Math.random() - RobotPosition.ARENA_WIDTH() / 2);
+            float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength * Math.random() - Position.ARENA_WIDTH() / 2);
             float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength * Math.random());
             Obstacle newObstacle = new Obstacle(newObstacleX, newObstacleY, OBSTACLE_SIZE / 2);
             obstacles[i] = newObstacle;
@@ -217,17 +217,17 @@ public class PathPlanSimulator {
 	 */
         boolean arrived = false;
         Path path = finder.getPath();
-        RobotPosition currentPos = path.getPoint(0);
+        Position currentPos = path.getPoint(0);
         int progress = 0;
         ArrayList<Obstacle> obstacles = new ArrayList<>(NUM_OBSTACLE); // Copying obstacles in to new list
         for (int i = 0; i < NUM_OBSTACLE; i++) {
             obstacles.add(getObstacles()[i]);
         }
         while (!arrived) { //While the robot is on transit
-            obstacles.sort(RobotPosition.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
+            obstacles.sort(Position.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
             Obstacle encountered = null;
             for (Obstacle obs : obstacles) {
-                RobotPosition temp = getEncounter(path, progress, obs); //returns position if the robot sees the obstacle
+                Position temp = getEncounter(path, progress, obs); //returns position if the robot sees the obstacle
                 if (temp != null) {
                     currentPos = temp; // where robot is currently standing
                     finder.setCurrentPos(currentPos); //
@@ -255,18 +255,18 @@ public class PathPlanSimulator {
     }
 
     /**
-     * Returns the RobotPosition where the robot sees the obstacle given if the robot encounters the obstacle between
+     * Returns the Position where the robot sees the obstacle given if the robot encounters the obstacle between
      * current position and the next position in the path.
      *
      * @param path     the path the robot is currently on
      * @param progress indicates the index of robot's position within the current path
      * @param obs      the obstacle being evaluated
-     * @return the RobotPosition where the robot sees the obstacle given if the robot encounters the obstacle.
+     * @return the Position where the robot sees the obstacle given if the robot encounters the obstacle.
      */
-    private RobotPosition getEncounter(Path path, int progress, Obstacle obs) {
+    private Position getEncounter(Path path, int progress, Obstacle obs) {
 
-        RobotPosition p1 = path.getPoint(progress); //current position
-        RobotPosition p2 = path.getPoint(progress + 1); //next position
+        Position p1 = path.getPoint(progress); //current position
+        Position p2 = path.getPoint(progress + 1); //next position
         float x1 = p1.getX(); // current position
         float y1 = p1.getY(); // coordinate
         float x2 = p2.getX(); // next position
@@ -295,8 +295,8 @@ public class PathPlanSimulator {
         float rx2 = (float) ((-b - Math.sqrt(check)) / (2 * a));
         float ry2 = (float) (slope * rx2 + y_intercept);
 
-        RobotPosition r1 = new RobotPosition(rx1, ry1);
-        RobotPosition r2 = new RobotPosition(rx2, ry2);
+        Position r1 = new Position(rx1, ry1);
+        Position r2 = new Position(rx2, ry2);
 	
 	/*Checking whether the points calculated are between current position and next position*/
         if (rx1 < Math.min(x1, x2) || rx1 > Math.max(x1, x2) || Double.isNaN(rx1) || Double.isNaN(ry1))
@@ -402,8 +402,8 @@ public class PathPlanSimulator {
         private void setUpSimulation() {
             String[] args = new String[getParameters().getRaw().size()];
             args = getParameters().getRaw().toArray(args);
-            RobotPosition start = new RobotPosition(0.0F, 0.0F, Math.PI / 2, 0.0F);
-            RobotPosition destination = new RobotPosition(0.0F, 0.0F);
+            Position start = new Position(0.0F, 0.0F, Math.PI / 2);
+            Position destination = new Position(0.0F, 0.0F);
             if (!start.setX(Float.parseFloat(args[0])) || !start.setY(Float.parseFloat(args[1]))
                     || !destination.setX(Float.parseFloat(args[2])) || !destination.setY(Float.parseFloat(args[3])))
                 throw new RuntimeException("Given coordinates are invalid to set up simulation");
@@ -415,8 +415,8 @@ public class PathPlanSimulator {
          */
         private void setUp() {
             primaryStage.setTitle("PathPlanSimulator");
-            primaryStage.setHeight(RobotPosition.ARENA_HEIGHT() * 100 + 100);
-            primaryStage.setWidth(600 + RobotPosition.ARENA_WIDTH() * 100);
+            primaryStage.setHeight(Position.ARENA_HEIGHT() * 100 + 100);
+            primaryStage.setWidth(600 + Position.ARENA_WIDTH() * 100);
 
             setUpArena();
             setUpResultDisplay();
@@ -449,12 +449,12 @@ public class PathPlanSimulator {
             });
 
             errorMessages.setEditable(false);
-            errorMessages.setPrefSize(300, RobotPosition.ARENA_HEIGHT() * 100);
+            errorMessages.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             VBox left = new VBox();
-            left.setPrefSize(300, RobotPosition.ARENA_HEIGHT() * 100);
+            left.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             left.getChildren().addAll(result, startButton);
             VBox right = new VBox();
-            right.setPrefSize(300, RobotPosition.ARENA_HEIGHT() * 100);
+            right.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             right.getChildren().addAll(errorMessages, reRunAlgorithmButton);
             left.setAlignment(Pos.CENTER);
             right.setAlignment(Pos.CENTER);
@@ -468,7 +468,7 @@ public class PathPlanSimulator {
          * Sets up arena graphics
          */
         private void setUpArena() {
-            arena.setPrefSize(RobotPosition.ARENA_WIDTH() * 100, RobotPosition.ARENA_HEIGHT() * 100);
+            arena.setPrefSize(Position.ARENA_WIDTH() * 100, Position.ARENA_HEIGHT() * 100);
             arena.setOnMouseReleased(new EventHandler<MouseEvent>() {
 
                 @Override
@@ -494,9 +494,9 @@ public class PathPlanSimulator {
          * Detailed arena structure graphics setup
          */
         private void drawArena() {
-            Line line1 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT), RobotPosition.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT));
-            Line line2 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT), RobotPosition.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT));
-            Line line3 = new Line(getDisplayX(0), 0.0, getDisplayX(0), RobotPosition.ARENA_HEIGHT() * 100);
+            Line line1 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT), Position.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT));
+            Line line2 = new Line(0.0, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT), Position.ARENA_WIDTH() * 100, getDisplayY(SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT));
+            Line line3 = new Line(getDisplayX(0), 0.0, getDisplayX(0), Position.ARENA_HEIGHT() * 100);
             Rectangle bin = new Rectangle(getDisplayX(0) - 50, getDisplayY(0) - 25, 100, 50);
             Circle start = new Circle(getDisplayX(simulator.getInitialPos().getX()), getDisplayY(simulator.getInitialPos().getY()), 20);
             Circle end = new Circle(getDisplayX(simulator.getDestination().getX()), getDisplayY(simulator.getDestination().getY()), 20);
@@ -548,12 +548,12 @@ public class PathPlanSimulator {
         	markFailed();
             } else {
         	for(int pos = 0; pos < path.length(); pos ++){
-        	    RobotPosition point = path.getPoint(pos);
+        	    Position point = path.getPoint(pos);
         	    Circle circle = new Circle(getDisplayX(point.getX()), getDisplayY(point.getY()), 5);
         	    circle.setFill(color);
         	    this.path.getChildren().add(circle);
         	    if (pos != path.length() - 1) {
-        		RobotPosition next = path.getPoint(pos + 1);
+        		Position next = path.getPoint(pos + 1);
         		Line line = new Line(getDisplayX(point.getX()), getDisplayY(point.getY()), getDisplayX(next.getX()), getDisplayY(next.getY()));
         		line.setFill(color);
         		this.path.getChildren().add(line);
@@ -569,7 +569,7 @@ public class PathPlanSimulator {
         private void setUpResultDisplay() {
             result = new TextArea();
             result.setEditable(false);
-            result.setPrefSize(300, RobotPosition.ARENA_HEIGHT() * 100);
+            result.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             result.appendText("ModifiedAStar Algorithm:\n");
         }
 
@@ -589,9 +589,9 @@ public class PathPlanSimulator {
             if (simulator.getPath() == null) {
         	return;
             }
-            RobotPosition previous = null;
+            Position previous = null;
             float dist = 0.0F, angle = 0.0F;
-            for (RobotPosition pos : simulator.getPath()) {
+            for (Position pos : simulator.getPath()) {
         	if (previous != null) {
         	    dist += previous.getDistTo(pos);
         	    angle += Math.abs(previous.getAngle() - pos.getAngle());
@@ -604,21 +604,21 @@ public class PathPlanSimulator {
 
 
         /**
-         * Converts RobotPosition x-coordinate to the display x-coordinate
+         * Converts Position x-coordinate to the display x-coordinate
          * meters -> pixels
          *
-         * @param x_pos RobotPosition x-coordinate to convert
+         * @param x_pos Position x-coordinate to convert
          * @return converted display x-coordinate
          */
         private double getDisplayX(float x_pos) {
-            return (double) ((x_pos + RobotPosition.ARENA_WIDTH() / 2) * 100);
+            return (double) ((x_pos + Position.ARENA_WIDTH() / 2) * 100);
         }
 
         /**
-         * Converts RobotPosition y-coordinate to the display y-coordinate
+         * Converts Position y-coordinate to the display y-coordinate
          * meters -> pixels
          *
-         * @param y_pos RobotPosition y-coordinate to convert
+         * @param y_pos Position y-coordinate to convert
          * @return converted display y-coordinate
          */
         private double getDisplayY(float y_pos) {
@@ -626,22 +626,22 @@ public class PathPlanSimulator {
         }
 
         /**
-         * Converts display x-coordinate to RobotPosition x-coordinate
+         * Converts display x-coordinate to Position x-coordinate
          * pixels -> meters
          *
          * @param display_x display x-coordinate to convert
-         * @return converted RobotPosition x-coordinate
+         * @return converted Position x-coordinate
          */
         private float getArenaX(double display_x) {
-            return (float) (display_x / 100 - RobotPosition.ARENA_WIDTH() / 2);
+            return (float) (display_x / 100 - Position.ARENA_WIDTH() / 2);
         }
 
         /**
-         * Converts display y-coordinate to RobotPosition y-coordinate
+         * Converts display y-coordinate to Position y-coordinate
          * pixels -> meters
          *
          * @param display_y display y-coordinate to convert
-         * @return converted RobotPosition y-coordinate
+         * @return converted Position y-coordinate
          */
         private float getArenaY(double display_y) {
             return (float) (display_y / 100);

@@ -51,7 +51,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     }
 
     @Override
-    public Path computePath(RobotPosition startPosition, RobotPosition endPosition) {
+    public Path computePath(Position startPosition, Position endPosition) {
 
 	/*Setting up fields and nodes*/
         start = new AStarNode(startPosition);
@@ -71,7 +71,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     }
 
     @Override
-    public Path computePath(RobotPosition currentPos, Obstacle newObstacle) {
+    public Path computePath(Position currentPos, Obstacle newObstacle) {
 
         AStarNode cp = new AStarNode(currentPos); //Parses currentPos in the AStarNode
         getObstacles().add(newObstacle);          //Adding obstacle to the list
@@ -88,7 +88,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         Path result = firstHalf;
 
         boolean skipped = false;
-        for (RobotPosition p : secondHalf) {
+        for (Position p : secondHalf) {
             if (!skipped) { //skipping first position so that there are no two current position nodes in the path
                 skipped = true;
             } else {
@@ -357,7 +357,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * @author Seohyun Jung
      * @see Position
      */
-    private class AStarNode extends RobotPosition {
+    private class AStarNode extends Position {
 
         /**
          * list that store neighboring vertexes

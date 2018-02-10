@@ -1,7 +1,5 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
-import java.util.Comparator;
-
 /**
  * Data type that represents a location inside the arena.
  * If angle is negative, the instance represents horizontal line in the arena.
@@ -9,57 +7,52 @@ import java.util.Comparator;
  * @author Seohyun Jung
  */
 
-public class Position implements Cloneable {
-
-    private float x_pos;
-    private float y_pos;
-    
-    private static final float WALL_CLEARANCE = 0.3F; //I set this to 30cm for now because I am scared of walls
-    private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
-    private static final float ARENA_HEIGHT = 7.38F;
-
-    public Position(float x_pos, float y_pos) {
-        this.x_pos = x_pos;
-        this.y_pos = y_pos;
-    }
-
-    public float getX() {
-        return x_pos;
-    }
-
-    public boolean setX(float x_pos) {
-        //checking whether input is within the arena
-        if (x_pos < (ARENA_WIDTH() / 2) - WALL_CLEARANCE() && x_pos > (ARENA_WIDTH() / -2) + WALL_CLEARANCE()) {
-            this.x_pos = x_pos;
-            return true;
-        }
-        return false;
-    }
-
-    public float getY() {
-        return y_pos;
-    }
-
-    public boolean setY(float y_pos) {
-        //checking whether input is within the arena
-        if (y_pos > WALL_CLEARANCE() && y_pos < 7.38F - WALL_CLEARANCE()) {
-            this.y_pos = y_pos;
-            return true;
-        }
-        return false;
-    }
+public class Position extends Coordinate implements Cloneable {
 
     /**
-     * Returns distance need to travel to position b
-     *
-     * @param b destination
-     * @return distance need to travel to position b
+     * <p>
+     * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
+     * </p>
+     * <p>
+     * Range : [0, 2PI) unit in radians.
+     * </p>
      */
-    public float getDistTo(Position b) {
-        return (float) Math.sqrt(Math.pow(getX() - b.getX(), 2) + Math.pow(getY() - b.getY(), 2));
+    private double angle; //declared double 'cause java.lang.Math hates float angles for trigonometry.
+    
+
+
+    public Position(float x_pos, float y_pos, double angle) {
+        super(x_pos, y_pos);
+        this.angle = angle;
     }
-
-
+    
+    public Position(float x_pos, float y_pos){
+	this(x_pos, y_pos, 0.0);
+    }
+    
+    public double getAngle(){
+	return angle;
+    }
+    
+    public void setAngle(double angle){
+	this.angle = angle;
+    }
+    
+    /**
+     * Returns angle the robot need to be in order to face position b
+     *
+     * @param b the destination
+     * @return angle the robot need to be in order to face position b
+     */
+    public double getAngleTurnTo(Coordinate p){
+   	float x_diff = p.getX() - getX();
+   	float y_diff = p.getY() - getY();
+   	if (x_diff < 0) {
+   	    return Math.PI + Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
+   	} else {
+   	    return Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
+   	}
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -78,22 +71,10 @@ public class Position implements Cloneable {
         return "(" + getX() + ", " + getY() + ")";
     }
 
-    public static Comparator<Position> getComparatorByDistTo(final Position pos) {
-        return new Comparator<Position>() {
-            public int compare(Position a, Position b) {
-                if (a.getDistTo(pos) < b.getDistTo(pos))
-                    return -1;
-                else if (a.getDistTo(pos) > b.getDistTo(pos))
-                    return 1;
-                else
-                    return 0;
-            }
-        };
-    }
 
     @Override
     public Object clone() {
-        return new Position(getX(), getY());
+        return new Position(getX(), getY(), getAngle());
     }
 
     /**
@@ -105,15 +86,5 @@ public class Position implements Cloneable {
         return hash;
     }
 
-    public static final float WALL_CLEARANCE() {
-        return Position.WALL_CLEARANCE;
-    }
-
-    public static final float ARENA_WIDTH() {
-        return Position.ARENA_WIDTH;
-    }
-
-    public static final float ARENA_HEIGHT() {
-        return Position.ARENA_HEIGHT;
-    }
+    
 }

@@ -2,19 +2,21 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 
 /**
- * @param <T> Path finding algorithm
+ * 
  * @author Robbie Dozier
+ * @author Seohyun Jung
  * <p>
  * Unfinished
+ * </p>
  */
 public class PathFinder {
     private ModifiedAStar pathFindingAlgorithm;
     private Path path;
-    private RobotPosition currentPos;
-    private RobotPosition startPos;
-    private RobotPosition targetPos;
+    private Position currentPos;
+    private Position startPos;
+    private Position targetPos;
 
-    public PathFinder(ModifiedAStar pathFindingAlgorithm, RobotPosition startPos, RobotPosition targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
+    public PathFinder(ModifiedAStar pathFindingAlgorithm, Position startPos, Position targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
         this.pathFindingAlgorithm = pathFindingAlgorithm;
         this.startPos = startPos;
         this.targetPos = targetPos;
@@ -34,7 +36,7 @@ public class PathFinder {
         return currentPos;
     }
 
-    public void setCurrentPos(RobotPosition currentPos) {
+    public void setCurrentPos(Position currentPos) {
         this.currentPos = currentPos;
     }
 
@@ -53,4 +55,5 @@ public class PathFinder {
     public void registerObstacle(Obstacle obstacle) throws PathFindingAlgorithm.AlgorithmFailureException {
         path = pathFindingAlgorithm.computePath(currentPos, obstacle);
     }
+    
 }
