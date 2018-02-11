@@ -276,12 +276,13 @@ message DepositionStateDetailed {
 
 // launch.transit
 message LaunchTransit {
-	required float current_length = 1;
-	required float current_angle = 2;
-	required float destination_length = 3;
-	required float destination_angle = 4;
-	required float time_allocation = 5;
-	required UnixTime timestamp = 6;
+    required float cur_x_pos = 1;
+	required float cur_y_pos = 2;
+    required float cur_heading = 3;
+	required float dest_x_pos = 4;
+	required float dest_y_pos = 5;
+	required float time_alloc = 6;
+	required UnixTime timestamp = 7;
 }
 
 // launch.drill
@@ -358,4 +359,12 @@ message DrillHardStop {
 message DumpHardStop {
 	required bool stop = 1;
 	required UnixTime timestamp = 2;
+}
+
+// newobstable.transit
+message TransitNewObstacle {
+    required float x_pos = 1;
+	required float y_pos = 2;
+    required float diameter = 3;
+	required UnixTime timestamp = 4;
 }
