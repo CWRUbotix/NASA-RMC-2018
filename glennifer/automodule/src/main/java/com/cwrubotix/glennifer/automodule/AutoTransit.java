@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -23,10 +23,9 @@ import java.util.concurrent.TimeoutException;
  * @author Imran Hossain
  */
 public class AutoTransit extends Module {
-
-	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI, 0.0F);
+	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI);
 	/*Horizontal line representing where digging arena starts.*/
-	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0, 0.0F);
+	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0);
 	private final float CLEARANCE_DIST = 0.3F; //Setting this to 30cm for now. Will have to change it after testing locomotion.
 	private static Position currentPos;
 	private PathFinder pathFinder;
