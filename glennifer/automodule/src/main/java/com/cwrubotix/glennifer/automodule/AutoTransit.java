@@ -17,13 +17,13 @@ import java.time.Instant;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-
 /**
  * Module for controlling movement
  *
  * @author Imran Hossain
  */
-public class AutoTransit{
+public class AutoTransit extends Module {
+
 	private final Position DUMP_BIN = new Position(0.0F, 0.0F, Math.PI, 0.0F);
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0, 0.0F);
@@ -134,70 +134,13 @@ public class AutoTransit{
 		return currentPos;
 	}
 
-	//amqp stuff
-	private UnixTime instantToUnixTime(Instant time) {
-		UnixTime.Builder unixTimeBuilder = UnixTime.newBuilder();
-		unixTimeBuilder.setTimeInt(time.getEpochSecond());
-		unixTimeBuilder.setTimeFrac(time.getNano() / 1000000000F);
-		return unixTimeBuilder.build();
-	}
+    @Override
+    protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+        // Listen for commands...
+    }
 
-	//amqp stuff
-	private void sendFault(int faultCode, Instant time) throws IOException {
-		Fault.Builder faultBuilder = Fault.newBuilder();
-		faultBuilder.setFaultCode(faultCode);
-		faultBuilder.setTimestamp(instantToUnixTime(time));
-		Fault message = faultBuilder.build();
-		channel.basicPublish(exchangeName, "fault", null, message.toByteArray());
-	}
-
-	/////// START/STOP LOGIC
-
-	private void runWithExceptions() throws IOException, TimeoutException {
-		// Setup connection
-		ConnectionFactory factory = new ConnectionFactory();
-		factory.setHost("localhost");
-		this.connection = factory.newConnection();
-		this.channel = connection.createChannel();
-
-		// Listener for launch command
-		String queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "launch.transit");
-		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
-
-		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "softstop.transit");
-		channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
-
-		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "hardstop.transit");
-		channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
-
-		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "newobstacle.transit");
-		channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
-	}
-
-	public void start() {
-		try {
-			runWithExceptions();
-		} catch (Exception e) {
-		    try {
-		    	sendFault(999, Instant.now());
-			} catch (IOException e1) {
-		    	e.printStackTrace();
-		    	System.out.println(e.getMessage());
-			}
-		}
-	}
-
-	public void stop() {
-		try {
-			channel.close();
-			connection.close();
-		} catch (IOException | TimeoutException e) {
-			// Do nothing
-		}
-	}
-	
 }

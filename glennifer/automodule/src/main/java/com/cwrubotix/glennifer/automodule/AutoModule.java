@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
  * @author Imran Hossain
  *
  */
-public class AutoModule {
+public class AutoModule extends Module {
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
 
@@ -51,73 +51,14 @@ public class AutoModule {
 	 *	5) Set up Connection Factory.
 	 */
 
-	//amqp stuff
-	private UnixTime instantToUnixTime(Instant time) {
-		UnixTime.Builder unixTimeBuilder = UnixTime.newBuilder();
-		unixTimeBuilder.setTimeInt(time.getEpochSecond());
-		unixTimeBuilder.setTimeFrac(time.getNano() / 1000000000F);
-		return unixTimeBuilder.build();
-	}
+	@Override
+	protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
 
-	//amqp stuff
-	private void sendFault(int faultCode, Instant time) throws IOException {
-		Fault.Builder faultBuilder = Fault.newBuilder();
-		faultBuilder.setFaultCode(faultCode);
-		faultBuilder.setTimestamp(instantToUnixTime(time));
-		Fault message = faultBuilder.build();
-		channel.basicPublish(exchangeName, "fault", null, message.toByteArray());
-	}
+        // Listen for commands...
 
-	private void runWithExceptions() throws IOException, TimeoutException {
-		// Setup connection
-		ConnectionFactory factory = new ConnectionFactory();
-		factory.setHost("localhost");
-		this.connection = factory.newConnection();
-		this.channel = connection.createChannel();
-
-		// Setup timer for timing tasks
-		Timer taskTimer = new Timer("Task Timer");
-
-		// Tell transit to start for N minutes
-		LaunchTransit msg1 = LaunchTransit.newBuilder()
-                // TODO set message properties (destination, current position, etc)
-                .setTimeAlloc(180)
-				.build();
-		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
-
-		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
-				.build();
-		taskTimer.schedule(new TimerTask() {
-			@Override
-			public void run() {
-				try {
-					AutoModule.this.channel.basicPublish(exchangeName, "softstop.transit", null, msg2.toByteArray());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}, 1800000);
-	}
-
-	public void start() {
-		try {
-			runWithExceptions();
-		} catch (Exception e) {
-			try {
-				sendFault(999, Instant.now());
-			} catch (IOException e1) {
-				e1.printStackTrace();
-				System.out.println(e1.getMessage());
-			}
-		}
-	}
-
-	public void stop() {
-		try {
-			channel.close();
-			connection.close();
-		} catch (IOException | TimeoutException e) {
-			// Do nothing
-		}
 	}
 }

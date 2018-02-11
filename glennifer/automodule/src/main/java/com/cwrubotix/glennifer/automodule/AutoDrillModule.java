@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
  * @author Seohyun Jung
  * @author Michael Schaffer
  */
-public class AutoDrillModule {
+public class AutoDrillModule extends Module {
 	/*
 	 * TODO list for NASA RMC 2018
 	 * 
@@ -383,23 +383,6 @@ public class AutoDrillModule {
 		this.exchangeName = exchangeName;
 	}
 	
-	//amqp stuff
-	private UnixTime instantToUnixTime(Instant time) {
-		UnixTime.Builder unixTimeBuilder = UnixTime.newBuilder();
-		unixTimeBuilder.setTimeInt(time.getEpochSecond());
-		unixTimeBuilder.setTimeFrac(time.getNano() / 1000000000F);
-		return unixTimeBuilder.build();
-	}
-	    
-	//amqp stuff
-	private void sendFault(int faultCode, Instant time) throws IOException {
-		Fault.Builder faultBuilder = Fault.newBuilder();
-		faultBuilder.setFaultCode(faultCode);
-		faultBuilder.setTimestamp(instantToUnixTime(time));
-		Fault message = faultBuilder.build();
-		channel.basicPublish(exchangeName, "fault", null, message.toByteArray());
-	}
-	
 	/**
 	 * The method where everything gets set up to operate.
 	 * @throws IOException
@@ -472,39 +455,6 @@ public class AutoDrillModule {
 			}
 		});
 		
-	}
-	
-	public void start(){
-		try{
-			runWithExceptions();
-		} catch(Exception e){
-			try{
-				sendFault(999, Instant.now());
-			} catch(Exception e1){}
-			e.printStackTrace();
-			System.out.println(e.getMessage());
-		}
-	}
-	
-	public void stop() {
-		try {
-			channel.close();
-			connection.close();
-			//Unsubscribing from StateModule
-			Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder()
-												  .setReplyKey("autoDrillModule")
-												  .setInterval(0.2F)
-												  .setDepositionDetailed(false)
-												  .setDepositionSummary(true)
-												  .setExcavationDetailed(true)
-												  .setExcavationSummary(false)
-												  .setLocomotionDetailed(true)
-												  .setLocomotionSummary(false)
-												  .build();
-			this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
-		} catch (IOException | TimeoutException e) {
-			// Do nothing
-		}
 	}
 	
 	public static void main(String[] args){
