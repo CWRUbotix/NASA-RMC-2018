@@ -8,7 +8,7 @@ package com.cwrubotix.glennifer;
  * Each comment before the message specifies what AMQP queue topics the message is used for.
  */
 
-// Used inside other messages only
+// Used inside other message only
 message UnixTime {
 	required uint64 time_int = 1;
 	required float time_frac = 2;
@@ -275,18 +275,35 @@ message DepositionStateDetailed {
 }
 
 // launch.transit
+message LaunchTransit {
+    required float cur_x_pos = 1;
+	required float cur_y_pos = 2;
+    required float cur_heading = 3;
+	required float dest_x_pos = 4;
+	required float dest_y_pos = 5;
+	required float time_alloc = 6;
+	required UnixTime timestamp = 7;
+}
+
 // launch.drill
+message LaunchDrill {
+	required float current_length = 1;
+	required float current_angle = 2;
+	required float destination_length = 3;
+	required float destination_angle = 4;
+	required float load_desired = 5;
+	required bool start = 6;
+	required float time_allocation = 7;
+	required UnixTime timestamp = 8;
+}
+
 // launch.dump
-message LaunchModule {
-	required float current_x_pos = 1;
-	required float current_y_pos = 2;
-	required float current_angle = 3;
+message LaunchDump {
+	required float current_length = 1;
+	required float current_angle = 2;
+	required bool start = 3;
 	required float time_allocation = 4;
-	required bool start = 5;
-	optional float destination_x_pos = 6;
-	optional float destination_y_pos = 7;
-	optional float load_desired = 8;
-	required UnixTime timestamp = 9;
+	required UnixTime timestamp = 5;
 }
 
 // progress.transit
@@ -303,4 +320,51 @@ message ProgressReport {
 message ErrorReport {
 	required bool resolved = 1;
 	required UnixTime timestamp = 2;
+}
+
+// softstop.transit
+message TransitSoftStop {
+	required float timeLeft = 1;
+	required bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// softstop.drill
+message DrillSoftStop {
+	required float timeLeft = 1;
+	required bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// softstop.dump
+message DumpSoftStop {
+	required float timeLeft = 1;
+	required bool stop = 2;
+	required UnixTime timestamp = 3;
+}
+
+// hardstop.transit
+message TransitHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
+
+// hardstop.drill
+message DrillHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
+
+// hardstop.dump
+message DumpHardStop {
+	required bool stop = 1;
+	required UnixTime timestamp = 2;
+}
+
+// newobstable.transit
+message TransitNewObstacle {
+    required float x_pos = 1;
+	required float y_pos = 2;
+    required float diameter = 3;
+	required UnixTime timestamp = 4;
 }

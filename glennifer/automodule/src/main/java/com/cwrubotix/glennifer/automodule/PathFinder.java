@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 import main.java.com.cwrubotix.glennifer.automodule.Path;
