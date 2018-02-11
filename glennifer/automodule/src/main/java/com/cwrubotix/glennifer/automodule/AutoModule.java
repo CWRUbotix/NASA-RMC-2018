@@ -53,12 +53,33 @@ public class AutoModule extends Module {
 
 	@Override
 	protected void runWithExceptions() throws IOException, TimeoutException {
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("localhost");
-        this.connection = factory.newConnection();
-        this.channel = connection.createChannel();
+        // Setup connection
+		ConnectionFactory factory = new ConnectionFactory();
+		factory.setHost("localhost");
+		this.connection = factory.newConnection();
+		this.channel = connection.createChannel();
 
-        // Listen for commands...
+		// Setup timer for timing tasks
+		Timer taskTimer = new Timer("Task Timer");
 
+		// Tell transit to start for N minutes
+		LaunchTransit msg1 = LaunchTransit.newBuilder()
+				// TODO set message properties (destination, current position, etc)
+				.setTimeAlloc(180)
+				.build();
+		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
+
+		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
+				.build();
+		taskTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					AutoModule.this.channel.basicPublish(exchangeName, "softstop.transit", null, msg2.toByteArray());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}, 1800000);
 	}
 }
