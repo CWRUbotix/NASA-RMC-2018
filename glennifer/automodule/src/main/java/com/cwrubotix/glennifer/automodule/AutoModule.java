@@ -31,9 +31,10 @@ import java.util.concurrent.TimeoutException;
  * depending on which state it is in.
  * 
  * @author Seohyun Jung
+ * @author Imran Hossain
  *
  */
-public class AutoModule{
+public class AutoModule {
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
 
@@ -78,8 +79,9 @@ public class AutoModule{
 		Timer taskTimer = new Timer("Task Timer");
 
 		// Tell transit to start for N minutes
-		LaunchTransit msg1 = LaunchTransit.newBuilder() // TODO set message properties
-                .setTimeAllocation(180)
+		LaunchTransit msg1 = LaunchTransit.newBuilder()
+                // TODO set message properties (destination, current position, etc)
+                .setTimeAlloc(180)
 				.build();
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
