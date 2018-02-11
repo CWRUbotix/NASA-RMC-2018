@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -63,13 +63,12 @@ public class AutoTransit extends Module {
 			Position currentPos = new Position(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
-					cmd.getCurHeading(),
-					0f);
+					cmd.getCurHeading());
 
 			Position destinationPos = new Position(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
-					0f, 0f);
+					0f);
 
 			// TODO Construct pathFinder when algorithms available
         }
