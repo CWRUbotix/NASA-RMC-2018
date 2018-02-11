@@ -138,7 +138,23 @@ public class AutoTransit extends Module {
         factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.channel = connection.createChannel();
-        // Listen for commands...
+
+        // Listeners for commands
+		String queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "launch.transit");
+		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "softstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "hardstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "newobstacle.transit");
+		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
     }
 
 }
