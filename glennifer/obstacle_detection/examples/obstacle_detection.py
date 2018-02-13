@@ -56,8 +56,8 @@ undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
 while True:
-    	frames = listener.waitForNewFrame()
-    	depth_frame = frames["depth"]
+	frames = listener.waitForNewFrame()
+	depth_frame = frames["depth"]
 
 	#convert image
 	img = depth_frame.asarray() / 4500.
@@ -71,6 +71,8 @@ while True:
 	ret,thresh = cv2.threshold(imgray,0,255,cv2.THRESH_BINARY)
 	#noise removal
 	kernel = np.ones((5,5),np.uint8)
+	thresh = cv2.erode(thresh, kernel, iterations = 3)
+	thresh = cv2.dilate(thresh, kernel, iterations = 2)
 	opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
 	#gradient calculation
 	gradient = cv2.morphologyEx(thresh, cv2.MORPH_GRADIENT, kernel)
@@ -82,28 +84,30 @@ while True:
 	# Finding unknown region
 	sure_fg = np.uint8(sure_fg)
 	#finding unknown region
-	unknown = cv2.subtract(gradient,sure_bg)
+	#unknown = cv2.subtract(gradient,sure_bg)
+	unknown = cv2.subtract(sure_bg,sure_fg)
 	unkown = cv2.medianBlur(unknown,5)
-	#unknown = cv2.subtract(sure_bg,sure_fg)
+	img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 	#begin contour detection
-	image, contours, hierarchy = cv2.findContours(unknown,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+	image, contours, hierarchy = cv2.findContours(sure_bg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 	for cntr in contours:
 		try:
-	    		#calculate diamter of equivalent cirlce
-	    		area = cv2.contourArea(cntr)
-	    		equi_diameter = np.sqrt(4*area/np.pi)
+			#calculate diamter of equivalent cirlce
+			area = cv2.contourArea(cntr)
+			equi_diameter = np.sqrt(4*area/np.pi)
 
 			#Hardcoded Diameter Range in pixels
 			LOW_DIAMETER_BOUND = 20
 			HIGH_DIAMETER_BOUND = 100
+			HIGH_DISTANCE_BOUND = 3000
 			#Original tolerances were 20 and 150
 
-	    		if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
-	    			mask = np.zeros(imgray.shape,np.uint8)
-	    			cv2.drawContours(mask,[cntr],0,255,-1)
-	    			pixelpoints = np.transpose(np.nonzero(mask))
-	    			img_fg = cv2.bitwise_and(depth_frame.asarray(),depth_frame.asarray(),mask = mask)
+			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
+				mask = np.zeros(imgray.shape,np.uint8)
+				cv2.drawContours(mask,[cntr],0,255,-1)
+				pixelpoints = np.transpose(np.nonzero(mask))
+				img_fg = cv2.bitwise_and(depth_frame.asarray(),depth_frame.asarray(),mask = mask)
 				
 				#img_fg = cv2.blur(img_fg,5)
 				img_fg = cv2.medianBlur(img_fg,5)
@@ -131,24 +135,36 @@ while True:
 				#mm_diameter = (2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object)
 				#(equi_diameter / w) * (2.0 * distance_to_object * math.tan(/2.0)) # ~FOV
 
-				# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
-				mm_diameter = equi_diameter
-
 				# Unconfirmed: this distance tries to get the unmodified distance
 				# Reminder: For this, it's Height x Width
 				actualDistmm = depth_frame.asarray()
+				actualDistmm = cv2.medianBlur(actualDistmm,5)
 				cv2.flip(actualDistmm, 1)
 				dist_to_centroid = actualDistmm[cy][cx]
 
-				ellipse = cv2.fitEllipse(cntr)
-		    		img = cv2.ellipse(img,ellipse,(255,255,255),2)
-				font = cv2.FONT_HERSHEY_SIMPLEX
+				if dist_to_centroid < HIGH_DISTANCE_BOUND:
 
-				cv2.putText(img, str(distance_to_object), (cx,cy+10), font, 0.4, (100, 5, 5), 1, cv2.LINE_AA)
-				cv2.putText(img, str(mm_diameter), (cx,cy+20), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
-				
-				# Distance to centroid point(?)
-				cv2.putText(img, str(dist_to_centroid), (cx,cy+30), font, 0.4, (100, 5, 5), 1, cv2.LINE_AA)
+					# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
+					mm_diameter = equi_diameter * (1.0 / focal_x) * dist_to_centroid
+					coords = registration.getPointXYZ(depth_frame, cy, cx)
+
+					ellipse = cv2.fitEllipse(cntr)
+					img = cv2.ellipse(img,ellipse,(0,255,0),2)
+					rect = cv2.minAreaRect(cntr)
+					box = cv2.boxPoints(rect)
+					box = np.int0(box)
+					cv2.drawContours(img,[box],0,(0,0,255),1)
+
+					font = cv2.FONT_HERSHEY_SIMPLEX
+
+					cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+					cv2.putText(img, "y" + str(coords[1]), (cx,cy+50), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+					cv2.putText(img, "z" + str(coords[2]), (cx,cy+70), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+					#cv2.putText(img, str(mm_diameter), (cx,cy+20), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+					
+					# Distance to centroid point(?)
+					#cv2.putText(img, str(dist_to_centroid), (cx,cy+40), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+
 		except:
 			print "Failed to fit ellipse"
 
@@ -161,7 +177,7 @@ while True:
 	#cv2.imwrite("thresh.png", thresh)
 	#cv2.imwrite("gradient.png", gradient)
 	#cv2.imshow("thresh", thresh)
-	#cv2.imshow("unknown", unknown)
+	cv2.imshow("unknown", sure_bg)
 	#cv2.imshow("gradient", gradient)
 	cv2.imshow("depth", img)
 	#break
