@@ -71,7 +71,7 @@ while True:
 
     # Test getting distance at the center pixel
     test_get_dist_center = depth.asarray()
-
+    cv2.flip(test_get_dist_center, 1)
     dist = test_get_dist_center[w/2][h/2]
 
     # Using a box of some amount to bound with
@@ -81,7 +81,7 @@ while True:
     #dist = test_get_dist_center[256][212]
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(test_get_dist_center, str(dist), (w/2,h/2), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(test_get_dist_center, str(dist), (h/2,w/2), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
 
     # NOTE for visualization:
     # cv2.imshow without OpenGL backend seems to be quite slow to draw all
@@ -92,7 +92,10 @@ while True:
     #cv2.imshow("depth", depth.asarray() / 4500.)
 
     # How to see where we're getting info at:
-    test_get_dist_center = cv2.circle(test_get_dist_center,(w/2,h/2), 2, (0,0,255), -1)
+    #test_get_dist_center = cv2.circle(test_get_dist_center,(w/2,h/2), 2, (0,0,255), -1)
+    
+    #lol, so apparantly this is supposed to be h by w???
+    test_get_dist_center = cv2.circle(test_get_dist_center,(h/2,w/2), 2, (0,0,255), -1)
 
     cv2.imshow("depth", test_get_dist_center / 4500.)
 

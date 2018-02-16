@@ -1,4 +1,5 @@
 # coding: utf-8
+# Here, feel free to do absurdly odd things!
 
 import numpy as np
 import math
@@ -67,8 +68,11 @@ while True:
 	imgray = cv2.flip(imgray,1)
 
 	#begin edge detection
-
 	ret,thresh = cv2.threshold(imgray,0,255,cv2.THRESH_BINARY)
+
+	# Apply Gaussian blur
+	thresh = cv2.GaussianBlur(thresh, (3,3), 0)
+
 	#noise removal
 	kernel = np.ones((5,5),np.uint8)
 	thresh = cv2.erode(thresh, kernel, iterations = 3)
@@ -86,7 +90,7 @@ while True:
 	#finding unknown region
 	#unknown = cv2.subtract(gradient,sure_bg)
 	unknown = cv2.subtract(sure_bg,sure_fg)
-	unkown = cv2.medianBlur(unknown,5)
+	unknown = cv2.medianBlur(unknown,5)
 	img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 	#begin contour detection
@@ -103,6 +107,9 @@ while True:
 
 			HIGH_DISTANCE_BOUND = 3000
 			#Original tolerances were 20 and 150
+
+            # Attempt to calculate this diameter in mm
+
 
 			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
 				mask = np.zeros(imgray.shape,np.uint8)
@@ -156,12 +163,11 @@ while True:
 					cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
 					cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
 					cv2.putText(img, "z" + str(coords[2]), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
-
-					#cv2.putText(img, str(mm_diameter), (cx,cy+20), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
-					
-					# Distance to centroid point(?)
+                    
+                    # Distance to centroid point(?)
 					cv2.putText(img, str(dist_to_centroid), (cx,cy+70), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
 
+					cv2.putText(img, str(mm_diameter), (cx,cy+80), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 		except:
 			print "Failed to fit ellipse"
 
