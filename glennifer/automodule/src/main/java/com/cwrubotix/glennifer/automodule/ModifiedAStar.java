@@ -17,7 +17,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     /**
      * ArrayList storing all nodes that are created during the run
      */
-    private ArrayList<AStarNode> nodes = new ArrayList<>(50);
+    private ArrayList<AStarNode> nodes = new ArrayList<>(75);
     /**
      * AStarNode that represents start point
      */
@@ -108,8 +108,8 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      */
     private void createNodes(Obstacle obs){
 	
-	for(int i = 0; i < 6; i++){
-	    double angle = Math.PI * i / 3;
+	for(int i = 0; i < 10; i++){
+	    double angle = Math.PI * i / 5;
 	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
 	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
