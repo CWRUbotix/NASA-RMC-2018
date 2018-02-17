@@ -40,5 +40,6 @@ FORMS    += mainwindow.ui \
 
 #CONFIG += conan_basic_setup
 #include(conanbuildinfo.pri)
+QT += widgets
 
 unix: LIBS += -L/usr/local/lib/ -lprotobuf -lamqpcpp -lrabbitmq -lssl -lcrypto -lprotoc -lyaml-cpp

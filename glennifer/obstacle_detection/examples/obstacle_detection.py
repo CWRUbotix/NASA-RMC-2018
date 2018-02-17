@@ -3,12 +3,16 @@
 import numpy as np
 import math
 import cv2
+import pika
 import sys
 import copy
+import time
+import messages_pb2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
 from pylibfreenect2 import LoggerLevel
+
 
 try:
     	from pylibfreenect2 import OpenCLPacketPipeline
@@ -22,6 +26,23 @@ except:
         	pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
+#start messaging
+exchange_name = 'amq.topic'
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+channel.exchange_declare(exchange_name, 'topic', durable=True)
+
+def publish_obstacle_position(x,y,z,diameter):
+	msg = messages_pb2.ObstaclePosition()
+	msg.x_position = x
+	msg.y_position = y
+	msg.z_position = z
+	msg.diameter = diameter
+	topic = 'obstacle.position'
+	channel.basic_publish(exchange=exchange_name,
+			routing_key=topic,
+			body=msg.SerializeToString())
+
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
 setGlobalLogger(logger)
@@ -29,14 +50,13 @@ setGlobalLogger(logger)
 fn = Freenect2()
 num_devices = fn.enumerateDevices()
 if num_devices == 0:
-    	print("No device connected!")
-    	sys.exit(1)
+	print("No device connected!")
+	sys.exit(1)
 
 serial = fn.getDeviceSerialNumber(0)
 device = fn.openDevice(serial, pipeline=pipeline)
 
-listener = SyncMultiFrameListener(
-    FrameType.Color | FrameType.Ir | FrameType.Depth)
+listener = SyncMultiFrameListener(FrameType.Color | FrameType.Ir | FrameType.Depth)
 
 # Register listeners
 device.setColorFrameListener(listener)
@@ -53,16 +73,21 @@ h,w = 512, 424
 FOVX = 1.232202 #horizontal FOV in radians
 focal_x = device.getIrCameraParams().fx #focal length x
 focal_y = device.getIrCameraParams().fy #focal length y
+principal_x = device.getIrCameraParams().cx #principal point x
+principal_y = device.getIrCameraParams().cy #principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
 while True:
 	frames = listener.waitForNewFrame()
 	depth_frame = frames["depth"]
-
+	color = frames["color"]
+	registration.apply(color, depth_frame, undistorted, registered)
 	#convert image
-	img = depth_frame.asarray() / 4500.
-	imgray = np.uint8(depth_frame.asarray()/255.0)
+	color = registered.asarray(np.uint8)
+	color = cv2.flip(color,1)
+	img = depth_frame.asarray(np.float32) / 4500.
+	imgray = np.uint8(depth_frame.asarray(np.float32)/255.0)
 	#flip images
 	img = cv2.flip(img,1)
 	imgray = cv2.flip(imgray,1)
@@ -88,13 +113,13 @@ while True:
 	#unknown = cv2.subtract(gradient,sure_bg)
 	unknown = cv2.subtract(sure_bg,sure_fg)
 	unkown = cv2.medianBlur(unknown,5)
-	img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+	#img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
 	#begin contour detection
 	image, contours, hierarchy = cv2.findContours(sure_bg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-	img = cv2.drawContours(img, contours, -1, (0,255,0), 1)
+	color = cv2.drawContours(color, contours, -1, (0,255,0), 1)
 	for cntr in contours:
-		#try:
+		try:
 			#calculate diamter of equivalent cirlce
 			area = cv2.contourArea(cntr)
 			equi_diameter = np.sqrt(4*area/np.pi)
@@ -107,24 +132,28 @@ while True:
 			#Original tolerances were 20 and 150
 
 			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
-				mask = np.zeros_like(depth_frame.asarray())
+				mask = np.zeros_like(depth_frame.asarray(np.float32))
 				ellipse = cv2.fitEllipse(cntr)
+				(x,y),radius = cv2.minEnclosingCircle(cntr)
+				equi_diameter = int(radius) * 2
+				rect = cv2.minAreaRect(cntr)
+				box = cv2.boxPoints(rect)
+				box = np.int0(box)
 				mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
 				mask = cv2.erode(mask, kernel, iterations=5)
-				#cv2.drawContours(mask,[cntr],0,255,-1)
-				#pixelpoints = np.transpose(np.nonzero(mask))
-				img_fg = cv2.bitwise_and(depth_frame.asarray(),mask)
-				#img_fg = cv2.blur(img_fg,5)
+				img_fg = cv2.bitwise_and(depth_frame.asarray(np.float32),mask)
 				img_fg = cv2.medianBlur(img_fg,5)
+
+
 
 				# Experimenting with different blur settings
 				#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
 
-				mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
+				#mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
 				non_zero_mean = np.median(img_fg[img_fg.nonzero()])
 				mean_val = non_zero_mean
 				min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
-				
+
 				# Experimenting with object distance
 				#distance_to_object = cv2.mean(img_fg)
 				#print img_fg[50]
@@ -145,30 +174,24 @@ while True:
 				dist_to_centroid = mean_val #actualDistmm[cy][cx]
 
 				if dist_to_centroid < HIGH_DISTANCE_BOUND:
-
-					# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
-					mm_diameter = equi_diameter * (1.0 / focal_x) * dist_to_centroid
-					coords = registration.getPointXYZ(depth_frame, max_loc[1], max_loc[0])
-
-					img = cv2.ellipse(img,ellipse,(0,255,0),2)
-					rect = cv2.minAreaRect(cntr)
-					box = cv2.boxPoints(rect)
-					box = np.int0(box)
-					cv2.drawContours(img,[box],0,(0,0,255),1)
+					coords = registration.getPointXYZ(undistorted, max_loc[1], max_loc[0])
+					mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
+					
+					publish_obstacle_position(coords[0],coords[1],coords[2],mm_diameter)
+					
+					color = cv2.ellipse(color,ellipse,(0,255,0),2)
+					cv2.drawContours(color,[box],0,(0,0,255),1)
 
 					font = cv2.FONT_HERSHEY_SIMPLEX
 
-					cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
-					cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
-					cv2.putText(img, "z" + str(coords[2]), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+					cv2.putText(color, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+					cv2.putText(color, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+					cv2.putText(color, "z" + str(coords[2]), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 
-					#cv2.putText(img, str(mm_diameter), (cx,cy+20), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
-					
-					# Distance to centroid point(?)
-					cv2.putText(img, str(dist_to_centroid), (cx,cy+70), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+					cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 
-		#except:
-			#print "Failed to fit ellipse"
+		except:
+			print "Failed to fit ellipse"
 
 
 	# NOTE for visualization:
@@ -176,16 +199,10 @@ while True:
 	# things below. Try commenting out some imshow if you don't have a fast
 	# visualization backend.
 
-	#cv2.imwrite("thresh.png", thresh)
-	#cv2.imwrite("gradient.png", gradient)
-	#cv2.imshow("thresh", thresh)
-	cv2.imshow("unknown", sure_bg)
-	#cv2.imshow("gradient", gradient)
-	cv2.imshow("depth", img)
-	#break
+	#cv2.imshow("unknown", sure_bg)
+	#cv2.imshow("depth", color)
 
 	listener.release(frames)
-
 	# Use the key 'q' to end!
 
 	key = cv2.waitKey(delay=1)

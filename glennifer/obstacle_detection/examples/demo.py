@@ -2,6 +2,7 @@
 import numpy as np
 import cv2
 import sys
+import copy
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
@@ -70,8 +71,12 @@ while True:
                        color_depth_map=color_depth_map)
 
     # Test getting distance at the center pixel
-    test_get_dist_center = depth.asarray()
+    test_get_dist_center = copy.copy(depth.asarray())
+    # Makes a fresh version of depth.asarray
+    depthArray = copy.copy(depth.asarray())
+
     cv2.flip(test_get_dist_center, 1)
+    cv2.flip(depthArray, 1)
     dist = test_get_dist_center[w/2][h/2]
 
     # Using a box of some amount to bound with
@@ -82,6 +87,25 @@ while True:
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(test_get_dist_center, str(dist), (h/2,w/2), font, 0.4, (255, 255, 255), 1, cv2.LINE_AA)
+
+    # Attempting to try Canny/Etc Filtering
+    imgray8bit = np.uint8(depthArray/255)
+
+    imgray = depthArray/4500
+
+    # Preprocess with a Gaussian Blur?
+    imgFilterGauss = cv2.GaussianBlur(imgray8bit, (5,5), 0)
+    imgFilterGauss3 = cv2.GaussianBlur(imgray8bit, (3,3), 0)
+
+    kernel = np.ones((5,5),np.uint8)
+    threshDilate = cv2.dilate(imgFilterGauss3, kernel, iterations = 1)
+    thresh = cv2.erode(threshDilate, kernel, iterations=1)
+
+    #thresh = cv2.dilate(thresh, kernel, iterations = 1)
+    #thresh = cv2.erode(threshDilate, kernel, iterations=1)
+    #what to display
+    #imgFilter = thresh
+    imgFilter = cv2.Canny(thresh, 5, 15)
 
     # NOTE for visualization:
     # cv2.imshow without OpenGL backend seems to be quite slow to draw all
@@ -98,7 +122,8 @@ while True:
     test_get_dist_center = cv2.circle(test_get_dist_center,(h/2,w/2), 2, (0,0,255), -1)
 
     cv2.imshow("depth", test_get_dist_center / 4500.)
-
+    #cv2.imshow("object detection filter Gauss 11", imgFilterGauss11)
+    cv2.imshow("object detection filter", imgFilter)
     #cv2.imshow("color", cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3))))
     #cv2.imshow("registered", registered.asarray(np.uint8))
 

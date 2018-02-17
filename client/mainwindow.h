@@ -134,6 +134,7 @@ public slots:
     void handleA_KeyPress();
     void handleD_KeyPress();
 
+    void handleObstacleData(QString key, QByteArray data);
 
     void keyPressEvent(QKeyEvent *ev);
     void keyReleaseEvent(QKeyEvent *ev);

@@ -188,6 +188,8 @@ class Demo {
 	bool procStarboard = false;
 	bool procStern = false;
 
+	double tag_vctr_one = 0.0121;
+
 public:
 
 	// default constructor
@@ -202,7 +204,7 @@ public:
 
 		m_width(640), //640
 		m_height(480), //480
-		m_tagSize(0.165), //0.166
+		m_tagSize(0.165), //0.165
 		m_fx(644.12),	//600 approximate, 644.12 second good calibration
 		m_fy(644.12),	//600 approximate, 644.12 second good calibration
 		m_px(319.5),	//m_width/2  //same 399.5 //319.5
@@ -241,6 +243,7 @@ public:
 		// prepare window for drawing the camera images
 		if (m_draw) {
 			cv::namedWindow(windowName, 1);
+			cv::namedWindow(windowName1, 1);
 		}
 
 		// optional: prepare serial port for communication with Arduino
@@ -387,8 +390,8 @@ public:
 
 
 	void print_detection(AprilTags::TagDetection& detection) const {
-		cout << "  Id: " << detection.id
-				<< " (Hamming: " << detection.hammingDistance << ")";
+		//cout << "  Id: " << detection.id
+		//		<< " (Hamming: " << detection.hammingDistance << ")";
 
 		// recovering the relative pose of a tag:
 
@@ -410,8 +413,8 @@ public:
 		double yaw, pitch, roll;
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
-		double a, b, c;
-		a = yaw; b = pitch; c = roll;
+		//double a, b, c;
+		//a = yaw; b = pitch; c = roll;
 		//a = pitch; b = roll; c = yaw;
 		//a = roll; b = yaw; c = pitch;
 		//a = yaw; b = roll; c = pitch;
@@ -420,7 +423,7 @@ public:
 
 
 		//Testing the creation of a vector for the standardization.
-		Eigen::Quaterniond q;
+		/*Eigen::Quaterniond q;
 	    // Abbreviations for the various angular functions
 		double cy = cos(a * 0.5);
 		double sy = sin(a * 0.5);
@@ -432,24 +435,32 @@ public:
 		q.w() = (cy * cr * cp + sy * sr * sp);
 		q.x() = (cy * sr * cp - sy * cr * sp);
 		q.y() = (cy * cr * sp + sy * sr * cp);
-		q.z() = (sy * cr * cp - cy * sr * sp);
+		q.z() = (sy * cr * cp - cy * sr * sp);*/
+
+		//testing new localization triangulation with tag 9
+		if (detection.id == 9) {
+			double centre = sqrt((translation.norm()*translation.norm()) + tag_vctr_one);
+			cout << "Distance to Centre: " << centre;
+			cout << "Distance to Tag: " << translation.norm();
+			cout << endl;
+		}
 
 		//Outputting the vector components to the AprilTag
-		cout << "  distance=" << translation.norm()
+		/*cout << "  distance=" << translation.norm()
         		 << "m, x=" << translation(0)
 				 << ", y=" << translation(1)
 				 << ", z=" << translation(2)
 				 << ", yaw(x)=" << yaw
 				 << ", pitch(z)=" << pitch
 				 << ", roll(y)=" << roll;
-		cout   << endl; //added ; cout to fix eclipse bug
+		cout   << endl; //added ; cout to fix eclipse bug*/
 
 		//Q components
-		cout << "    qw=" << q.w()
+		/*cout << "    qw=" << q.w()
 				<< ", qx=" << q.x()
 				<< ", qy=" << q.y()
 				<< ", qz=" << q.z();
-		cout << endl;
+		cout << endl;*/
 
 		//AMQP
 
@@ -551,7 +562,7 @@ public:
 		return ret;
 	}
 
-	/*
+
 	void processImage2(cv::Mat& image, cv::Mat& image_gray) {
 		// alternative way is to grab, then retrieve; allows for
 		// multiple grab when processing below frame rate - v4l keeps a
@@ -610,7 +621,7 @@ public:
 			}
 		}
 	}
-	*/
+
 
 	// Load and process a single image
 	void loadImages() {
@@ -644,12 +655,17 @@ public:
 
 		int frame = 0;
 		double last_t = tic();
-		double time_last_located = tic();
+		//double time_last_located = tic();
 		while (true) {
 
-
+			m_cap >> image;
+			cout << "communicating data..." << endl;
+			m_cap1 >> image1;
+			cout << "communicating data1..." << endl;
+			processImage(image, image_gray);
+			processImage2(image1, image_gray1);
 			//processing the port camera
-			if(procPort){
+		/*	if(procPort){
 				// capture frame
 				m_cap >> image;
 				bool result = processImage(image, image_gray);
@@ -691,11 +707,11 @@ public:
 			}
 
 			//processing other frames without worrying about the rate above
-			// m_cap1 >> image1;
-			// processImage2(image1, image_gray1);
+			 m_cap1 >> image1;
+			 processImage2(image1, image_gray1);
 
-			/*m_cap2 >> image;
-      	  processImage(image, image_gray);*/
+		//	m_cap2 >> image;
+      	 // processImage(image, image_gray);*/
 
 
 			AMQPExchange * ex = amqp.createExchange("amq.topic");
