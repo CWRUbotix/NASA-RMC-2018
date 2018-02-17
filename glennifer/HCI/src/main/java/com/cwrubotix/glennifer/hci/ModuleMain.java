@@ -29,13 +29,15 @@ public class ModuleMain {
     private static final String serverUsername;
     private static final String serverPassword;
     private static final String exchangeName;
+    private static Channel channel;
+    private static String queueName;
 
 	public static void runWithConnectionExceptions() throws IOException, TimeoutException {
 		// Read connection config
 		Mechanics.initialize();
 
         // Read String paths from YML file
-        getPathsFromYML(inputYMLPath);
+		getVarsFromConfigFile(inputYMLPath);
 
 		//Connect and Configure AMPQ
         setupAMQP();
@@ -60,8 +62,7 @@ public class ModuleMain {
 
 		Consumer consumer = new DefaultConsumer(channel) {
 			@Override
-			public void handleDelivery(String consumerTag, Envelope envelope,
-									   AMQP.BasicProperties properties, byte[] body) throws IOException {
+			public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 				String routingKey = envelope.getRoutingKey();
 				String[] keys = routingKey.split("\\.");
                 if(keys.length < 2) {
@@ -81,6 +82,7 @@ public class ModuleMain {
                     routeSystemMessage(keys, body);
 			    }
 		    };
+		};
 
 		channel.basicConsume(queueName, true, consumer);
 
@@ -90,8 +92,8 @@ public class ModuleMain {
 				SensorData sensorData = hci.pollSensorUpdate();
 				
 				int sensorDataID =  sensorData.id;
-				double value = sensorData.data
-				long time_ms = sensorDatatimestamp;
+				double value = sensorData.data;
+				long time_ms = sensorData.timestamp;
 				Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
 						.setTimeInt(time_ms / 1000)
 						.setTimeFrac((time_ms % 1000) / (1000.0F))
@@ -168,9 +170,9 @@ public class ModuleMain {
                     }
                 }
                 // sensor.locomotion.front_left.wheel_pod_limit_extended
-// sensor.locomotion.front_right.wheel_pod_limit_extended
-// sensor.locomotion.back_left.wheel_pod_limit_extended
-// sensor.locomotion.back_right.wheel_pod_limit_extended
+				// sensor.locomotion.front_right.wheel_pod_limit_extended
+				// sensor.locomotion.back_left.wheel_pod_limit_extended
+				// sensor.locomotion.back_right.wheel_pod_limit_extended
 				else if(sensorDataID == 16){
 					Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
 							.setRpm((float)convertToBCAngle(value))
@@ -230,14 +232,14 @@ public class ModuleMain {
         }
     }
 
-    private static setupAMQP() throws IOException{
+    private static void setupAMQP() throws IOException{
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(serverAddress); //replace local host with host name
         factory.setUsername(serverUsername);
         factory.setPassword(serverPassword);
         Connection connection = factory.newConnection(); // throws
-        Channel channel = connection.createChannel(); // throws
-        String queueName = channel.queueDeclare().getQueue();
+        channel = connection.createChannel(); // throws
+        queueName = channel.queueDeclare().getQueue();
     }
 
     private static String findArduinoPort(){
@@ -289,7 +291,7 @@ public class ModuleMain {
         // If port is still null, couldn't find it
         if(port == null) {
             System.out.println("Couldn't find attached arduino, please try again");
-            return;
+            return null;
         } else {
             System.out.println("Found arduino at " + port);
         }
@@ -374,7 +376,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeLocomotionMessage(Stirng[] keys, byte[] body){
+    private static void routeLocomotionMessage(String[] keys, byte[] body){
         if(keys.length < 4) {
             System.out.println("Locomotion motor control routing key must have 4 elements");
             return;
@@ -462,7 +464,7 @@ public class ModuleMain {
         }
     }
 
-    private static routeDepositionMessage(String[] keys, byte[] body){
+    private static void routeDepositionMessage(String[] keys, byte[] body){
         if(keys.length < 3) {
             System.out.println("Deposition motor control routing key must have 3 elements");
             return;
@@ -488,7 +490,7 @@ public class ModuleMain {
         }
     }
 
-    private static routeSystemMessage(String[] keys, byte[] body){
+    private static void routeSystemMessage(String[] keys, byte[] body){
         if(keys[2].equals("stop_all")){
             Messages.StopAllCommand sac = Messages.StopAllCommand.parseFrom(body);
             int id = 50; //the "50th motor tells all motors to stop or start"
@@ -502,16 +504,16 @@ public class ModuleMain {
             System.out.println("Stop All command issued");
             queueActuation(id, targetValue);
         }
-    }    else {
+        else {
         System.out.println("Motor control routing key has unrecognized subsystem");
         return;
-    }
+        }
     }
 
     private static Actuation queueActuation(int id, double targetValue){
         Actuation act = new Actuation(id, targetValue);
         System.out.println("Queueing Actuation for Motor ID: " + id + ", Target value: " + targetValue);
-        hci.queueActuation(a);
+        hci.queueActuation(act);
     }
 
 	private static int sign(double x) {
