@@ -1,7 +1,6 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 /**
  * Complete graph implementation of A* search algorithm with account for obstacles that are not visible before attaining certain proximity.
@@ -44,6 +43,19 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     protected ArrayList<AStarNode> getNodes() {
         return nodes;
     }
+    
+    protected void setStart(Position startPosition){
+	start = new AStarNode(startPosition);
+	start.setHeading(startPosition.getHeading());
+	connectToAll(start);
+	addNode(getNodes(), start);
+    }
+    
+    protected void setEnd(Position endPosition){
+	end = new AStarNode(endPosition);
+	connectToAll(end);
+	addNode(getNodes(), end);
+    }
 
     @Override
     public Path computePath() {
@@ -55,12 +67,12 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 
 	/*Setting up fields and nodes*/
         start = new AStarNode(startPosition);
-        start.setAngle(startPosition.getAngle());
+        start.setHeading(startPosition.getHeading());
         end = new AStarNode(endPosition);
         start.connect(end);
         end.connect(start);
-        getNodes().add(start);
-        getNodes().add(end);
+        addNode(getNodes(), start);
+        addNode(getNodes(), end);
 	
 	/*Calls aStar method*/
         Path result = aStar(start, end);
@@ -72,30 +84,17 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 
     @Override
     public Path computePath(Position currentPos, Obstacle newObstacle) {
-
-        AStarNode cp = new AStarNode(currentPos); //Parses currentPos in the AStarNode
+	setStart(currentPos);
         getObstacles().add(newObstacle);          //Adding obstacle to the list
         createNodes(newObstacle);                 //Creates new AStarNodes around the obstacle registered.
-        getNodes().add(cp);
 
         connectToAll(); // Reconstructs the graph to make sure no edges run into obstacles.
-	
-	/*Calls aStar method. Making sure that the Path created contains current position.*/
-        Path firstHalf = aStar(start, cp);
-        Path secondHalf = aStar(cp, end);
-	
+		
+        /*Calls aStar method*/
+        Path result = aStar(start, end);
+        
 	/*Post processing*/
-        Path result = firstHalf;
-
-        boolean skipped = false;
-        for (Position p : secondHalf) {
-            if (!skipped) { //skipping first position so that there are no two current position nodes in the path
-                skipped = true;
-            } else {
-                result.addLast(p);
-            }
-        }
-        setAngles(result); //Setting up angles
+        setAngles(result);
         return result;
     }
     
@@ -113,7 +112,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
 	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
-		getNodes().add(new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
+		addNode(getNodes(), new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
 	}
     }
 
@@ -130,6 +129,15 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                 }
             }
         }
+    }
+    
+    private void connectToAll(AStarNode newNode){
+	for(AStarNode node : getNodes()){
+	    if(isValid(newNode, node)){
+		newNode.connect(node);
+		node.connect(newNode);
+	    }
+	}
     }
 
     /**
@@ -159,10 +167,10 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 
     private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
 	/*Making sure whether obstacle even has a chance to be on the way*/
-	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - 0.75;
-	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + 0.75;
-	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - 0.75;
-	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + 0.75;
+	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - 0.80;
+	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + 0.80;
+	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - 0.80;
+	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + 0.80;
 	
 	/*If it is not within the range we should worry about, return false*/
 	if(obs.getX() < x_left_bound || obs.getX() > x_right_bound || obs.getY() < y_top_bound || obs.getY() > y_bottom_bound){
@@ -171,16 +179,16 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
-        double theta = Math.atan((0.75F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
+        double theta = Math.atan((0.80F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
-        double leftBound = start.getAngleTurnTo(obs) - theta;
-        double rightBound = start.getAngleTurnTo(obs) + theta;
+        double leftBound = start.getHeadingTo(obs) - theta;
+        double rightBound = start.getHeadingTo(obs) + theta;
 
         if (rightBound > Math.PI * 2) rightBound = rightBound - 2 * Math.PI; // In case the angle bounds
         if (leftBound < 0) leftBound = leftBound + 2 * Math.PI;              // exceed the angle range
 
-        double angle = start.getAngleTurnTo(end); // absolute angle position of end node relative to the start node
+        double angle = start.getHeadingTo(end); // absolute angle position of end node relative to the start node
 
         if (leftBound < rightBound) { // Normal case
             if (angle > leftBound && angle < rightBound) return true;
@@ -192,6 +200,11 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 
     }
     
+    private void addNode(ArrayList<AStarNode> list, AStarNode node){
+	if(!list.contains(node))
+	    list.add(node);
+    }
+    
     /*Main A* implementation method*/
 
     /**
@@ -201,32 +214,35 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * @param end   end point of the path
      * @return the path created
      */
-    protected Path aStar(AStarNode start, AStarNode end) {
+    private Path aStar(AStarNode start, AStarNode end) {
 
-        resetVisited();        //
-        resetFound();             // Resetting
-        resetDistances();      // Field values
-        updateHeruistics(end); //
-	
 	/*pre-search setup*/
+        astarSetup(end);
         AStarNode current = start;
         current.updateDist(0.0F);
-        LinkedList<AStarNode> openSet = new LinkedList<>();
-        LinkedList<AStarNode> closedSet = new LinkedList<>();
-        openSet.add(start);
+        ArrayList<AStarNode> openSet = new ArrayList<>(getNodes().size());
+        addNode(openSet, start);
         start.setFound(true);
 
         while (!openSet.isEmpty()) { // While there are nodes to evaluate
             if (current.equals(end)) // When reached the destination
                 return createPath(start, end);
             openSet.remove(current);  // Removes the node whose shortest distance from start position is determined
-            closedSet.add(current);   // from openSet list and adds it to the closedSet list.
             current.setVisited(true); // marking the field that is added to closedSet
-            updateDistances(current); // evaluating adjacent nodes
-            for (AStarNode neighbor : current.getConnections()) { // adding adjacent nodes to openSet list
-                if (!neighbor.isVisited() && !neighbor.found()) { // if it is not in both lists
-                    openSet.add(neighbor);
+            
+            for (AStarNode neighbor : current.getConnections()) { 
+                if (!neighbor.isVisited() && !neighbor.found()) { // if it is not seen before, add to open list
+                    addNode(openSet,neighbor);
                     neighbor.setFound(true);
+                    neighbor.setPrevious(current);
+                    neighbor.updateDist(current.getDist() + current.getDistTo(neighbor));
+                }
+                else if(!neighbor.isVisited()){ //If seen before, update cost.
+                    float tempGScore = current.getDist() + current.getDistTo(neighbor);
+                    if (neighbor.getDist() > tempGScore) {
+                        neighbor.updateDist(tempGScore);
+                        neighbor.setPrevious(current);
+                    }
                 }
             }
             current = getMinFScore(openSet); // setting next node as a node with minimum fScore.
@@ -244,7 +260,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * @param openSet the given list to search
      * @return the node with minimum fScore among the nodes in the given list
      */
-    private AStarNode getMinFScore(LinkedList<AStarNode> openSet) {
+    private AStarNode getMinFScore(ArrayList<AStarNode> openSet) {
         AStarNode save = null;
         for (AStarNode neighbor : openSet) { //linear search
             if (save == null) {
@@ -256,62 +272,22 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         }
         return save;
     }
-
-    /**
-     * Iterates through the connected nodes of the given AStarNode and updates the distance field.
-     *
-     * @param current a node whose connected neighbors are being evaluated
-     */
-    private void updateDistances(AStarNode current) {
-        for (AStarNode node : current.getConnections()) {
-            float tempGScore = current.getDist() + current.getDistTo(node);
-            if (node.getDist() > tempGScore) {
-                node.updateDist(tempGScore);
-                node.setPrevious(current);
-            }
-        }
-    }
-    
     
     
     /*Helper methods for pre-setup for new search*/
-
+    
     /**
-     * Iterates through all nodes and updates Heruisitics field according to given end point
-     *
-     * @param end
+     * Pre-search setup for astar method.
+     * Resets field values to default and sets up heuristic of all nodes
+     * @param end destination of the search
      */
-    private void updateHeruistics(AStarNode end) {
-        for (AStarNode node : getNodes()) {
+    private void astarSetup(AStarNode end){
+	for(AStarNode node : getNodes()){
             node.setHeruistic(end);
-        }
-    }
-
-    /**
-     * Iterates through all nodes and resets visited field
-     */
-    private void resetVisited() {
-        for (AStarNode node : getNodes()) {
             node.setVisited(false);
-        }
-    }
-
-    /**
-     * Iterates through all nodes and resets found field
-     */
-    private void resetFound() {
-        for (AStarNode node : getNodes()) {
             node.setFound(false);
-        }
-    }
-
-    /**
-     * Iterates through all nodes and sets distance field as default value
-     */
-    private void resetDistances() {
-        for (AStarNode node : getNodes()) {
             node.updateDist(Float.POSITIVE_INFINITY);
-        }
+	}
     }
     
     /*Post-search processing*/
@@ -346,7 +322,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
             if (!skipFirst)
                 skipFirst = true;
             else {
-                ((AStarNode) p).setAngle();
+                ((AStarNode) p).setHeading();
             }
         }
     }
@@ -516,8 +492,8 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         /**
          * Calculates and updates angle value using the previous AStarNode
          */
-        public void setAngle() {
-            super.setAngle(getPrevious().getAngleTurnTo(this)); //The absolute angle position that robot needs to face to reach this position
+        public void setHeading() {
+            super.setHeading(getPrevious().getHeadingTo(this)); //The absolute angle position that robot needs to face to reach this position
         }
 
         /**
@@ -530,7 +506,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         }
 
         /**
-         * Marks whether this ndoe has been added to open set during A* search
+         * Marks whether this node has been added to open set during A* search
          *
          * @param found
          */

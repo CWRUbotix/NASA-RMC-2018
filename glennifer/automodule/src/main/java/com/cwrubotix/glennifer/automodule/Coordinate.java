@@ -5,7 +5,7 @@ import java.util.Comparator;
 public abstract class Coordinate{
     private float x_pos;
     private float y_pos;
-    private static final float WALL_CLEARANCE = 0.3F; //I set this to 30cm for now because I am scared of walls
+    private static final float WALL_CLEARANCE = 0.80F; 
     private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
     private static final float ARENA_HEIGHT = 7.38F;
     
@@ -18,26 +18,24 @@ public abstract class Coordinate{
         return x_pos;
     }
 
-    public boolean setX(float x_pos) {
-        //checking whether input is within the arena
-        if (x_pos < (ARENA_WIDTH() / 2) - WALL_CLEARANCE() && x_pos > (ARENA_WIDTH() / -2) + WALL_CLEARANCE()) {
-            this.x_pos = x_pos;
-            return true;
-        }
-        return false;
+    public boolean setX(float x_pos){
+	if(x_pos < ARENA_WIDTH / 2 && x_pos > ARENA_WIDTH / -2){
+	    this.x_pos = x_pos;
+	    return true;
+	}
+	return false;
     }
 
     public float getY() {
         return y_pos;
     }
 
-    public boolean setY(float y_pos) {
-        //checking whether input is within the arena
-        if (y_pos > WALL_CLEARANCE() && y_pos < 7.38F - WALL_CLEARANCE()) {
-            this.y_pos = y_pos;
-            return true;
-        }
-        return false;
+    public boolean setY(float y_pos){
+	if(y_pos < ARENA_HEIGHT && y_pos >= 0){
+	    this.y_pos = y_pos;
+	    return true;
+	}
+	return false;
     }
     
     /**
