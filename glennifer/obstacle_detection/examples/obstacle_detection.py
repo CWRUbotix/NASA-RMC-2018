@@ -79,6 +79,7 @@ undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
 while True:
+	
 	frames = listener.waitForNewFrame()
 	depth_frame = frames["depth"]
 	color = frames["color"]
