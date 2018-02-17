@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -9,10 +9,18 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.UnixTime;
+import com.cwrubotix.glennifer.Messages.Fault;
+import com.cwrubotix.glennifer.Messages.LaunchTransit;
+import com.cwrubotix.glennifer.Messages.LaunchDrill;
+import com.cwrubotix.glennifer.Messages.LaunchDump;
+import com.cwrubotix.glennifer.Messages.TransitSoftStop;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -23,11 +31,16 @@ import java.util.concurrent.TimeoutException;
  * depending on which state it is in.
  * 
  * @author Seohyun Jung
+ * @author Imran Hossain
  *
  */
 public class AutoModule extends Module {
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
+
+	private String exchangeName;
+	private Connection connection;
+	private Channel channel;
 	
 	/*
 	 *TODO list
@@ -46,5 +59,6 @@ public class AutoModule extends Module {
         this.channel = connection.createChannel();
 
         // Listen for commands...
+
 	}
 }
