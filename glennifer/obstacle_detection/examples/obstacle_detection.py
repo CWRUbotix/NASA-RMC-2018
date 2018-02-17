@@ -3,12 +3,16 @@
 import numpy as np
 import math
 import cv2
+import pika
 import sys
 import copy
+import time
+import messages_pb2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
 from pylibfreenect2 import LoggerLevel
+
 
 try:
     	from pylibfreenect2 import OpenCLPacketPipeline
@@ -22,6 +26,23 @@ except:
         	pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
+#start messaging
+exchange_name = 'amq.topic'
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+channel = connection.channel()
+channel.exchange_declare(exchange_name, 'topic', durable=True)
+
+def publish_obstacle_position(x,y,z,diameter):
+	msg = messages_pb2.ObstaclePosition()
+	msg.x_position = x
+	msg.y_position = y
+	msg.z_position = z
+	msg.diameter = diameter
+	topic = 'obstacle.position'
+	channel.basic_publish(exchange=exchange_name,
+			routing_key=topic,
+			body=msg.SerializeToString())
+
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
 setGlobalLogger(logger)
@@ -29,14 +50,13 @@ setGlobalLogger(logger)
 fn = Freenect2()
 num_devices = fn.enumerateDevices()
 if num_devices == 0:
-    	print("No device connected!")
-    	sys.exit(1)
+	print("No device connected!")
+	sys.exit(1)
 
 serial = fn.getDeviceSerialNumber(0)
 device = fn.openDevice(serial, pipeline=pipeline)
 
-listener = SyncMultiFrameListener(
-    FrameType.Color | FrameType.Ir | FrameType.Depth)
+listener = SyncMultiFrameListener(FrameType.Color | FrameType.Ir | FrameType.Depth)
 
 # Register listeners
 device.setColorFrameListener(listener)
@@ -59,16 +79,16 @@ undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
 while True:
+	
 	frames = listener.waitForNewFrame()
 	depth_frame = frames["depth"]
 	color = frames["color"]
-	#undistorted_depth = registration.undistortDepth(depth_frame, undistorted)
 	registration.apply(color, depth_frame, undistorted, registered)
 	#convert image
 	color = registered.asarray(np.uint8)
 	color = cv2.flip(color,1)
-	img = depth_frame.asarray() / 4500.
-	imgray = np.uint8(depth_frame.asarray()/255.0)
+	img = depth_frame.asarray(np.float32) / 4500.
+	imgray = np.uint8(depth_frame.asarray(np.float32)/255.0)
 	#flip images
 	img = cv2.flip(img,1)
 	imgray = cv2.flip(imgray,1)
@@ -98,7 +118,7 @@ while True:
 
 	#begin contour detection
 	image, contours, hierarchy = cv2.findContours(sure_bg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-	#img = cv2.drawContours(img, contours, -1, (0,255,0), 1)
+	color = cv2.drawContours(color, contours, -1, (0,255,0), 1)
 	for cntr in contours:
 		try:
 			#calculate diamter of equivalent cirlce
@@ -113,7 +133,7 @@ while True:
 			#Original tolerances were 20 and 150
 
 			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
-				mask = np.zeros_like(depth_frame.asarray())
+				mask = np.zeros_like(depth_frame.asarray(np.float32))
 				ellipse = cv2.fitEllipse(cntr)
 				(x,y),radius = cv2.minEnclosingCircle(cntr)
 				equi_diameter = int(radius) * 2
@@ -122,7 +142,7 @@ while True:
 				box = np.int0(box)
 				mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
 				mask = cv2.erode(mask, kernel, iterations=5)
-				img_fg = cv2.bitwise_and(cv2.flip(depth_frame.asarray(),1),mask)
+				img_fg = cv2.bitwise_and(depth_frame.asarray(np.float32),mask)
 				img_fg = cv2.medianBlur(img_fg,5)
 
 
@@ -131,7 +151,7 @@ while True:
 				#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
 
 				#mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
-				non_zero_mean = np.mean(img_fg[img_fg.nonzero()])
+				non_zero_mean = np.median(img_fg[img_fg.nonzero()])
 				mean_val = non_zero_mean
 				min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
 
@@ -155,10 +175,11 @@ while True:
 				dist_to_centroid = mean_val #actualDistmm[cy][cx]
 
 				if dist_to_centroid < HIGH_DISTANCE_BOUND:
-					# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
-					coords = registration.getPointXYZ(depth_frame, max_loc[1], max_loc[0])
-					mm_diameter = -(equi_diameter - principal_x) * (1.0 / focal_x) * coords[2]
-
+					coords = registration.getPointXYZ(undistorted, max_loc[1], max_loc[0])
+					mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
+					
+					publish_obstacle_position(coords[0],coords[1],coords[2],mm_diameter)
+					
 					color = cv2.ellipse(color,ellipse,(0,255,0),2)
 					cv2.drawContours(color,[box],0,(0,0,255),1)
 
@@ -170,9 +191,6 @@ while True:
 
 					cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 
-					# Distance to centroid point(?)
-					#cv2.putText(img, "depth = " + str(distance_to_object), (cx,cy), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
-
 		except:
 			print "Failed to fit ellipse"
 
@@ -182,17 +200,10 @@ while True:
 	# things below. Try commenting out some imshow if you don't have a fast
 	# visualization backend.
 
-	#cv2.imwrite("thresh.png", thresh)
-	#cv2.imwrite("gradient.png", gradient)
-	#cv2.imshow("thresh", thresh)
-	cv2.imshow("unknown", sure_bg)
-	#cv2.imshow("gradient", gradient)
-	cv2.imshow("depth", color)
-
-	#break
+	#cv2.imshow("unknown", sure_bg)
+	#cv2.imshow("depth", color)
 
 	listener.release(frames)
-
 	# Use the key 'q' to end!
 
 	key = cv2.waitKey(delay=1)
