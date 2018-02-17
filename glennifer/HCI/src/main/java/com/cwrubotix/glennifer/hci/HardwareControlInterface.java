@@ -75,7 +75,7 @@ public class HardwareControlInterface implements Runnable {
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
 	public int addActuator(ActuatorConfig config) {
-		Actuator actuator = new Actuator(config)
+		Actuator actuator = new Actuator(config);
 		int ID = config.ID;
 
 		if(actuators.containsKey(ID)) {
@@ -94,10 +94,10 @@ public class HardwareControlInterface implements Runnable {
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
 	public int addSensor(SensorConfig config) {
-		Sensor sensor = new Sensor(config)
+		Sensor sensor = new Sensor(config);
 		int ID = config.ID;
 
-		if(sensors.containsKey(ID) {
+		if(sensors.containsKey(ID)) {
 			return 1;
 		} else {
 			sensors.put(ID, sensor);
@@ -273,7 +273,7 @@ public class HardwareControlInterface implements Runnable {
 				// Update it with the data
 				boolean different = s.updateRaw(dat);
 				if (different) {
-					sensorUpdateQueue.add(new SensorData(sens, dat, t))); // TODO: transform to sensor-specific physical units here
+					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 				}
 			}
 		}

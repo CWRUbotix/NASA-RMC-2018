@@ -87,6 +87,7 @@ public class ModuleMain {
 		// Main loop to get sensor data
 		try {
 			while (true) {
+				System.out.println("Looping in main")
 				SensorData sensorData = hci.pollSensorUpdate();
 				
 				int sensorDataID =  sensorData.id;
@@ -168,9 +169,9 @@ public class ModuleMain {
                     }
                 }
                 // sensor.locomotion.front_left.wheel_pod_limit_extended
-// sensor.locomotion.front_right.wheel_pod_limit_extended
-// sensor.locomotion.back_left.wheel_pod_limit_extended
-// sensor.locomotion.back_right.wheel_pod_limit_extended
+				// sensor.locomotion.front_right.wheel_pod_limit_extended
+				// sensor.locomotion.back_left.wheel_pod_limit_extended
+				// sensor.locomotion.back_right.wheel_pod_limit_extended
 				else if(sensorDataID == 16){
 					Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
 							.setRpm((float)convertToBCAngle(value))
@@ -252,14 +253,15 @@ public class ModuleMain {
                 sp.setParams(baud, 8, 1, 0);
                 sp.setDTR(false);
                 // Create test packet
-                byte[] bt = {0x5A,0x01,0x00};
+                byte[] bt = {0x02,0x01,0x5A};
                 // Write test byte 0x5A
                 sp.writeBytes(bt);
-                Thread.sleep(2000);
+                Thread.sleep(1000);
                 // Read response bytes
-                byte[] b = sp.readBytes(1,1000);
+                byte[] b = sp.readBytes(3,1000);
                 // If response is 0xA5, it is the arduino
-                if(b[0] == (byte)0xA5) {
+                if(b[2] == (byte)0xA5) {
+                	System.out.println("Found the arduino")
                     // Capture the string of correct port
                     port = s;
                     // Close the port
