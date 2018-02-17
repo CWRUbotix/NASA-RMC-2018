@@ -196,7 +196,7 @@ FAULT_T hciRead(byte * cmd){
 	uint8_t retval;
 
 	retval = SerialUSB.readBytes(cmd, CMD_HEADER_SIZE);	// populate the array
-
+  Serial.print(retval);
 	// proceed to check the cmd array for issues
 	if(retval != CMD_HEADER_SIZE){
 		return FAULT_INCOMPLETE_HEADER;
@@ -206,6 +206,8 @@ FAULT_T hciRead(byte * cmd){
 	}
 
 	bodyLen = cmd_body_len(cmd);
+  Serial.print("BODY LEN:\t");
+  Serial.println(bodyLen);
 	retval = SerialUSB.readBytes(cmd + CMD_HEADER_SIZE, bodyLen);
 
 	if(retval < bodyLen){
@@ -230,7 +232,7 @@ uint16_t cmd_body_len(byte* cmd){
 }
 ////////////////////////////////////////////////////////////////////////////////
 bool cmd_check_body(byte * cmd, uint8_t bodyLen){
-	return (bodyLen % INSTRUCTION_LEN)==0;
+	return true; //(bodyLen % INSTRUCTION_LEN)==0;
 }
 ////////////////////////////////////////////////////////////////////////////////
 uint8_t cmd_type(byte cmd[]) {
@@ -390,6 +392,7 @@ void maintain_motors(byte* cmd, bool success){
 	// if(stopped){
 	// 	continue;
 	// }
+  /*
 	uint8_t type 	= cmd_type(cmd);
 
 	if(success){ 	// process the new command
@@ -410,7 +413,7 @@ void maintain_motors(byte* cmd, bool success){
 //			continue;
 //		}
 		// do motor maintainance things
-	}
+	}*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -442,6 +445,7 @@ void setup(){
 	setup_sensors();
 	setup_motors();
 	setup_comms();
+  stopped = false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -469,7 +473,7 @@ void loop(){
 											// we may not need the cmd argument
 	
 
-	if(SerialUSB.available()){
+	if(success){//SerialUSB.available()){
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
     Serial.print("RPY STATUS:\t");
     Serial.println(fault_code);
