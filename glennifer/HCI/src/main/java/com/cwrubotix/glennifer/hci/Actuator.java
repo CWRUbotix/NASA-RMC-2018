@@ -50,9 +50,6 @@ public class Actuator {
 	// Temporary storage for the update() function
 	private HashMap<Integer,ArrayList<Double>> tempData = new HashMap<Integer, ArrayList<Double>>();
 	
-	// The interface that controls this actuator
-	private final HardwareControlInterface hci;
-	
 	// List of data
 	private ArrayList<ActuatorData> data = new ArrayList<ActuatorData>();
 	// List of sensors for feedback
@@ -110,8 +107,7 @@ public class Actuator {
 	 * @param config The configuration of the actuator
 	 * @param iface The interface that controls this actuator
 	 */
-	Actuator(ActuatorConfig config, HardwareControlInterface iface) {
-		hci = iface;
+	Actuator(ActuatorConfig config) {
 		// Initialize the temporary data holder
 		for(FeedbackType f: FeedbackType.values()) {
 			tempData.put(f.id, new ArrayList<Double>());

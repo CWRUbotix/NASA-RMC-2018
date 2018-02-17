@@ -45,4 +45,9 @@ public class ActuatorConfig {
 		cop.nomVoltage = this.nomVoltage;
 		return cop;
 	}
+
+	ActuatorConfig(String name, int ID){
+		this.name = name;
+		this.ID = ID;
+	}
 }

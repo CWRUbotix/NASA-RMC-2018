@@ -31,10 +31,8 @@ public class HardwareControlInterface implements Runnable {
 
 	// Queue of actuations to be checked in
 	private LinkedBlockingQueue<Actuation> actuationQueue = new LinkedBlockingQueue<Actuation>();
-	// Queue of coordinated actuations to be checked in
-	private LinkedBlockingQueue<CoordinatedActuation> coordinatedActuationQueue = new LinkedBlockingQueue<CoordinatedActuation>();
 	// Queue of sensor updates detected that can be consumed externally for sending
-	private LinkedBlockingQueue<LabeledSensorData> sensorUpdateQueue = new LinkedBlockingQueue<>();
+	private LinkedBlockingQueue<SensorData> sensorUpdateQueue = new LinkedBlockingQueue<>();
 	// List of constraints set on various motors, etc.
 	private ArrayList<ActuationConstraint> constraints = new ArrayList<ActuationConstraint>();
 	// Hashmap of actuators to their ID's
@@ -44,7 +42,6 @@ public class HardwareControlInterface implements Runnable {
 	// List of active actuation jobs
 	private ArrayList<Actuation> activeActuations = new ArrayList<Actuation>();
 	// List of active coordinated actuation jobs
-	private ArrayList<CoordinatedActuation> activeCoordinatedActuations = new ArrayList<CoordinatedActuation>();
 	private SerialPort port;
 	/**
 	 * Queue's an actuation to be checked in
@@ -53,20 +50,12 @@ public class HardwareControlInterface implements Runnable {
 	public void queueActuation(Actuation actuation) {
 		actuationQueue.add(actuation);
 	}
-	
-	/**
-	 * Queue's a coordinated actuation to be checked in
-	 * @param coordinatedActuation The actuation job that is to be checked in
-	 */
-	public void queueCoordinatedActuation(CoordinatedActuation coordinatedActuation) {
-		coordinatedActuationQueue.add(coordinatedActuation);
-	}
 
 	/**
 	 * Blocking wait until there is a sensor update to be consumed, and then pop it.
 	 * @return the sensor data
 	 */
-	public LabeledSensorData pollSensorUpdate() throws InterruptedException {
+	public SensorData pollSensorUpdate() throws InterruptedException {
 		return sensorUpdateQueue.poll(1000000, TimeUnit.DAYS);
 	}
 	
@@ -85,12 +74,15 @@ public class HardwareControlInterface implements Runnable {
 	 * @param id The ID of the actuator
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
-	public int addActuator(Actuator actuator, int id) {
-		if(actuators.containsKey(id)) {
+	public int addActuator(ActuatorConfig config) {
+		Actuator actuator = new Actuator(config)
+		int ID = config.ID;
+
+		if(actuators.containsKey(ID)) {
 			System.out.println("Fail to add actuator #" + id);
 			return 1;
 		} else {
-			actuators.put(id, actuator);
+			actuators.put(ID, actuator);
 			return 0;
 		}
 	}
@@ -101,11 +93,14 @@ public class HardwareControlInterface implements Runnable {
 	 * @param id The ID of the sensor
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
-	public int addSensor(Sensor sensor, int id) {
-		if(sensors.containsKey(id)) {
+	public int addSensor(SensorConfig config) {
+		Sensor sensor = new Sensor(config)
+		int ID = config.ID;
+
+		if(sensors.containsKey(ID) {
 			return 1;
 		} else {
-			sensors.put(id, sensor);
+			sensors.put(ID, sensor);
 			return 0;
 		}
 	}
@@ -195,19 +190,6 @@ public class HardwareControlInterface implements Runnable {
 				}
 			}
 		}
-		Iterator<CoordinatedActuation> itca = activeCoordinatedActuations.iterator();
-		while(itca.hasNext()) {
-			CoordinatedActuation ca = itca.next();
-			// For all active actuations
-			if(ca.actuatorID == act.actuatorID) {
-				// If target is already set and override, remove it, otherwise return false
-				if(act.override) {
-					itca.remove();
-				} else {
-					return false;
-				}
-			}
-		}
 		// If no conflict or override, add it
 		activeActuations.add(act);
 		actuationQueue.remove(act);
@@ -291,7 +273,7 @@ public class HardwareControlInterface implements Runnable {
 				// Update it with the data
 				boolean different = s.updateRaw(dat);
 				if (different) {
-					sensorUpdateQueue.add(new LabeledSensorData(sens, new SensorData(dat, t))); // TODO: transform to sensor-specific physical units here
+					sensorUpdateQueue.add(new SensorData(sens, dat, t))); // TODO: transform to sensor-specific physical units here
 				}
 			}
 		}
