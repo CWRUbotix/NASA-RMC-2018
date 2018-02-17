@@ -49,11 +49,6 @@ public class Actuator {
 	
 	// Temporary storage for the update() function
 	private HashMap<Integer,ArrayList<Double>> tempData = new HashMap<Integer, ArrayList<Double>>();
-	
-	// List of data
-	private ArrayList<ActuatorData> data = new ArrayList<ActuatorData>();
-	// List of sensors for feedback
-	private ArrayList<SensorFeedback> sensors = new ArrayList<SensorFeedback>();
 	// Output type of this actuator
 	private OutputType outputType;
 	
@@ -70,36 +65,6 @@ public class Actuator {
 		}
 		long now = System.currentTimeMillis();
 		// TODO
-	}
-	
-	/**
-	 * Gets the actuator data at a specific time.  If the specified time was not sampled at,
-	 * the function linearly interpolates the data.
-	 * @param millis
-	 * @return Null if extrapolates 250ms past last data point or if millis predates the first data point.
-	 * Returns the exact or interpolated value at millis otherwise.
-	 */
-	public ActuatorData getDataAt(long millis) {
-		// TODO
-		return null;
-	}
-	
-	/**
-	 * Adds a feedback sensor to the actuator
-	 * @param sensorID ID of the sensor
-	 * @param fbType Type of feedback
-	 * @param conv Conversion from raw sensor values to standard units of fbType
-	 */
-	public void addFeedback(int sensorID, FeedbackType fbType, double conv, double weight) {
-		for(SensorFeedback sf: sensors) {
-			if(sf.sensorID == sensorID) {
-				sf.sensorID = sensorID;
-				sf.fbType = fbType;
-				sf.convFactor = conv;
-				return;
-			}
-		}
-		sensors.add(new SensorFeedback(sensorID, fbType, conv, weight));
 	}
 	
 	/**

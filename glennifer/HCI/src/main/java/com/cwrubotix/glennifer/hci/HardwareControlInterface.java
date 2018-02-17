@@ -33,8 +33,6 @@ public class HardwareControlInterface implements Runnable {
 	private LinkedBlockingQueue<Actuation> actuationQueue = new LinkedBlockingQueue<Actuation>();
 	// Queue of sensor updates detected that can be consumed externally for sending
 	private LinkedBlockingQueue<SensorData> sensorUpdateQueue = new LinkedBlockingQueue<>();
-	// List of constraints set on various motors, etc.
-	private ArrayList<ActuationConstraint> constraints = new ArrayList<ActuationConstraint>();
 	// Hashmap of actuators to their ID's
 	private HashMap<Integer, Actuator> actuators = new HashMap<Integer,Actuator>();
 	// Hashmap of sensors to their ID's
@@ -79,7 +77,7 @@ public class HardwareControlInterface implements Runnable {
 		int ID = config.ID;
 
 		if(actuators.containsKey(ID)) {
-			System.out.println("Fail to add actuator #" + id);
+			System.out.println("Fail to add actuator #" + ID);
 			return 1;
 		} else {
 			actuators.put(ID, actuator);

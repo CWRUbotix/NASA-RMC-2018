@@ -31,10 +31,8 @@ public class ActuatorConfig {
 	public int maxOutput = 127;
 	
 	public ActuatorConfig copy() {
-		ActuatorConfig cop = new ActuatorConfig();
-		cop.name = this.name;
+		ActuatorConfig cop = new ActuatorConfig(this.name, this.ID);
 		cop.description = this.description;
-		cop.ID = this.ID;
 		cop.angLinConv = this.angLinConv;
 		cop.anglin = this.anglin;
 		cop.tfCurrentRatio = this.tfCurrentRatio;

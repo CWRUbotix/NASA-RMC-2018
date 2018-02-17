@@ -11,6 +11,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.ArrayList;
@@ -25,10 +26,10 @@ public class ModuleMain {
     private static final String inputYMLPath = "config/connection.yml";
 	
 	private static HardwareControlInterface hci;
-    private static final String serverAddress;
-    private static final String serverUsername;
-    private static final String serverPassword;
-    private static final String exchangeName;
+    private static String serverAddress;
+    private static String serverUsername;
+    private static String serverPassword;
+    private static String exchangeName;
     private static Channel channel;
     private static String queueName;
 
@@ -89,7 +90,7 @@ public class ModuleMain {
 		// Main loop to get sensor data
 		try {
 			while (true) {
-				System.out.println("Looping in main")
+				System.out.println("Looping in main");
 				SensorData sensorData = hci.pollSensorUpdate();
 				
 				int sensorDataID =  sensorData.id;
@@ -209,7 +210,7 @@ public class ModuleMain {
 	}
 
 
-    private static void getVarsFromConfigFile(String path) throws RuntimeException{
+    private static void getVarsFromConfigFile(String path) throws RuntimeException, IOException{
         InputStream input = new FileInputStream(path);
         Yaml yaml = new Yaml();
         Object connectionConfigObj = yaml.load(input);
@@ -233,7 +234,7 @@ public class ModuleMain {
         }
     }
 
-    private static void setupAMQP() throws IOException{
+    private static void setupAMQP() throws IOException, TimeoutException{
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(serverAddress); //replace local host with host name
         factory.setUsername(serverUsername);
@@ -255,15 +256,15 @@ public class ModuleMain {
                 sp.setParams(baud, 8, 1, 0);
                 sp.setDTR(false);
                 // Create test packet
-                byte[] bt = {0x02,0x01,0x5A};
+                byte[] bt = {0x03,0x01,0x5A};
                 // Write test byte 0x5A
                 sp.writeBytes(bt);
                 Thread.sleep(1000);
                 // Read response bytes
-                byte[] b = sp.readBytes(3,1000);
+                byte[] b = sp.readBytes(3,2000);
                 // If response is 0xA5, it is the arduino
                 if(b[2] == (byte)0xA5) {
-                	System.out.println("Found the arduino")
+                	System.out.println("Found the arduino");
                     // Capture the string of correct port
                     port = s;
                     // Close the port
@@ -378,7 +379,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeLocomotionMessage(String[] keys, byte[] body){
+    private static void routeLocomotionMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 4) {
             System.out.println("Locomotion motor control routing key must have 4 elements");
             return;
@@ -396,7 +397,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeWheelRPMMessage(String[] keys, byte[] body){
+    private static void routeWheelRPMMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         int id = -1;
         if (keys[2].equals("front_left")) {
             id = 0;
@@ -420,7 +421,7 @@ public class ModuleMain {
         queueActuation(id, targetValue);
     }
 
-    private static void routeWheelPodPosMessage(String[] keys, byte[] body){
+    private static void routeWheelPodPosMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         int id = -1;
         if (keys[2].equals("front_left")) {
             id = 4;
@@ -439,7 +440,7 @@ public class ModuleMain {
         queueActuation(id, targetValue);
     }
 
-    private static void routeExcavationMessage(String[] keys, byte[] body){
+    private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 3) {
             System.out.println("Excavation motor control routing key must have 3 elements");
             return;
@@ -466,7 +467,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeDepositionMessage(String[] keys, byte[] body){
+    private static void routeDepositionMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 3) {
             System.out.println("Deposition motor control routing key must have 3 elements");
             return;
@@ -492,7 +493,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeSystemMessage(String[] keys, byte[] body){
+    private static void routeSystemMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys[2].equals("stop_all")){
             Messages.StopAllCommand sac = Messages.StopAllCommand.parseFrom(body);
             int id = 50; //the "50th motor tells all motors to stop or start"
@@ -516,6 +517,7 @@ public class ModuleMain {
         Actuation act = new Actuation(id, targetValue);
         System.out.println("Queueing Actuation for Motor ID: " + id + ", Target value: " + targetValue);
         hci.queueActuation(act);
+        return act;
     }
 
 	private static int sign(double x) {
