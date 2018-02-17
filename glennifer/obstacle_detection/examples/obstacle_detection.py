@@ -4,6 +4,7 @@ import numpy as np
 import math
 import cv2
 import sys
+import copy
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
@@ -91,8 +92,9 @@ while True:
 
 	#begin contour detection
 	image, contours, hierarchy = cv2.findContours(sure_bg,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+	img = cv2.drawContours(img, contours, -1, (0,255,0), 1)
 	for cntr in contours:
-		try:
+		#try:
 			#calculate diamter of equivalent cirlce
 			area = cv2.contourArea(cntr)
 			equi_diameter = np.sqrt(4*area/np.pi)
@@ -105,18 +107,22 @@ while True:
 			#Original tolerances were 20 and 150
 
 			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
-				mask = np.zeros(imgray.shape,np.uint8)
-				cv2.drawContours(mask,[cntr],0,255,-1)
-				pixelpoints = np.transpose(np.nonzero(mask))
-				img_fg = cv2.bitwise_and(depth_frame.asarray(),depth_frame.asarray(),mask = mask)
-				
+				mask = np.zeros_like(depth_frame.asarray())
+				ellipse = cv2.fitEllipse(cntr)
+				mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
+				mask = cv2.erode(mask, kernel, iterations=5)
+				#cv2.drawContours(mask,[cntr],0,255,-1)
+				#pixelpoints = np.transpose(np.nonzero(mask))
+				img_fg = cv2.bitwise_and(depth_frame.asarray(),mask)
 				#img_fg = cv2.blur(img_fg,5)
 				img_fg = cv2.medianBlur(img_fg,5)
 
 				# Experimenting with different blur settings
 				#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
 
-				mean_val = cv2.mean(img_fg)
+				mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
+				non_zero_mean = np.median(img_fg[img_fg.nonzero()])
+				mean_val = non_zero_mean
 				min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
 				
 				# Experimenting with object distance
@@ -136,15 +142,14 @@ while True:
 				actualDistmm = depth_frame.asarray()
 				actualDistmm = cv2.medianBlur(actualDistmm,5)
 				cv2.flip(actualDistmm, 1)
-				dist_to_centroid = actualDistmm[cy][cx]
+				dist_to_centroid = mean_val #actualDistmm[cy][cx]
 
 				if dist_to_centroid < HIGH_DISTANCE_BOUND:
 
 					# Sets mm_diameter to the object's diameter in pixels wide, for calibration if desired
 					mm_diameter = equi_diameter * (1.0 / focal_x) * dist_to_centroid
-					coords = registration.getPointXYZ(depth_frame, cy, cx)
+					coords = registration.getPointXYZ(depth_frame, max_loc[1], max_loc[0])
 
-					ellipse = cv2.fitEllipse(cntr)
 					img = cv2.ellipse(img,ellipse,(0,255,0),2)
 					rect = cv2.minAreaRect(cntr)
 					box = cv2.boxPoints(rect)
@@ -162,8 +167,8 @@ while True:
 					# Distance to centroid point(?)
 					cv2.putText(img, str(dist_to_centroid), (cx,cy+70), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
 
-		except:
-			print "Failed to fit ellipse"
+		#except:
+			#print "Failed to fit ellipse"
 
 
 	# NOTE for visualization:
