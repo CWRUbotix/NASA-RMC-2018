@@ -2,12 +2,17 @@ package main.java.com.cwrubotix.glennifer.automodule;
 
 import java.util.Comparator;
 
+/**
+ * Abstract Data structure representing a coordinate within the arena
+ * @author Seohyun Jung
+ *
+ */
 public abstract class Coordinate{
     private float x_pos;
     private float y_pos;
-    private static final float WALL_CLEARANCE = 0.80F; 
-    private static final float ARENA_WIDTH = 3.78F;  //+/- 1.39F From the middle (Tag is the origin)
-    private static final float ARENA_HEIGHT = 7.38F;
+    private static final float WALL_CLEARANCE = 0.80F; //Clearance distance from wall
+    private static final float ARENA_WIDTH = 3.78F;  
+    private static final float ARENA_HEIGHT = 7.38F; 
     
     public Coordinate(float x_pos, float y_pos){
 	this.x_pos = x_pos;
