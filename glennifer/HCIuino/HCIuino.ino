@@ -19,12 +19,13 @@
 #define RPY_HCI_TEST 			(0xA5)
 
 // Sizes & Number of things
-#define SENSORE_DATA_SIZE 		(1)
+#define SENSOR_DATA_SIZE 		(1)
+#define SENSOR_ID_SIZE      (2)
 #define MOTOR_ID_SIZE 			(1)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
-//#define HEADER_FIELDS			(3)
-//#define INSTRUCTION_LEN 		(3)
+#define HEADER_FIELDS			(3)
+#define INSTRUCTION_LEN 		(3)
 #define DEFAULT_BUF_LEN 		(256)
 #define SENSORE_ID_SIZE 		(1)
 #define MOTOR_ID_SIZE 			(1)
@@ -309,7 +310,7 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 ////////////////////////////////////////////////////////////////////////////////
 FAULT_T hciWrite(byte rpy[]){
 	uint16_t len 	= rpy_len(rpy);	// DIFF from last year
-	fault FAULT_T 	= FAULT_FAILED_WRITE;
+	FAULT_T fault	= FAULT_FAILED_WRITE;
 	uint8_t retval 	= SerialUSB.write(rpy,len+2);
 	
 	if (retval == len+2) {
@@ -405,9 +406,9 @@ void maintain_motors(byte* cmd, bool success){
 	for(i=0; i<DEFAULT_BUF_LEN; i++){
 		motor = motor_infos[i];
 
-		if(motor.hardware == MotorHardware.MH_NONE){
-			continue;
-		}
+//		if(motor.hardware == MotorHardware.MH_NONE){
+//			continue;
+//		}
 		// do motor maintainance things
 	}
 }
@@ -453,6 +454,8 @@ void loop(){
   FAULT_T fault_code = NO_FAULT;
 	if(SerialUSB.available()){
 		fault_code = hciRead(cmd);	// verify the command
+    Serial.print("CMD STATUS:\t");
+    Serial.println(fault_code);
 		if(fault_code == NO_FAULT){
 			success = true;
 		}else{ // there was an issue with the command
@@ -468,5 +471,7 @@ void loop(){
 
 	if(SerialUSB.available()){
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
+    Serial.print("RPY STATUS:\t");
+    Serial.println(fault_code);
 	}
 }
