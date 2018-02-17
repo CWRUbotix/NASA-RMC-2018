@@ -25,6 +25,8 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * AStarNode that represents end point
      */
     private AStarNode end;
+    /**Clearance distance needed from the center of the robot*/
+    private final float CLEARANCE = 0.80F;
 
     /**
      * Returns the list of obstacles
@@ -109,7 +111,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 	for(int i = 0; i < 10; i++){
 	    double angle = Math.PI * i / 5;
-	    float clearance = 0.80F / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
+	    float clearance = CLEARANCE / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
 	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
 		addNode(getNodes(), new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
@@ -179,7 +181,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
-        double theta = Math.atan((0.80F / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
+        double theta = Math.atan((CLEARANCE / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
 	
 	/*Absolute angle positions of two tangent lines of clearance ranges that intersects start position*/
         double leftBound = start.getHeadingTo(obs) - theta;
