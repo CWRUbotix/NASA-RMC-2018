@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -492,8 +492,31 @@ public class AutoDrillModule extends Module {
 		});
 		
 	}
-	
-	public  static void main(String[] args){
+
+    @Override
+    public void stop() {
+	    try {
+	        channel.close();
+	        connection.close();
+
+	        // Unsubscribe from StateModule
+            Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder()
+                    .setReplyKey("autoDrillModule")
+                    .setInterval(0.2F)
+                    .setDepositionDetailed(false)
+                    .setDepositionSummary(true)
+                    .setExcavationDetailed(true)
+                    .setExcavationSummary(false)
+                    .setLocomotionDetailed(true)
+                    .setLocomotionSummary(false)
+                    .build();
+            this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
+        } catch (TimeoutException | IOException e) {
+            // Do nothing
+        }
+    }
+
+    public  static void main(String[] args){
 		AutoDrillModule module = new AutoDrillModule();
 		module.start();
 	}

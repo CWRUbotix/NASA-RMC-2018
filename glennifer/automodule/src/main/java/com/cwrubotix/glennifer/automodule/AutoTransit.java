@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -63,13 +63,12 @@ public class AutoTransit extends Module {
 			Position currentPos = new Position(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
-					cmd.getCurHeading(),
-					0f);
+					cmd.getCurHeading());
 
 			Position destinationPos = new Position(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
-					0f, 0f);
+					0f);
 
 			// TODO Construct pathFinder when algorithms available
         }
@@ -139,7 +138,23 @@ public class AutoTransit extends Module {
         factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.channel = connection.createChannel();
-        // Listen for commands...
+
+        // Listeners for commands
+		String queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "launch.transit");
+		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "softstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "hardstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, exchangeName, "newobstacle.transit");
+		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
     }
 
 }

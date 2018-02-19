@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 /**
  * Data type that represents a location inside the arena.
@@ -58,8 +58,8 @@ public class Position extends Coordinate implements Cloneable {
     /**
      * Returns heading the robot need to be in order to face position b
      *
-     * @param b the destination
-     * @return heading the robot need to be in order to face position b
+     * @param p the destination
+     * @return angle the robot need to be in order to face position b
      */
     public double getHeadingTo(Coordinate p){
    	float x_diff = p.getX() - getX();
