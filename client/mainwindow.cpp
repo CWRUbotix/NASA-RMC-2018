@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -1109,6 +1109,12 @@ void MainWindow::initSubscription() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "state.subscribe");
 
+    //QString login = str_login;
+    ConsumerThread *threadDylann = new ConsumerThread(m_loginStr, "obstacle.position");
+    connect(threadDylann, &ConsumerThread::receivedMessage, this, &MainWindow::handleObstacleData);
+    connect(threadDylann, SIGNAL(finished()), threadDylann, SLOT(deleteLater()));
+    threadDylann->start();
+
     on_commandLinkButton_clicked();
 }
 
@@ -1446,10 +1452,12 @@ void MainWindow::handleTankPivotL() {
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
         handleBackLeftWheelSet(leftSide);
+       // msg.set_rpm(60 * (value / 100.0F));
 
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config, tank pivot only works on straight");
-    }
+    }//msg.set_rpm(60 * (value / 100.0F));
+
 }
 
 void MainWindow::handleTankPivotRK() {
@@ -1801,4 +1809,21 @@ void MainWindow::handleD_KeyPress() {
     }
     else                       //turn or strafe
         handleLocomotionRight();
+}
+
+void MainWindow::handleObstacleData(QString key, QByteArray data) {
+    ObstaclePosition msg;
+    msg.ParseFromArray(data.data(), data.length());
+    float x_pos = msg.x_position();
+    float y_pos = msg.y_position();
+    float z_pos = msg.z_position();
+    float diameter = msg.diameter();
+    QString x = QString::number(x_pos);
+    QString y = QString::number(y_pos);
+    QString z = QString::number(z_pos);
+    QString d = QString::number(diameter);
+    ui->consoleOutputTextBrowser->append(x + y + z + d);
+    //QPixmap pix;
+   // pix.loadFromData((uchar*)data.data(), data.length(), "JPEG");
+    //ui->cam5lbl->setPixmap(pix);
 }

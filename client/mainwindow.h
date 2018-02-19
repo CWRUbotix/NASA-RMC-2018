@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -134,6 +134,7 @@ public slots:
     void handleA_KeyPress();
     void handleD_KeyPress();
 
+    void handleObstacleData(QString key, QByteArray data);
 
     void keyPressEvent(QKeyEvent *ev);
     void keyReleaseEvent(QKeyEvent *ev);

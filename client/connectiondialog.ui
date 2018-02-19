@@ -32,7 +32,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Robot address:</string>
+        <string>Robot Address:</string>
        </property>
       </widget>
      </item>

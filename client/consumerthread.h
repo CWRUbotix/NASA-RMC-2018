@@ -2,7 +2,7 @@
 #define CONSUMERTHREAD_H
 
 #include <QThread>
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QString>
 #include <QMap>

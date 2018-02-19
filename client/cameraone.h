@@ -1,17 +1,17 @@
 #ifndef CAMERAONE_H
 #define CAMERAONE_H
 #include <opencv2/core/core.hpp>
-#include <opencv2/video.hpp>
-#include <opencv/cv.h>
-#include <opencv/cv.hpp>
-#include <AMQPcpp.h>
+//#include <opencv2/video.hpp>
+//#include <opencv/cv.h>
+//#include <opencv/cv.hpp>
+#include <amqpcpp/AMQPcpp.h>
 #include <QDialog>
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/opencv.hpp>
+//#include <opencv2/highgui.hpp>
+//#include <opencv2/imgcodecs.hpp>
 #include <stdio.h>
 #include <iostream>
-#include <opencv2/imgproc.hpp>
+//#include <opencv2/imgproc.hpp>
 
 namespace Ui {
 class CameraOne;
