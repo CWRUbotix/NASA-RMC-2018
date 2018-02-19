@@ -2,7 +2,6 @@ package com.cwrubotix.glennifer.automodule;
 
 /**
  * Data type that represents a location inside the arena.
- * If angle is negative, the instance represents horizontal line in the arena.
  *
  * @author Seohyun Jung
  */
@@ -11,40 +10,58 @@ public class Position extends Coordinate implements Cloneable {
 
     /**
      * <p>
-     * Represent the angle the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
+     * Represent the heading the robot is facing. EX) 0 when facing north, PI/2 when facing to the right and so forth (clock-wise).
      * </p>
      * <p>
      * Range : [0, 2PI) unit in radians.
      * </p>
      */
-    private double angle; //declared double 'cause java.lang.Math hates float angles for trigonometry.
+    private double heading; //declared double 'cause java.lang.Math hates float headings for trigonometry.
     
 
 
-    public Position(float x_pos, float y_pos, double angle) {
+    public Position(float x_pos, float y_pos, double heading) {
         super(x_pos, y_pos);
-        this.angle = angle;
+        this.heading = heading;
     }
     
     public Position(float x_pos, float y_pos){
 	this(x_pos, y_pos, 0.0);
     }
     
-    public double getAngle(){
-	return angle;
+    public double getHeading(){
+	return heading;
     }
     
-    public void setAngle(double angle){
-	this.angle = angle;
+    public void setHeading(double heading){
+	this.heading = heading;
+    }
+    
+    public boolean setX(float x_pos) {
+        //checking whether input is within the arena
+        if (x_pos < (ARENA_WIDTH() / 2) - WALL_CLEARANCE() && x_pos > (ARENA_WIDTH() / -2) + WALL_CLEARANCE()) {
+            super.setX(x_pos);
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean setY(float y_pos) {
+        //checking whether input is within the arena
+        if (y_pos > WALL_CLEARANCE() && y_pos < ARENA_HEIGHT() - WALL_CLEARANCE()) {
+            super.setY(y_pos);
+            return true;
+        }
+        return false;
     }
     
     /**
-     * Returns angle the robot need to be in order to face position b
+     * Returns heading the robot need to be in order to face position b
      *
      * @param p the destination
      * @return angle the robot need to be in order to face position b
      */
-    public double getAngleTurnTo(Coordinate p){
+    public double getHeadingTo(Coordinate p){
    	float x_diff = p.getX() - getX();
    	float y_diff = p.getY() - getY();
    	if (x_diff < 0) {
@@ -74,7 +91,7 @@ public class Position extends Coordinate implements Cloneable {
 
     @Override
     public Object clone() {
-        return new Position(getX(), getY(), getAngle());
+        return new Position(getX(), getY(), getHeading());
     }
 
     /**
