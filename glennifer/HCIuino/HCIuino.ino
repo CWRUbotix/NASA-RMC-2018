@@ -3,7 +3,7 @@
 //	PREPROCESSOR INCLUDES
 //
 ////////////////////////////////////////////////////////////////////////////////
-//#include <ODriveArduino.h>
+#include <ODriveArduino.h>
 #include <math.h>
 
 
@@ -24,10 +24,11 @@
 ////  SETUP
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
+	SerialUSB.begin(HCI_BAUD);	// Begin communication with computer
+	// Serial.begin(9600); 		// Comms with something-or-other
 	setup_sensors();
 	setup_motors();
-	SerialUSB.begin(9600);
-  Serial.begin(9600);
+	
 	stopped = false;
 }
 
@@ -55,7 +56,6 @@ void loop(){
 	
 	maintain_motors(cmd, success);			// keep robot in a stable state
 											// we may not need the cmd argument
-	
 
 	if(success){
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client

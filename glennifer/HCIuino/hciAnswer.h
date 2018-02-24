@@ -56,12 +56,12 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 	uint8_t size 	= RPY_HEADER_SIZE;
 	uint8_t bodyLen = 0;
 	uint8_t retval 	= 0;
-	FAULT_T fault 	= FAULT_FAILED_WRITE;
+	FAULT_T fault 	= FAULT_FAILED_WRITE; 	// defualt assumption
 
-	uint8_t type = cmd_type(cmd);
+	uint8_t type = cmd_type(cmd); 			// rpy type is same as cmd type
 	rpy_init(rpy, type);
-	uint8_t num = 0;
-	uint8_t i, ID, index;
+	uint8_t num = 0; 						// number of sensors
+	uint8_t i, ID, index; 
 	switch(type){
 		case CMD_HCI_TEST:
 			rpy[RPY_HEADER_SIZE] = RPY_HCI_TEST; 	// data goes immediately after header
