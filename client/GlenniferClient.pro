@@ -43,3 +43,4 @@ FORMS    += mainwindow.ui \
 QT += widgets
 
 unix: LIBS += -L/usr/local/lib/ -lprotobuf -lamqpcpp -lrabbitmq -lssl -lcrypto -lprotoc -lyaml-cpp
+QMAKE_CXXFLAGS += -std=c++11

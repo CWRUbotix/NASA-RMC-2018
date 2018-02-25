@@ -169,6 +169,10 @@ private:
     QString drillFwd = "drill.surface";
     QString drillEnd = "drill.end";
     int m_dumpConfig = 0; //0 is store, 1 is dump/fully extended
+
+    QGraphicsScene *radarScene;
+    QGraphicsEllipseItem *agent;
+    QGraphicsEllipseItem *agent2;
 };
 
 #endif // MAINWINDOW_H

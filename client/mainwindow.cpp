@@ -89,6 +89,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     depositionScene->addPolygon(poly, outlinePen, redBrush);
 
+    //painter.drawEllipse(QPointF(x,y), radius, radius);
+    radarScene = new QGraphicsScene(this);
+    ui->mapGraphicsView->setScene(radarScene);
+    agent = radarScene->addEllipse(10, 10, 10, 10, outlinePen, greenBrush);
+    //agent->setTransformOriginPoint(55, 55);
+
+    agent2 = radarScene->addEllipse(20, 20, 10, 10, outlinePen, redBrush);
+    //agent2->setTransformOriginPoint(75, 75);
+
     QObject::connect(ui->locomotion_UpButton, &QPushButton::clicked,
                      this, &MainWindow::handleLocomotionUp);
     QObject::connect(ui->locomotion_UpButton, &QPushButton::released,
@@ -1115,7 +1124,7 @@ void MainWindow::initSubscription() {
     connect(threadDylann, SIGNAL(finished()), threadDylann, SLOT(deleteLater()));
     threadDylann->start();
 
-    on_commandLinkButton_clicked();
+    //on_commandLinkButton_clicked();
 }
 
 void MainWindow::handleState(QString key, QByteArray data) {
@@ -1420,13 +1429,25 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::on_commandLinkButton_clicked()
 {
     //reset frame and img to make sure it is not conflicting
-    cameraOne = new CameraOne(this, m_loginStr);
+    /*cameraOne = new CameraOne(this, m_loginStr);
     cameraOne->CameraOne::camOneStream();
     cameraOne->CameraOne::camTwoStream();
     cameraOne->CameraOne::camThreeStream();
     cameraOne->CameraOne::camFourStream();
     cameraOne->CameraOne::camFiveStream();
-    cameraOne->show();
+    cameraOne->show();*/
+    QBrush greenBrush(Qt::green);
+    QBrush grayBrush(Qt::gray);
+    QBrush redBrush(Qt::red);
+    QBrush blueBrush(Qt::blue);
+    QPen outlinePen(Qt::black);
+    outlinePen.setWidth(2);
+    float valuex = 20;
+
+    QGraphicsEllipseItem *obstacle;
+    obstacle = radarScene->addEllipse(10, 10, 10, 10, outlinePen, greenBrush);
+    obstacle->setTransformOriginPoint(valuex, valuex);
+    valuex = valuex + 20;
 }
 
 
