@@ -3,13 +3,11 @@
 //	PREPROCESSOR INCLUDES
 //
 ////////////////////////////////////////////////////////////////////////////////
-#include <ODriveArduino.h>
+//#include <ODriveArduino.h>
 #include <math.h>
-
 
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
-#include "global_vars.h"
 #include "hciRead.h"
 #include "hardware_io.h"
 #include "hciAnswer.h"
@@ -25,11 +23,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
 	SerialUSB.begin(HCI_BAUD);	// Begin communication with computer
-	// Serial.begin(9600); 		// Comms with something-or-other
+	Serial.begin(9600); 		// Comms with something-or-other
 	setup_sensors();
 	setup_motors();
 	
 	stopped = false;
+	Serial.println("================================================================================");
+	Serial.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,12 +39,15 @@ void loop(){
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false;
+	debugging[0]=0; debugging[1]=0; debugging[2]=0; debugging[3]=0; debugging[4]=0;
+
+	long time = millis() - lastTime;
 	FAULT_T fault_code = NO_FAULT;
-	if(SerialUSB.available()){
+	if(SerialUSB.available() > 0){
+		
 		fault_code = hciRead(cmd);	// verify the command
 
-		Serial.print("CMD STATUS:\t");
-		Serial.println(fault_code);
+		debugging[0] = fault_code;
 
 		if(fault_code == NO_FAULT){
 			success = true;
@@ -52,16 +55,36 @@ void loop(){
 			success = false;
 			//log_fault(fault_code);			// add to log or whatever
 		}
+	}else{
+		//Serial.println("Client is still not available.");
+		if(time >= 5000){
+			Serial.println("Client is still not available.");
+			lastTime = millis();
+		}
+		
 	}
-	
 	maintain_motors(cmd, success);			// keep robot in a stable state
 											// we may not need the cmd argument
 
 	if(success){
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
 
-		Serial.print("RPY STATUS:\t");
-		Serial.println(fault_code);
+		// Serial.print("\t");
+		// Serial.println(fault_code);
+		debugging[3] = fault_code;
+	}
+	if(debugging[0] != 0){
+		Serial.print("   ");
+		Serial.print(debugging[0]);
+		Serial.print("            ");
+		Serial.print(debugging[1]);
+		Serial.print("            ");
+		Serial.print(debugging[2]);
+		Serial.print("      ");
+		Serial.print(debugging[3]);
+		Serial.print("      ");
+		Serial.print(debugging[4]);
+		Serial.println();
 	}
 }
 

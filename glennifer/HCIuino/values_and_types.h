@@ -46,6 +46,7 @@
 //Motor Faults
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 //  DEFINE TYPES
@@ -71,10 +72,11 @@ typedef struct SensorInfo{
 	SensorHardware hardware;
 	uint8_t addr; 			// When hardware = SH_I2C_* or ...
 	uint8_t whichMotor; 	// When hardware = SH_RC_*
-	uint8_t whichPin; 		// 
-	bool is_inverted;		// When hardware = SH_PIN_LIMIT
-	float responsiveness;	// 1 is perfect responsiveness??
+	int whichPin; 			// 
+	bool is_reversed;		// When hardware = SH_PIN_LIMIT
+	float responsiveness;	// 1 = responsiveness
 	uint16_t scale; 		// 1 unless needed
+	int16_t storedVal; 		// replacing the sensor_storedVals array
 }SensorInfo;
 
 //MOTOR STUFF
@@ -91,12 +93,19 @@ enum MotorHardware {
 	MH_ALL			// 
 };
 
+enum CtrlrType {
+	CTRL_BL,
+	CTRL_BR
+};
+
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	uint8_t addr; 			// 
 	uint8_t whichMotor;		// if brushless motors
-	uint16_t scale; 		// 1 unless needed
+	uint8_t whichCtrlr; 	// identify the controller
+	uint8_t PWMpin; 		// if MH_BR_PWM
+	uint16_t scale = 1; 	// 1 unless needed
 	uint16_t setPt; 		// set point for motor (rather that use an array)
 	float kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	float ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
@@ -113,7 +122,25 @@ typedef struct MotorInfo{
 }MotorInfo;
 
 
+////////////////////////////////////////////////////////////////////////////////
+//
+//  GLOBAL VARIABLES
+//
+////////////////////////////////////////////////////////////////////////////////
+FAULT_T faults[DEFAULT_BUF_LEN];						// to hold faults that have occurred
+byte faultIndex = 0;									// tracks the location of the last fault
 
+SensorInfo sensor_infos[DEFAULT_BUF_LEN] 		= {}; 	// All initialized to SH_NONE
+MotorInfo motor_infos[DEFAULT_BUF_LEN] 			= {}; 	// All initialized to MH_NONE
 
+int16_t motor_setpoints[DEFAULT_BUF_LEN] 		= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
+uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
+int16_t sensor_storedVals[DEFAULT_BUF_LEN] 		= {}; 	// All initialized to 0
+float motor_integrals[DEFAULT_BUF_LEN] 			= {}; 	//All initialized to 0
+int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
+bool stopped 									= true;	// default status is stopped
+
+int lastTime = 0;
+int debugging[5] = {};
 
 #endif

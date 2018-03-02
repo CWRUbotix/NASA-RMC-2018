@@ -71,7 +71,7 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 			int16_t value;
 			num = cmd_sense_num_sensors(cmd);
 			for(i = 0; i<num; i++){
-				ID    = cmd[(3*i)+CMD_HEADER_SIZE];
+				ID    = cmd[i+CMD_HEADER_SIZE];
 				read_sensor(ID, &value);
 				rpy[(3*i)+RPY_HEADER_SIZE]   = ID;
 				rpy[(3*i)+RPY_HEADER_SIZE+1] = (uint8_t)(value >> 8);
@@ -95,7 +95,8 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 	}
 
 	rpy_set_len(rpy, bodyLen); 	// we only want to consider body length
-	size 	+= bodyLen;
+	size 	= RPY_HEADER_SIZE + bodyLen;
+	debugging[4] = size;
 	retval 	= SerialUSB.write(rpy, size);
 	success = (retval == size);
 	if(success){
