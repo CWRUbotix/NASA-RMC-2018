@@ -41,6 +41,7 @@ def publish_obstacle_position(x, y, z, diameter):
     msg.y_position = y
     msg.z_position = z
     msg.diameter = diameter
+    print msg
     topic = 'obstacle.position'
     channel.basic_publish(exchange=exchange_name,
                           routing_key=topic,
@@ -77,6 +78,8 @@ registration = Registration(device.getIrCameraParams(),
 h, w = 512, 424
 FOVX = 1.232202  # horizontal FOV in radians
 sending_data = True
+window_size = 5
+time_delay = 2
 focal_x = device.getIrCameraParams().fx  # focal length x
 focal_y = device.getIrCameraParams().fy  # focal length y
 principal_x = device.getIrCameraParams().cx  # principal point x
@@ -84,7 +87,7 @@ principal_y = device.getIrCameraParams().cy  # principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
-while sending_data:
+while True:
     frames = listener.waitForNewFrame()
     depth_frame = frames["depth"]
     color = frames["color"]
@@ -99,7 +102,6 @@ while sending_data:
     imgray = cv2.flip(imgray, 1)
 
     # begin edge detection
-
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY)
     # noise removal
     kernel = np.ones((5, 5), np.uint8)
@@ -144,7 +146,7 @@ while sending_data:
             	equi_diameter < HIGH_DIAMETER_BOUND):
                 mask = np.zeros_like(depth_frame.asarray(np.float32))
                 ellipse = cv2.fitEllipse(cntr)
-                (x, y), radius = cv2.minEnclosingCircle(cntr)
+                (circle_x, circle_y), radius = cv2.minEnclosingCircle(cntr)
                 equi_diameter = int(radius) * 2
                 rect = cv2.minAreaRect(cntr)
                 box = cv2.boxPoints(rect)
@@ -153,7 +155,6 @@ while sending_data:
                 mask = cv2.erode(mask, kernel, iterations=5)
                 img_fg = cv2.bitwise_and(depth_frame.asarray(np.float32), mask)
                 img_fg = cv2.medianBlur(img_fg, 5)
-
                 # Experimenting with different blur settings
                 # img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
 
@@ -176,12 +177,11 @@ while sending_data:
 
                 if dist_to_centroid < HIGH_DISTANCE_BOUND:
                     coords = registration.getPointXYZ(
-                        undistorted, max_loc[1], max_loc[0])
-                    #mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
-                    mm_diameter = (math.tan((equi_diameter / 2.0 / w) * FOVX) * coords[2])
+                        depth_frame, circle_y, circle_x)
+                    mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
+                    #mm_diameter = (math.tan((equi_diameter / 2.0 / w) * FOVX) * coords[2])
                     if(sending_data):
                         publish_obstacle_position(coords[0], coords[1], coords[2], mm_diameter)
-                        sending_data = False
 
                     color = cv2.ellipse(color, ellipse, (0, 255, 0), 2)
                     cv2.drawContours(color, [box], 0, (0, 0, 255), 1)
@@ -210,12 +210,13 @@ while sending_data:
     #cv2.imshow("depth", color)
 
     listener.release(frames)
-    break
+
     # Use the key 'q' to end!
 
     key = cv2.waitKey(delay=1)
     if key == ord('q'):
         break
+    time.sleep(time_delay)
 
 #connection.close()
 cv2.destroyAllWindows()
