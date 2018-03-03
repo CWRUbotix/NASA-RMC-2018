@@ -108,7 +108,7 @@ public class HardwareControlInterface implements Runnable {
 		while(true) {
 			try {
 				// Read sensors
-				readSensors();
+				// readSensors(); //TODO
 				// Update actuator data
 				for(int id:actuators.keySet()) {
 					actuators.get(id).update();
@@ -205,18 +205,20 @@ public class HardwareControlInterface implements Runnable {
 			return true;
 		}
 		// Allocate byte array for the data in the request
-		byte[] data = new byte[activeActuations.size()*4];
+		byte[] data = new byte[activeActuations.size()*3];
 		// Generate data array for request
 		// Each actuator ID is 2 bytes, each output is 2 bytes
 		// Conversion to short is not checked
 		for(int i = 0; i < activeActuations.size(); i++) {
 			Actuation activeActuation = activeActuations.get(i);
-			short actuatorIdShort = (short)activeActuation.actuatorID;
+			byte actuatorIdShort = (byte)activeActuation.actuatorID;
 			short currentOutputShort = (short)activeActuation.currentOutput;
-			data[4*i] = (byte)(actuatorIdShort >>> 8);
-			data[4*i+1] = (byte)(actuatorIdShort);
-			data[4*i+2] = (byte)(currentOutputShort >>> 8);
-			data[4*i+3] = (byte)(currentOutputShort);
+			data[3*i] = actuatorIdShort;
+			data[3*i+1] = (byte)(currentOutputShort >>> 8);
+			data[3*i+2] = (byte)(currentOutputShort);
+			System.out.println(data[0]);
+			System.out.println(data[1]);
+			System.out.println(data[2]);
 			//System.out.println("Setting output: " + currentOutputShort + " actuator ID: " + actuatorIdShort);
 		}
 		activeActuations.clear();
