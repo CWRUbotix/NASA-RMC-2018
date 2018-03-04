@@ -84,7 +84,6 @@ typedef struct SensorInfo{
 //MOTOR STUFF
 enum MotorHardware {
 	MH_NONE,
-	MH_BL_UART, 	// BL := brushless
 	MH_BL_VEL,		// 
 	MH_BL_POS,		// 
 	MH_BL_POS_BOTH,	// 
@@ -96,19 +95,21 @@ enum MotorHardware {
 };
 
 enum MCType{
+	MC_NONE,
 	MC_ODRIVE,
 	MC_BRUSHED
 };
 
-struct MCInfo {
-	uint8_t type; 	// refer to the MCType enum
-	uint8_t SLPpin; // if MC_BRUSHED
-};
+typedef struct MCInfo {
+	MCType type = MC_NONE; 	// refer to the MCType en = NULL
+	uint8_t SLPpin; 		// if MC_BRUSHED
+	ODriveArduino* odrive; 	// if MC_ODRIVE
+}MCInfo;
 
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
-	MCinfo   board; 		// info about this motor's board
+	MCInfo*  board; 		// motor controller board info
 	uint8_t  addr; 			// 
 	uint8_t  whichMotor;	// if brushless motors
 	uint8_t  PWMpin; 		// if MH_BR_PWM
@@ -140,7 +141,7 @@ byte faultIndex = 0;									// tracks the location of the last fault
 
 SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
-MCInfo 		board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
+MCInfo      board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
 
 int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
@@ -151,5 +152,9 @@ bool 	stopped 								= true;	// default status is stopped
 
 int lastTime = 0;
 int debugging[5] = {};
+
+ODriveArduino odrive0(Serial1);
+ODriveArduino odrive1(Serial1);
+ODriveArduino odrive2(Serial1);
 
 #endif

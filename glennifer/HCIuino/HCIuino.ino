@@ -3,7 +3,7 @@
 //	PREPROCESSOR INCLUDES
 //
 ////////////////////////////////////////////////////////////////////////////////
-//#include <ODriveArduino.h>
+#include <ODriveArduino.h>
 #include <math.h>
 
 #include "values_and_types.h"

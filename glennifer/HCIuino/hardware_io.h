@@ -48,36 +48,52 @@ void maintain_motors(byte* cmd, bool success){
   
 	uint8_t type 	= cmd_type(cmd);
 
-	if(success){ 	// process the new command
-		if(type == CMD_SET_OUTPUTS){	// here we only care if it's set outputs
-			uint8_t num_motors_requested;
-			FAULT_T retfault;
+	if(success && (type == CMD_SET_OUTPUTS) ){	// here we only care if it's set outputs
+		uint8_t num_motors_requested;
+		FAULT_T retfault;
 
-			for(int i = CMD_HEADER_SIZE; i< CMD_HEADER_SIZE+cmd_body_len(cmd) ; i+=3 ){
-				uint8_t id 		= cmd[i];
-				uint16_t val 	= 0;
-				MotorInfo* motor = &(motor_infos[id]); 	// get a pointer to the struct
+		for(int i = CMD_HEADER_SIZE; i< CMD_HEADER_SIZE+cmd_body_len(cmd) ; i+=3 ){
+			uint8_t id 		= cmd[i];
+			uint16_t val 	= 0;
+			MotorInfo* motor = &(motor_infos[id]); 	// get a pointer to the struct
 
 
-				val += cmd[i+1];
-				val = val << 8;
-				val += cmd[i+2];
-				Serial.print("Value Received:\t");
-				Serial.println(val);
-				motor->setPt = val; 	// deref the ptr and set the struct field
+			val += cmd[i+1];
+			val = val << 8;
+			val += cmd[i+2];
+			Serial.print("Value Received:\t");
+			Serial.println(val);
+			motor->setPt = val; 	// deref the ptr and set the struct field
 
-				if(motor->hardware == MH_NONE){
-					continue;
-				}else if(motor->hardware == MH_BR_PWM){
-					//Serial.print("Set Point for this motor: ");
-					//Serial.println(val);
-					Serial.print("Writing ");
-					Serial.print(motor->setPt);
-					Serial.print(" to the motor - on pin ");
-					Serial.println(motor->PWMpin);
+			switch(motor->hardware){
+				case MH_NONE:
+					break;
+
+				case MH_BR_PWM:
 					analogWrite(motor->PWMpin,  motor->setPt);
-				}
+					break;
+
+				case MH_BL_VEL:
+					// do things
+					break;
+
+				case MH_BL_POS:
+					ODriveArduino odrive = *(motor->board->odrive);
+					odrive.SetPosition(motor->whichMotor, motor->setPt);
+					break;
 			}
+			
+			// if(motor->hardware == MH_NONE){
+			// 	continue;
+		// 	}else if(motor->hardware == MH_BR_PWM){
+		// 		//Serial.print("Set Point for this motor: ");
+		// 		//Serial.println(val);
+		// 		Serial.print("Writing ");
+		// 		Serial.print(motor->setPt);
+		// 		Serial.print(" to the motor - on pin ");
+		// 		Serial.println(motor->PWMpin);
+		// 		analogWrite(motor->PWMpin,  motor->setPt);
+		// }
 		}
 	}
 
