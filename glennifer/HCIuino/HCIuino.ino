@@ -29,7 +29,7 @@ void setup(){
 	
 	stopped = false;
 	Serial.println("================================================================================");
-	Serial.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS");
+	Serial.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
 }
 
 
@@ -37,6 +37,7 @@ void setup(){
 ////  MAIN LOOP
 ////////////////////////////////////////////////////////////////////////////////
 void loop(){
+	analogWriteResolution(12);
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false;
@@ -48,12 +49,24 @@ void loop(){
 		
 		fault_code = hciRead(cmd);	// verify the command
 
+		if(cmd_type(cmd) > 0){
+			for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
+				Serial.print((uint8_t)cmd[i]);
+				Serial.print(" ");
+			}
+			Serial.println();
+		}
+
 		debugging[0] = fault_code;
 
 		if(fault_code == NO_FAULT){
 			success = true;
 		}else{ // there was an issue with the command
 			success = false;
+			Serial.print("READ ERROR:\t");
+			Serial.print(fault_code);
+			Serial.print("\t");
+			Serial.println(cmd_type(cmd));
 			//log_fault(fault_code);			// add to log or whatever
 		}
 	}else{
@@ -68,25 +81,31 @@ void loop(){
 											// we may not need the cmd argument
 
 	if(success){
+		Serial.print("SUCCESS! CMD received:\t");
+		for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
+			Serial.print((uint8_t)cmd[i]);
+			Serial.print(" ");
+		}
+		Serial.println();
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
 
 		// Serial.print("\t");
 		// Serial.println(fault_code);
 		debugging[3] = fault_code;
 	}
-	if(debugging[0] != 0){
-		Serial.print("   ");
-		Serial.print(debugging[0]);
-		Serial.print("            ");
-		Serial.print(debugging[1]);
-		Serial.print("            ");
-		Serial.print(debugging[2]);
-		Serial.print("      ");
-		Serial.print(debugging[3]);
-		Serial.print("      ");
-		Serial.print(debugging[4]);
-		Serial.println();
-	}
+	// if(debugging[0] != 0){
+	// 	Serial.print("   ");
+	// 	Serial.print(debugging[0]);
+	// 	Serial.print("            ");
+	// 	Serial.print(debugging[1]);
+	// 	Serial.print("            ");
+	// 	Serial.print(debugging[2]);
+	// 	Serial.print("      ");
+	// 	Serial.print(debugging[3]);
+	// 	Serial.print("      ");
+	// 	Serial.print(debugging[4]);
+	// 	Serial.println();
+	// }
 }
 
 

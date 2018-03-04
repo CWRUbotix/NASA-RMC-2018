@@ -25,9 +25,10 @@
 //#define HEADER_FIELDS			(3)
 #define SENSOR_ID_SIZE      	(1)
 #define SENSOR_DATA_SIZE 		(1)
-#define NUM_MOTORS 				(9)
 #define MOTOR_ID_SIZE 			(1)
 #define MOTOR_INSTRUC_SIZE 		(2)
+#define NUM_MOTORS 				(9)
+#define NUM_SENSORS 			(100)
 
 
 // FAULT CODES
@@ -43,7 +44,8 @@
 //Logging faults
 #define FAULT_LOG_FULL			(7)
 
-//Motor Faults
+//Motor Control Boards
+#define BRUSHED_0_SLP 			(22)
 
 
 
@@ -70,13 +72,13 @@ enum SensorHardware {
 //SENSOR INFO
 typedef struct SensorInfo{
 	SensorHardware hardware;
-	uint8_t addr; 			// When hardware = SH_I2C_* or ...
-	uint8_t whichMotor; 	// When hardware = SH_RC_*
-	int whichPin; 			// 
-	bool is_reversed;		// When hardware = SH_PIN_LIMIT
-	float responsiveness;	// 1 = responsiveness
-	uint16_t scale; 		// 1 unless needed
-	int16_t storedVal; 		// replacing the sensor_storedVals array
+	uint8_t  addr; 				// When hardware = SH_I2C_* or ...
+	uint8_t  whichMotor; 		// When hardware = SH_RC_*
+	int      whichPin; 			// 
+	bool     is_reversed;		// When hardware = SH_PIN_LIMIT
+	float    responsiveness;	// 1 = responsiveness
+	uint16_t scale; 			// 1 unless needed
+	int16_t  storedVal; 		// replacing the sensor_storedVals array
 }SensorInfo;
 
 //MOTOR STUFF
@@ -93,32 +95,32 @@ enum MotorHardware {
 	MH_ALL			// 
 };
 
-enum CtrlrType {
-	CTRL_BL,
-	CTRL_BR
+struct Board {
+	
 };
 
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
-	uint8_t addr; 			// 
-	uint8_t whichMotor;		// if brushless motors
-	uint8_t whichCtrlr; 	// identify the controller
-	uint8_t PWMpin; 		// if MH_BR_PWM
+	uint8_t  addr; 			// 
+	uint8_t  whichMotor;	// if brushless motors
+	uint8_t  boardPin; 		// identify the controller's sleep pin
+	uint8_t  PWMpin; 		// if MH_BR_PWM
+	uint8_t  DIRpin; 		// 
 	uint16_t scale = 1; 	// 1 unless needed
 	uint16_t setPt; 		// set point for motor (rather that use an array)
-	float kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
-	float ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
-	float kd; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
+	float    ki; 			// When hardware = MH_RC_POS or MC_RC_VEL
+	float    kd; 			// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t qpps; 			// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t deadband; 		// When hardware = MH_RC_POS
 	uint32_t minpos; 		// When hardware = MH_RC_POS
 	uint32_t maxpos; 		// When hardware = MH_RC_POS
 	uint32_t accel;
 	uint16_t feedbackSensorID;
-	float saturation;
-	int16_t lastUpdateTime;	// replaces the motor_lastUpdateTime array
-	float integral; 		// replaces the motor_integrals array
+	float    saturation;
+	int16_t  lastUpdateTime;// replaces the motor_lastUpdateTime array
+	float    integral; 		// replaces the motor_integrals array
 }MotorInfo;
 
 
@@ -130,15 +132,15 @@ typedef struct MotorInfo{
 FAULT_T faults[DEFAULT_BUF_LEN];						// to hold faults that have occurred
 byte faultIndex = 0;									// tracks the location of the last fault
 
-SensorInfo sensor_infos[DEFAULT_BUF_LEN] 		= {}; 	// All initialized to SH_NONE
-MotorInfo motor_infos[DEFAULT_BUF_LEN] 			= {}; 	// All initialized to MH_NONE
+SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
+MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
 
-int16_t motor_setpoints[DEFAULT_BUF_LEN] 		= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
+int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
-int16_t sensor_storedVals[DEFAULT_BUF_LEN] 		= {}; 	// All initialized to 0
-float motor_integrals[DEFAULT_BUF_LEN] 			= {}; 	//All initialized to 0
+int16_t sensor_storedVals	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to 0
+float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
-bool stopped 									= true;	// default status is stopped
+bool 	stopped 								= true;	// default status is stopped
 
 int lastTime = 0;
 int debugging[5] = {};
