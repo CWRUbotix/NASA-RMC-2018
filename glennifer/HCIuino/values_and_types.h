@@ -95,16 +95,22 @@ enum MotorHardware {
 	MH_ALL			// 
 };
 
-struct Board {
-	
+enum MCType{
+	MC_ODRIVE,
+	MC_BRUSHED
+};
+
+struct MCInfo {
+	uint8_t type; 	// refer to the MCType enum
+	uint8_t SLPpin; // if MC_BRUSHED
 };
 
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
+	MCinfo   board; 		// info about this motor's board
 	uint8_t  addr; 			// 
 	uint8_t  whichMotor;	// if brushless motors
-	uint8_t  boardPin; 		// identify the controller's sleep pin
 	uint8_t  PWMpin; 		// if MH_BR_PWM
 	uint8_t  DIRpin; 		// 
 	uint16_t scale = 1; 	// 1 unless needed
@@ -134,6 +140,7 @@ byte faultIndex = 0;									// tracks the location of the last fault
 
 SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
+MCInfo 		board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
 
 int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
