@@ -57,7 +57,6 @@ void maintain_motors(byte* cmd, bool success){
 			uint16_t val 	= 0;
 			MotorInfo* motor = &(motor_infos[id]); 	// get a pointer to the struct
 
-
 			val += cmd[i+1];
 			val = val << 8;
 			val += cmd[i+2];
@@ -74,12 +73,11 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_BL_VEL:
-					// do things
+					(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
 					break;
 
 				case MH_BL_POS:
-					ODriveArduino odrive = *(motor->board->odrive);
-					odrive.SetPosition(motor->whichMotor, motor->setPt);
+					(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
 					break;
 			}
 			
@@ -104,20 +102,32 @@ void maintain_motors(byte* cmd, bool success){
 	for(i=0; i<NUM_MOTORS; i++){
 		MotorInfo* motor = &(motor_infos[i]); 	// get a pointer to the struct
 
-		if(motor->hardware == MH_NONE){
-			continue;
-		}else {
-			//val = 
+		switch(motor->hardware){
+			case MH_NONE:
+				break;
+
+			case MH_BR_PWM:
+				// must do some PID here
+				analogWrite(motor->PWMpin,  motor->setPt);
+				break;
+
+			case MH_BL_VEL:
+				(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
+				break;
+
+			case MH_BL_POS:
+				(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
+				break;
 		}
 
-		if(motor->hardware == MH_BR_PWM){
-			Serial.print("Maintaining Motor ");
-			Serial.print(i);
-			Serial.print(".\tSET PT:\t");
-			Serial.println(motor->setPt);
-			// do PID
-			analogWrite(motor->PWMpin , motor->setPt );
-		}
+		// if(motor->hardware == MH_BR_PWM){
+		// 	Serial.print("Maintaining Motor ");
+		// 	Serial.print(i);
+		// 	Serial.print(".\tSET PT:\t");
+		// 	Serial.println(motor->setPt);
+		// 	// do PID
+		// 	analogWrite(motor->PWMpin , motor->setPt );
+		// }
 
 		// do motor maintainance things
 	}
