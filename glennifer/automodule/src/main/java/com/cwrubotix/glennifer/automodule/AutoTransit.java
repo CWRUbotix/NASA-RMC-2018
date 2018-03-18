@@ -6,6 +6,9 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import main.java.com.cwrubotix.glennifer.automodule.PathFinder.DestinationModified;
+import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm.AlgorithmFailureException;
+
 import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
@@ -60,13 +63,13 @@ public class AutoTransit extends Module {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
-			Position currentPos = new Position(
+			Position currentPos = new RobotPosition(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
 					cmd.getCurHeading(),
 					0f);
 
-			Position destinationPos = new Position(
+			Position destinationPos = new RobotPosition(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
 					0f, 0f);
@@ -115,7 +118,12 @@ public class AutoTransit extends Module {
 			float obsDiameter = cmd.getDiameter();
 			Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
-			pathFinder.registerObstacle(newObs);
+			try {
+			    pathFinder.registerObstacle(newObs);
+			} catch (AlgorithmFailureException | DestinationModified e) {
+			    // TODO Auto-generated catch block
+			    e.printStackTrace();
+			}
 		}
 	}
 
