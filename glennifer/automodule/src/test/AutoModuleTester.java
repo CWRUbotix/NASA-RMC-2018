@@ -200,29 +200,6 @@ public class AutoModuleTester extends Module{
 	}
     }
     
-    private void checkValidStop(){
-	if(!taskAssigned){
-	    System.err.println("ERROR: Tried to stop a non-existing task");
-	    System.exit(1);
-	}
-    }
-    
-    private void checkTimeSinceSoftStop(Instant time){
-	if(softStopTimeStamp == null){
-	    System.err.println("ERROR: Received hardStop message without previous softStop message");
-	    System.exit(1);
-	}
-	UnixTime softStop = instantToUnixTime(softStopTimeStamp);
-	UnixTime hardStop = instantToUnixTime(time);
-	if(Math.abs(timeLeft - (hardStop.getTimeFrac() - softStop.getTimeFrac())) <= TIME_ERROR_BOUND){
-	    softStopTimeStamp = null;
-	    taskAssigned = false;
-	} else{
-	    System.err.println("ERROR: hardStop message was not sent in timely manner.");
-	    System.exit(1);
-	}
-    }
-
     private class LaunchTransitListener extends DefaultConsumer{
 
 	public LaunchTransitListener(Channel channel) {
@@ -280,7 +257,10 @@ public class AutoModuleTester extends Module{
 	
 	@Override
 	public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    checkValidStop();
+	    if(!taskAssigned){
+		System.err.println("ERROR: Tried to stop a non-existing task");
+		System.exit(1);
+	    }
 	    softStopTimeStamp = Instant.now();
 	}
     }
@@ -293,7 +273,19 @@ public class AutoModuleTester extends Module{
 	
 	@Override
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    checkTimeSinceSoftStop(Instant.now());
+	    if(softStopTimeStamp == null){
+		System.err.println("ERROR: Received hardStop message without previous softStop message");
+		System.exit(1);
+	    }
+	    UnixTime softStop = instantToUnixTime(softStopTimeStamp);
+	    UnixTime hardStop = instantToUnixTime(Instant.now());
+	    if((timeLeft - (hardStop.getTimeFrac() - softStop.getTimeFrac())) >= -1 * TIME_ERROR_BOUND && hardStop.getTimeFrac() >= softStop.getTimeFrac()){
+		softStopTimeStamp = null;
+		taskAssigned = false;
+	    } else{
+		System.err.println("ERROR: hardStop message was not sent in timely manner.");
+		System.exit(1);
+	    }
 	}
 	
     }
