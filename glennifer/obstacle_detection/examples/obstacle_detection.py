@@ -122,6 +122,10 @@ while True:
     # unknown = cv2.subtract(gradient,sure_bg)
     unknown = cv2.subtract(sure_bg, sure_fg)
     unkown = cv2.medianBlur(unknown, 5)
+<<<<<<< HEAD
+=======
+    # img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+>>>>>>> cbc385e64226891e762ecc9ed4ae62a179108305
 
     # begin contour detection
     image, contours, hierarchy = cv2.findContours(
@@ -151,14 +155,22 @@ while True:
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 mask = cv2.ellipse(mask, ellipse, (255, 255, 255), -1)
+<<<<<<< HEAD
                 mask = cv2.erode(mask, (10,10), iterations=5)
+=======
+                mask = cv2.erode(mask, kernel, iterations=5)
+>>>>>>> cbc385e64226891e762ecc9ed4ae62a179108305
                 img_fg = cv2.bitwise_and(depth_frame.asarray(np.float32), mask)
                 img_fg = cv2.medianBlur(img_fg, 5)
                 # Experimenting with different blur settings
                 # img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
 
                 # mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
+<<<<<<< HEAD
                 non_zero_mean = np.mean(img_fg[img_fg.nonzero()])
+=======
+                non_zero_mean = np.median(img_fg[img_fg.nonzero()])
+>>>>>>> cbc385e64226891e762ecc9ed4ae62a179108305
                 mean_val = non_zero_mean
                 min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(
                     img_fg)
@@ -175,6 +187,7 @@ while True:
                 dist_to_centroid = mean_val  # actualDistmm[cy][cx]
 
                 if dist_to_centroid < HIGH_DISTANCE_BOUND:
+<<<<<<< HEAD
                     dist_x = 0.0
                     dist_y = 0.0
                     dist_z = 0.0
@@ -209,6 +222,29 @@ while True:
 
                             cv2.putText(color, "diameter = " + str(mm_diameter),
                                         (cx, cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+=======
+                    coords = registration.getPointXYZ(
+                        depth_frame, circle_y, circle_x)
+                    mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
+                    #mm_diameter = (math.tan((equi_diameter / 2.0 / w) * FOVX) * coords[2])
+                    if(sending_data):
+                        publish_obstacle_position(coords[0], coords[1], coords[2], mm_diameter)
+
+                    color = cv2.ellipse(color, ellipse, (0, 255, 0), 2)
+                    cv2.drawContours(color, [box], 0, (0, 0, 255), 1)
+
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+
+                    cv2.putText(
+                        color, "x" + str(coords[0]), (cx, cy + 30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+                    cv2.putText(
+                        color, "y" + str(coords[1]), (cx, cy + 45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+                    cv2.putText(
+                        color, "z" + str(coords[2]), (cx, cy + 60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+
+                    cv2.putText(color, "diameter = " + str(mm_diameter),
+                                (cx, cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+>>>>>>> cbc385e64226891e762ecc9ed4ae62a179108305
 
         except:
             print "Failed to fit ellipse"
@@ -218,8 +254,13 @@ while True:
     # things below. Try commenting out some imshow if you don't have a fast
     # visualization backend.
 
+<<<<<<< HEAD
     cv2.imshow("unknown", sure_bg)
     cv2.imshow("depth", color)
+=======
+    #cv2.imshow("unknown", sure_bg)
+    #cv2.imshow("depth", color)
+>>>>>>> cbc385e64226891e762ecc9ed4ae62a179108305
 
     listener.release(frames)
 

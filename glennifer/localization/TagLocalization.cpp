@@ -30,8 +30,8 @@ using namespace std;
 
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
+
 #include "messages.pb.h"
-//#include "messages.pb.cc"
 
 //#include "utils.h"
 
@@ -74,6 +74,30 @@ extern char *optarg;
 
 const char* windowGreenCam = "Green Cam";
 const char* windowYellowCam = "Yellow";
+
+/*
+ *
+ * Standardization
+ *
+ */
+struct tagCache{
+
+	int tagID, cameraID;
+	Eigen::Vector3d capturedVector;
+
+};
+
+//database for captured tags
+std::vector<tagCache> capturedTags;
+
+//distance from tag with named ID to the standardization point (int meters)
+const float distToStandard01 = 0.545;
+const float distToStandard03 = 0.3245;
+const float distToStandard05 = 0.108;
+const float distToStandard09 = -0.11;
+const float distToStandard10 = -0.326;
+const float distToStandard11 = -0.5425;
+
 
 // utility function to provide current system time (used below in
 // determining frame rate at which images are being processed)
@@ -139,11 +163,11 @@ AMQP amqp("guest:guest@localhost");
 const char* topic = "locs";
 AMQPQueue *queue = amqp.createQueue(topic);
 
-		//this should be set in methods or somewhere appropriate
-		//all is here for ease of access during testing
+//this should be set in methods or somewhere appropriate
+//all is here for ease of access during testing
 
-		//similar code to ConsumerThread::run()
-		//so, should check dor fuplicate topic threads???
+//similar code to ConsumerThread::run()
+//so, should check dor fuplicate topic threads???
 
 //Initializes AMQP queue etc
 void init_Queue() {
@@ -196,8 +220,6 @@ class Localization {
 	bool procStarboard = false;
 	bool procStern = false;
 
-	//double tag_vctr_one = 0.0121;
-
 public:
 
 	// default constructor
@@ -209,7 +231,6 @@ public:
 		m_draw(true),
 		m_arduino(false),
 		m_timing(false),
-
 		m_width(640),
 		m_height(480),
 		m_tagSize(0.165),
@@ -339,7 +360,8 @@ public:
 			}
 			v4l2_close(device1);
 
-		#endif
+
+#endif
 
 		// find and open robot cameras
 		green_cap = cv::VideoCapture(greenCam.c_id);
@@ -378,6 +400,10 @@ public:
 	void print_detection(AprilTags::TagDetection& detection, camera camera) const {
 		//cout << "  Id: " << detection.id
 		//		<< " (Hamming: " << detection.hammingDistance << ")";
+	//void print_detection(AprilTags::TagDetection& detection, std::vector<tagCache>& dataRecords, int cameraID) const {
+	//	cout << "\t\t  Id: " << detection.id
+	//			<< " (Hamming: " << detection.hammingDistance << ")";
+
 
 		// recovering the relative pose of a tag:
 
@@ -390,6 +416,7 @@ public:
 		detection.getRelativeTranslationRotation(m_tagSize, camera.c_fx, camera.c_fy, camera.c_px, camera.c_py,
 				translation, rotation);
 
+		//calculating rotation matric
 		Eigen::Matrix3d F;
 		F <<
 				1, 0,  0,
@@ -437,58 +464,43 @@ public:
 		//ex->Publish(msg, sizeof(msg), "loc.post");
 
 		//Outputting the vector components to the AprilTag
-		/*cout << "  distance=" << translation.norm()
-        		 << "m, x=" << translation(0)
-				 << ", y=" << translation(1)
-				 << ", z=" << translation(2)
-				 << ", yaw(x)=" << yaw
-				 << ", pitch(z)=" << pitch
-				 << ", roll(y)=" << roll;
-		cout   << endl; //added ; cout to fix eclipse bug*/
+/*		cout << "  distance=" << translation.norm()
+        										 << "m, x=" << translation(0)
+												 << ", y=" << translation(1)
+												 << ", z=" << translation(2)
+												 << ", yaw(x)=" << yaw
+												 << ", pitch(z)=" << pitch
+												 << ", roll(y)=" << roll;*/
+		cout   << endl; //added ; cout to fix eclipse bug
 
-		//Q components
-		/*cout << "    qw=" << q.w()
-				<< ", qx=" << q.x()
-				<< ", qy=" << q.y()
-				<< ", qz=" << q.z();
-		cout << endl;*/
+		tagCache toAdd;
+		/*TODO integrate these with the new version if needed*/
+		//toAdd.cameraID = cameraID;
+		toAdd.tagID = detection.id;
+		toAdd.capturedVector = translation;
 
-		//AMQP
-
-		//AMQPExchange * ex = amqp.createExchange("amq.topic");
-		//ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-	   //char msg [50];
-		//sprintf(msg,"%d",(int)translation.norm());
-		//ex->Publish(msg, sizeof(msg), "localization");
+		//dataRecords.push_back(toAdd);
 
 
-		// Also note that for SLAM/multi-view application it is better to
-		// use reprojection error of corner points, because the noise in
-		// this relative pose is very non-Gaussian; see iSAM source code
-		// for suitable factors.
+		/*
+		if(cacheCameraIndex == 0){
+			if(detection.id == 1){
+				//TODO: see if garbage collection affects this. hopyfully not
+				c0CacheVector0 = translation;
+			}else if(detection.id == 3){
+				c0CacheVector1 = translation;
+			}
+		}else if(cacheCameraIndex == 1){
+			//TODO: this
+		}*/
 	}
 
-	//From wikipedia, this is for testing. again, ask chad
-	//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-	Eigen::Quaterniond toQuaternion(double pitch, double roll, double yaw)
-	{
-		Eigen::Quaterniond q;
-	    // Abbreviations for the various angular functions
-		double cy = cos(yaw * 0.5);
-		double sy = sin(yaw * 0.5);
-		double cr = cos(roll * 0.5);
-		double sr = sin(roll * 0.5);
-		double cp = cos(pitch * 0.5);
-		double sp = sin(pitch * 0.5);
-
-		q.w() = cy * cr * cp + sy * sr * sp;
-		q.x() = cy * sr * cp - sy * cr * sp;
-		q.y() = cy * cr * sp + sy * sr * cp;
-		q.z() = sy * cr * cp - cy * sr * sp;
-		return q;
-	}
 
 	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name) {
+
+	//bool processImage(cv::Mat& image, cv::Mat& image_gray, std::vector<tagCache>& dataRecords, int cameraID) {
+		//TODO fix this method above
+
 		// alternative way is to grab, then retrieve; allows for
 		// multiple grab when processing below frame rate - v4l keeps a
 		// number of frames buffered, which can lead to significant lag
@@ -510,11 +522,12 @@ public:
 		}
 
 		// print out each detection
-		cout << detections.size() << " Camera 1 tags detected:" << endl;
+		//cout << "\t" << detections.size() << " Camera tags detected:" << endl;
 		bool ret = false;
-		cout << "detections.size: "<< detections.size() << endl;
+		//cout << "\tdetections.size: "<< detections.size() << endl;
 		for (int i=0; i<detections.size(); i++){
 			print_detection(detections[i], camera); //previously commented out
+			//TODO fix this part print_detection(detections[i], capturedTags, cameraID);
 			ret = true;
 		}
 
@@ -614,6 +627,10 @@ public:
 	}*/
 
 
+
+//		return ret; TODO check if this needs to be fixed after commenting out merge conflict version
+//	}
+
 	// Load and process a single image
 	/*void loadImages() {
 		cv::Mat image;
@@ -621,7 +638,7 @@ public:
 
 		for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
 			image = cv::imread(*it); // load image with opencv
-			processImage(image, image_gray);
+			processImage(image, image_gray, capturedTags, 0);
 			while (cv::waitKey(100) == -1) {}
 		}
 	}*/
@@ -639,13 +656,15 @@ public:
 
 		cv::Mat green_image;
 		cv::Mat green_image_gray;
+		cv::Mat image;
+		cv::Mat image_gray;
 
 		cv::Mat yellow_image;
 		cv::Mat yellow_image_gray;
 
 		int frame = 0;
 		double last_t = tic();
-		//double time_last_located = tic();
+		double time_last_located = tic();
 		while (true) {
 
 			green_cap >> green_image;
@@ -680,54 +699,92 @@ public:
 			//qu2->Declare();
 			//qu2->Bind( "amq.topic", "localization.data");
 			//ax->Publish((char*)msg_buff, msg_size, "localization.data");
+
+			capturedTags.clear();
+
 			//processing the port camera
-		/*	if(procPort){
-				// capture frame
-				m_cap >> image;
-				bool result = processImage(image, image_gray);
-				if(result){
+			// capture frame
+			// TODO Check if this is needed elsewhere m_cap >> image;
+
+			//TODO: clear vector cache
+
+
+			//TODO integrate this part with the new code
+			//cout << "camera 0" << endl;
+			bool result = processImage(image, image_gray, capturedTags, 0);
+			/*				if(result){
 					cout << "communicating data..." << endl;
 					time_last_located = tic();
+				}*/
+
+			//cout << "camera 1" << endl;
+			m_cap1 >> image;
+			result = processImage(image, image_gray, capturedTags, 1);
+
+			cout << "num of cached instances=" << capturedTags.size() << endl;
+
+			Eigen::Vector3d standardizedVector;
+			int length = capturedTags.size();
+			for(int i = 0; i < length; i++){
+				for(int j = 0; j < length; j++){
+					if(j != i){
+						if(capturedTags.at(i).cameraID == capturedTags.at(j).cameraID){
+							//create standardized vector
+							Eigen::Vector3d helper = capturedTags.at(i).capturedVector - capturedTags.at(j).capturedVector;
+
+						}
+					}
 				}
-
-				m_cap1 >> image;
-				result = processImage(image, image_gray);
-				if(result){
-					cout << "communicating data1..." << endl;
-					time_last_located = tic();
-				}
 			}
 
-			//checking time with last seen apriltag
-			if(tic() - time_last_located >= 5.0){
-				//cout << "Time Alloted without detection, turning on all cameras" << endl;
-				if(!procPort){
-					procPort = true;
-				}
-			}
-
-			//Check to make sure at-least one camera is set to process
-			if(!procPort){
-				cout << "No Camera's Running, turning all on" << endl;
-				procPort = true;
-			}
+			/*if(result){
+				cout << "communicating data1..." << endl;
+				time_last_located = tic();
+			}*/
 
 
-			//sleep(2);
-			// print out the frame rate at which image frames are being processed
-			frame++;
-			if (frame % 10 == 0) {
-				double t = tic();
-				cout << "  " << 10./(t-last_t) << " fps" << endl;
-				last_t = t;
-			}
+			/*cout << "calc stand" << endl;
+			cout << "\tTag 1:" << c0CacheVector0(0)
+				<< " " << c0CacheVector0(1)
+				<< " " << c0CacheVector0(2);
+				cout << endl;
+			cout << "\tTag 3:" << c0CacheVector1(0)
+				<< " " << c0CacheVector1(1)
+				<< " " << c0CacheVector1(2);
+				cout << endl;
+
+			Eigen::Vector3d helper = c0CacheVector1 - c0CacheVector0;
+			cout << "\tHelper:" << endl;
+			cout << "\t\t distance=" << helper.norm()
+				<< "m x=" << helper(0)
+				<< " y=" << helper(1)
+				<< " z=" << helper(2);
+				cout << endl;
+
+			helper = 1.502 * helper;
+
+			cout << "\tHelper Scaled:" << endl;
+			cout << "\t\t distance=" << helper.norm()
+				<< "m x=" << helper(0)
+				<< " y=" << helper(1)
+				<< " z=" << helper(2);
+				cout << endl;
+
+			Eigen::Vector3d standardizedVector = c0CacheVector0 + helper;
+
+			cout << "\tStandardized Vector:" << endl;
+			cout << "\t\t distance=" << standardizedVector.norm()
+				<< "m x=" << standardizedVector(0)
+				<< " y=" << standardizedVector(1)
+				<< " z=" << standardizedVector(2);
+				cout << endl;*/
 
 			//processing other frames without worrying about the rate above
-			 m_cap1 >> image1;
-			 processImage2(image1, image_gray1);
+			// m_cap1 >> image1;
+			// processImage2(image1, image_gray1);
 
-		//	m_cap2 >> image;
-      	 // processImage(image, image_gray);*/
+			/*m_cap2 >> image;
+      	    processImage(image, image_gray);*/
 
 
 

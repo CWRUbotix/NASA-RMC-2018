@@ -287,6 +287,8 @@ message ObstaclePosition {
 	required float z_position = 3;
 	required float diameter = 4;
 
+}
+
 // launch.transit
 message LaunchTransit {
     required float cur_x_pos = 1;
