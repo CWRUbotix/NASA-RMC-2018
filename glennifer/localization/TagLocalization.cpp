@@ -31,6 +31,7 @@ using namespace std;
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
 
+//TODO: un-comment
 //#include "messages.pb.h"
 
 //#include "utils.h"
@@ -71,9 +72,8 @@ extern char *optarg;
 // For Arduino: locally defined serial port access class
 #include "Serial.h"
 
-
 const char* windowGreenCam = "Green Cam";
-const char* windowYellowCam = "Yellow";
+const char* windowYellowCam = "Yellow Cam";
 
 /*
  *
@@ -131,22 +131,6 @@ inline double standardRad(double t) {
 	}
 	return t;
 }
-
-//#include "CamCalibration.cpp"
-
-/* Camera Calibration Inputs */
-/*double fx = 602.4;
-double fy = 602.4;
-double cx = 319.5;
-double cy = 239.5;
-double k1 = 0.25524;
-double k2 = -10.998;
-double p1 = 0.0;
-double p2 = 0.0;
-double k3 = 125.0015;
-
-cv::Mat cameraMatrix = (cv::Mat1d(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
-cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
 
 /**
  * Convert rotation matrix to Euler angles
@@ -288,81 +272,70 @@ public:
 	}
 
 	void setupVideo() {
+		#ifdef EXPOSURE_CONTROL
+				// manually setting camera exposure settings; OpenCV/v4l1 doesn't
+				// support exposure control; so here we manually use v4l2 before
+				// opening the device via OpenCV; confirmed to work with Logitech
+				// C270; try exposure=20, gain=100, brightness=150
+
+				string video_str = "/dev/video0";
+				video_str[10] = '0' + greenCam.c_id;
+				int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+
+				string video_str1 = "/dev/video1";
+				video_str1[10] = '1' + yellowCam.c_id;
+				int device1 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+
+				//string video_str2 = "/dev/video2";
+				//video_str2[10] = '2' + m_deviceId;
+
+				//int device2 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+
+				if (m_exposure >= 0) {
+					// not sure why, but v4l2_set_control() does not work for
+					// V4L2_CID_EXPOSURE_AUTO...
+					struct v4l2_control c_green;
+					c_green.id = V4L2_CID_EXPOSURE_AUTO;
+					c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+					if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c_green) != 0) {
+						cout << "Failed to set... " << strerror(errno) << endl;
+					}
+					cout << "exposure: " << m_exposure << endl;
+					v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+				}
+				if (m_gain >= 0) {
+					cout << "gain: " << m_gain << endl;
+					v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
+				}
+				if (m_brightness >= 0) {
+					cout << "brightness: " << m_brightness << endl;
+					v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
+				}
+				v4l2_close(device);
+
+				//if statements for the other cameras
+				if (m_exposure >= 0) {
+					struct v4l2_control c_yellow;
+					c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
+					c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+					if (v4l2_ioctl(device1, VIDIOC_S_CTRL, &c_yellow) != 0) {
+						cout << "Failed to set... " << strerror(errno) << endl;
+					}
+					cout << "exposure: " << m_exposure << endl;
+					v4l2_set_control(device1, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+				}
+				if (m_gain >= 0) {
+					cout << "gain: " << m_gain << endl;
+					v4l2_set_control(device1, V4L2_CID_GAIN, m_gain*256);
+				}
+				if (m_brightness >= 0) {
+					cout << "brightness: " << m_brightness << endl;
+					v4l2_set_control(device1, V4L2_CID_BRIGHTNESS, m_brightness*256);
+				}
+				v4l2_close(device1);
 
 
-		//AMQP amqp("guest:guest@localhost");
-
-		//AMQPExchange * ex = amqp.createExchange("amqp.topic");
-		//ex->Declare("localization.data", "topic", AMQP_DURABLE);
-
-		//AMQPQueue * qu2 = amqp.createQueue("q2");
-		//qu2->Declare();
-		//qu2->Bind( "e", "");
-
-#ifdef EXPOSURE_CONTROL
-		// manually setting camera exposure settings; OpenCV/v4l1 doesn't
-		// support exposure control; so here we manually use v4l2 before
-		// opening the device via OpenCV; confirmed to work with Logitech
-		// C270; try exposure=20, gain=100, brightness=150
-
-		string video_str = "/dev/video0";
-		video_str[10] = '0' + greenCam.c_id;
-		int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
-
-		string video_str1 = "/dev/video1";
-		video_str1[10] = '1' + yellowCam.c_id;
-		int device1 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
-
-		//string video_str2 = "/dev/video2";
-		//video_str2[10] = '2' + m_deviceId;
-
-		//int device2 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
-
-		if (m_exposure >= 0) {
-			// not sure why, but v4l2_set_control() does not work for
-			// V4L2_CID_EXPOSURE_AUTO...
-			struct v4l2_control c_green;
-			c_green.id = V4L2_CID_EXPOSURE_AUTO;
-			c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-			if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c_green) != 0) {
-				cout << "Failed to set... " << strerror(errno) << endl;
-			}
-			cout << "exposure: " << m_exposure << endl;
-			v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-		}
-		if (m_gain >= 0) {
-			cout << "gain: " << m_gain << endl;
-			v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
-		}
-		if (m_brightness >= 0) {
-			cout << "brightness: " << m_brightness << endl;
-			v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
-		}
-		v4l2_close(device);
-
-		//if statements for the other cameras
-		if (m_exposure >= 0) {
-			struct v4l2_control c_yellow;
-			c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
-			c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-			if (v4l2_ioctl(device1, VIDIOC_S_CTRL, &c_yellow) != 0) {
-				cout << "Failed to set... " << strerror(errno) << endl;
-			}
-			cout << "exposure: " << m_exposure << endl;
-			v4l2_set_control(device1, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-		}
-		if (m_gain >= 0) {
-			cout << "gain: " << m_gain << endl;
-			v4l2_set_control(device1, V4L2_CID_GAIN, m_gain*256);
-		}
-		if (m_brightness >= 0) {
-			cout << "brightness: " << m_brightness << endl;
-			v4l2_set_control(device1, V4L2_CID_BRIGHTNESS, m_brightness*256);
-		}
-		v4l2_close(device1);
-
-
-#endif
+		#endif
 
 		// find and open robot cameras
 		green_cap = cv::VideoCapture(greenCam.c_id);
@@ -399,11 +372,11 @@ public:
 	//in functions that utilize calibration values
 
 	void print_detection(AprilTags::TagDetection& detection, camera camera, string name) const {
-		//cout << "  Id: " << detection.id
-		//		<< " (Hamming: " << detection.hammingDistance << ")";
-		//void print_detection(AprilTags::TagDetection& detection, std::vector<tagCache>& dataRecords, int cameraID) const {
-		//	cout << "\t\t  Id: " << detection.id
-		//			<< " (Hamming: " << detection.hammingDistance << ")";
+		/*cout << "  Id: " << detection.id
+				<< " (Hamming: " << detection.hammingDistance << ")";
+		void print_detection(AprilTags::TagDetection& detection, std::vector<tagCache>& dataRecords, int cameraID) const {
+			cout << "\t\t  Id: " << detection.id
+					<< " (Hamming: " << detection.hammingDistance << ")";*/
 
 
 		// recovering the relative pose of a tag:
@@ -427,43 +400,6 @@ public:
 		double yaw, pitch, roll;
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
-		//double a, b, c;
-		//a = yaw; b = pitch; c = roll;
-		//a = pitch; b = roll; c = yaw;
-		//a = roll; b = yaw; c = pitch;
-		//a = yaw; b = roll; c = pitch;
-		//a = roll; b = pitch; c = yaw;
-		//a = pitch; b = yaw; c = roll;
-
-
-		//Testing the creation of a vector for the standardization.
-		/*Eigen::Quaterniond q;
-	    // Abbreviations for the various angular functions
-		double cy = cos(a * 0.5);
-		double sy = sin(a * 0.5);
-		double cr = cos(c * 0.5);
-		double sr = sin(c * 0.5);
-		double cp = cos(b * 0.5);
-		double sp = sin(b * 0.5);
-
-		q.w() = (cy * cr * cp + sy * sr * sp);
-		q.x() = (cy * sr * cp - sy * cr * sp);
-		q.y() = (cy * cr * sp + sy * sr * cp);
-		q.z() = (sy * cr * cp - cy * sr * sp);*/
-
-		//testing new localization triangulation with tag 9
-		/*if (detection.id == 9) {
-			double centre = sqrt((translation.norm()*translation.norm()) + tag_vctr_one);
-			cout << "Distance to Centre: " << centre;
-			cout << "Distance to Tag: " << translation.norm();
-			cout << endl;
-		}*/
-
-
-
-
-		//ex->Publish(msg, sizeof(msg), "loc.post");
-
 		//Outputting the vector components to the AprilTag
 		/*		cout << "  distance=" << translation.norm()
         										 << "m, x=" << translation(0)
@@ -472,44 +408,18 @@ public:
 												 << ", yaw(x)=" << yaw
 												 << ", pitch(z)=" << pitch
 												 << ", roll(y)=" << roll;
-		cout   << endl;*/ //added ; cout to fix eclipse bug
+		cout   << endl;*/
 
 		tagCache toAdd;
-		/*TODO integrate these with the new version if needed*/
-		//toAdd.cameraID = cameraID;
 		toAdd.cameraID = name;
 		toAdd.tagID = detection.id;
 		toAdd.capturedVector = translation;
 
 		capturedTagCaches.push_back(toAdd);
-
-		//dataRecords.push_back(toAdd);
-
-
-		/*
-		if(cacheCameraIndex == 0){
-			if(detection.id == 1){
-				//TODO: see if garbage collection affects this. hopyfully not
-				c0CacheVector0 = translation;
-			}else if(detection.id == 3){
-				c0CacheVector1 = translation;
-			}
-		}else if(cacheCameraIndex == 1){
-			//TODO: this
-		}*/
 	}
 
 
 	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name) {
-
-		//bool processImage(cv::Mat& image, cv::Mat& image_gray, std::vector<tagCache>& dataRecords, int cameraID) {
-		//TODO fix this method above
-
-		// alternative way is to grab, then retrieve; allows for
-		// multiple grab when processing below frame rate - v4l keeps a
-		// number of frames buffered, which can lead to significant lag
-		//      m_cap.grab();
-		//      m_cap.retrieve(image);
 
 		// detect April tags (requires a gray scale image)
 		cv::Mat temp = image.clone();
@@ -570,83 +480,6 @@ public:
 		return ret;
 	}
 
-
-	/*void processImage2(cv::Mat& image, cv::Mat& image_gray, camera camera) {
-		// alternative way is to grab, then retrieve; allows for
-		// multiple grab when processing below frame rate - v4l keeps a
-		// number of frames buffered, which can lead to significant lag
-		//      m_cap.grab();
-		//      m_cap.retrieve(image);
-
-		// detect April tags (requires a gray scale image)
-		cv::Mat temp = image.clone();
-		//cv::undistort(temp, image,cameraMatrix, distortionCoefficients);
-		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
-		double t0;
-		if (m_timing) {
-			t0 = tic();
-		}
-		vector<AprilTags::TagDetection> detections = m_tagDetector->extractTags(image_gray);
-		if (m_timing) {
-			double dt = tic()-t0;
-			cout << "Extracting tags took " << dt << " seconds." << endl;
-		}
-
-		// print out each detection
-		cout << detections.size() << " Camera 2 tags detected:" << endl;
-		for (int i=0; i<detections.size(); i++) {
-			print_detection(detections[i], camera);
-		}
-
-		// show the current image including any detections
-		if (m_draw) {
-			for (int i=0; i<detections.size(); i++) {
-				// also highlight in the image
-				detections[i].draw(image);
-			}
-			imshow(windowYellowCam, image); // OpenCV call
-		}
-
-		// optionally send tag information to serial port (e.g. to Arduino)
-		if (m_arduino) {
-			if (detections.size() > 0) {
-				// only the first detected tag is sent out for now
-				Eigen::Vector3d translation;
-				Eigen::Matrix3d rotation;
-				detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-						translation, rotation);
-				m_serial.print(detections[0].id);
-				m_serial.print(",");
-				// m_serial.print(translation(0));
-				m_serial.print(",");
-				//m_serial.print(translation(1));
-				m_serial.print(",");
-				// m_serial.print(translation(2));
-				m_serial.print("\n");
-			} else {
-				// no tag detected: tag ID = -1
-				m_serial.print("-1,0.0,0.0,0.0\n");
-			}
-		}
-	}*/
-
-
-
-	//		return ret; TODO check if this needs to be fixed after commenting out merge conflict version
-	//	}
-
-	// Load and process a single image
-	/*void loadImages() {
-		cv::Mat image;
-		cv::Mat image_gray;
-
-		for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
-			image = cv::imread(*it); // load image with opencv
-			processImage(image, image_gray, capturedTags, 0);
-			while (cv::waitKey(100) == -1) {}
-		}
-	}*/
-
 	// Video or image processing?
 	bool isVideo() {
 		return m_imgNames.empty();
@@ -655,8 +488,6 @@ public:
 	// The processing loop where images are retrieved, tags detected,
 	// and information about detections generated
 	void loop() {
-
-		//procPort = true;
 
 		cv::Mat green_image;
 		cv::Mat green_image_gray;
@@ -718,7 +549,7 @@ public:
 
 							cout << "\tchecking camera " << capturedTagCaches.at(i).cameraID
 									<< " which caught tag " << capturedTagCaches.at(i).tagID
-									<< " and " << capturedTagCaches.at(j).tagID << endl;
+									<< " and tag " << capturedTagCaches.at(j).tagID << endl;
 
 							//create standardized vector
 							float a = 0.0f;
@@ -769,7 +600,7 @@ public:
 								b = 0.0f;
 							}
 
-							cout << "\ta = " << a << " b = " << b << endl;
+							cout << "\t\ta = " << a << " b = " << b << endl;
 
 							Eigen::Vector3d stdFromCamera;
 
@@ -823,12 +654,12 @@ public:
 								stdFromCamera = capturedTagCaches.at(i).capturedVector + helper2;
 
 							}else{
-								cout << "\tERROR, undefined combination for 2 tags a = " << a << " b = " << b << endl;
+								cout << "\t\tERROR, undefined combination for 2 tags a = " << a << " b = " << b << endl;
 							}
 
-							cout << "\tStdVector:" << endl;
+							cout << "\t\tStdVector:" << endl;
 
-							cout << "\t\tdistance=" << stdFromCamera.norm()
+							cout << "\t\t\tdistance=" << stdFromCamera.norm()
 																				<< "m x=" << stdFromCamera(0)
 																				<< " y=" << stdFromCamera(1)
 																				<< " z=" << stdFromCamera(2);
@@ -841,7 +672,7 @@ public:
 				}
 			}
 
-			float norm,x,y,z;
+			/*float norm,x,y,z;
 
 			for(int i = 0; i < foundStandards.size(); i++){
 				norm += foundStandards.at(i).norm();
@@ -859,95 +690,9 @@ public:
 					<< "\t\tdist=" << norm
 					<< " x=" << x
 					<< " y=" << y
-					<< " z=" << z << endl;
+					<< " z=" << z << endl;*/
 
 			capturedTagCaches.clear();
-
-			//processing the port camera
-			// capture frame
-			// TODO Check if this is needed elsewhere m_cap >> image;
-
-			//TODO: clear vector cache
-
-
-			//TODO integrate this part with the new code
-			//cout << "camera 0" << endl;
-			//bool result = processImage(image, image_gray, capturedTags, 0);
-			/*				if(result){
-					cout << "communicating data..." << endl;
-					time_last_located = tic();
-				}*/
-
-			//cout << "camera 1" << endl;
-			//m_cap1 >> image;
-			//result = processImage(image, image_gray, capturedTags, 1);
-
-			//cout << "num of cached instances=" << capturedTagCaches.size() << endl;
-
-			/*Eigen::Vector3d standardizedVector;
-			int length = capturedTagCaches.size();
-			for(int i = 0; i < length; i++){
-				for(int j = 0; j < length; j++){
-					if(j != i){
-						if(capturedTagCaches.at(i).cameraID == capturedTagCaches.at(j).cameraID){
-							//create standardized vector
-							Eigen::Vector3d helper = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
-
-						}
-					}
-				}
-			}*/
-
-			/*if(result){
-				cout << "communicating data1..." << endl;
-				time_last_located = tic();
-			}*/
-
-
-			/*cout << "calc stand" << endl;
-			cout << "\tTag 1:" << c0CacheVector0(0)
-				<< " " << c0CacheVector0(1)
-				<< " " << c0CacheVector0(2);
-				cout << endl;
-			cout << "\tTag 3:" << c0CacheVector1(0)
-				<< " " << c0CacheVector1(1)
-				<< " " << c0CacheVector1(2);
-				cout << endl;
-
-			Eigen::Vector3d helper = c0CacheVector1 - c0CacheVector0;
-			cout << "\tHelper:" << endl;
-			cout << "\t\t distance=" << helper.norm()
-				<< "m x=" << helper(0)
-				<< " y=" << helper(1)
-				<< " z=" << helper(2);
-				cout << endl;
-
-			helper = 1.502 * helper;
-
-			cout << "\tHelper Scaled:" << endl;
-			cout << "\t\t distance=" << helper.norm()
-				<< "m x=" << helper(0)
-				<< " y=" << helper(1)
-				<< " z=" << helper(2);
-				cout << endl;
-
-			Eigen::Vector3d standardizedVector = c0CacheVector0 + helper;
-
-			cout << "\tStandardized Vector:" << endl;
-			cout << "\t\t distance=" << standardizedVector.norm()
-				<< "m x=" << standardizedVector(0)
-				<< " y=" << standardizedVector(1)
-				<< " z=" << standardizedVector(2);
-				cout << endl;*/
-
-			//processing other frames without worrying about the rate above
-			// m_cap1 >> image1;
-			// processImage2(image1, image_gray1);
-
-			/*m_cap2 >> image;
-      	    processImage(image, image_gray);*/
-
-
 
 			// exit if any key is pressed
 			if (cv::waitKey(10) >= 0) break;
