@@ -31,7 +31,7 @@ using namespace std;
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
 
-#include "messages.pb.h"
+//#include "messages.pb.h"
 
 //#include "utils.h"
 
@@ -82,21 +82,22 @@ const char* windowYellowCam = "Yellow";
  */
 struct tagCache{
 
-	int tagID, cameraID;
+	int tagID;
+	string cameraID;
 	Eigen::Vector3d capturedVector;
 
 };
 
 //database for captured tags
-std::vector<tagCache> capturedTags;
+std::vector<tagCache> capturedTagCaches;
 
 //distance from tag with named ID to the standardization point (int meters)
-const float distToStandard01 = 0.545;
-const float distToStandard03 = 0.3245;
-const float distToStandard05 = 0.108;
-const float distToStandard09 = -0.11;
-const float distToStandard10 = -0.326;
-const float distToStandard11 = -0.5425;
+const float distToStandard01 = 0.545f;
+const float distToStandard03 = 0.3245f;
+const float distToStandard05 = 0.108f;
+const float distToStandard09 = -0.11f;
+const float distToStandard10 = -0.326f;
+const float distToStandard11 = -0.5425f;
 
 
 // utility function to provide current system time (used below in
@@ -249,7 +250,7 @@ public:
 		m_gain(-1),
 		m_brightness(-1)
 
-	{}
+{}
 
 	// changing the tag family
 	void setTagCodes(string s) {
@@ -298,67 +299,67 @@ public:
 		//qu2->Declare();
 		//qu2->Bind( "e", "");
 
-		#ifdef EXPOSURE_CONTROL
-			// manually setting camera exposure settings; OpenCV/v4l1 doesn't
-			// support exposure control; so here we manually use v4l2 before
-			// opening the device via OpenCV; confirmed to work with Logitech
-			// C270; try exposure=20, gain=100, brightness=150
+#ifdef EXPOSURE_CONTROL
+		// manually setting camera exposure settings; OpenCV/v4l1 doesn't
+		// support exposure control; so here we manually use v4l2 before
+		// opening the device via OpenCV; confirmed to work with Logitech
+		// C270; try exposure=20, gain=100, brightness=150
 
-			string video_str = "/dev/video0";
-			video_str[10] = '0' + greenCam.c_id;
-			int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		string video_str = "/dev/video0";
+		video_str[10] = '0' + greenCam.c_id;
+		int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
 
-			string video_str1 = "/dev/video1";
-			video_str1[10] = '1' + yellowCam.c_id;
-			int device1 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		string video_str1 = "/dev/video1";
+		video_str1[10] = '1' + yellowCam.c_id;
+		int device1 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
 
-			//string video_str2 = "/dev/video2";
-			//video_str2[10] = '2' + m_deviceId;
+		//string video_str2 = "/dev/video2";
+		//video_str2[10] = '2' + m_deviceId;
 
-			//int device2 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		//int device2 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
 
-			if (m_exposure >= 0) {
-				// not sure why, but v4l2_set_control() does not work for
-				// V4L2_CID_EXPOSURE_AUTO...
-				struct v4l2_control c_green;
-				c_green.id = V4L2_CID_EXPOSURE_AUTO;
-				c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-				if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c_green) != 0) {
-					cout << "Failed to set... " << strerror(errno) << endl;
-				}
-				cout << "exposure: " << m_exposure << endl;
-				v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		if (m_exposure >= 0) {
+			// not sure why, but v4l2_set_control() does not work for
+			// V4L2_CID_EXPOSURE_AUTO...
+			struct v4l2_control c_green;
+			c_green.id = V4L2_CID_EXPOSURE_AUTO;
+			c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c_green) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
 			}
-			if (m_gain >= 0) {
-				cout << "gain: " << m_gain << endl;
-				v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
-			}
-			if (m_brightness >= 0) {
-				cout << "brightness: " << m_brightness << endl;
-				v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
-			}
-			v4l2_close(device);
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(device);
 
-			//if statements for the other cameras
-			if (m_exposure >= 0) {
-				struct v4l2_control c_yellow;
-				c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
-				c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-				if (v4l2_ioctl(device1, VIDIOC_S_CTRL, &c_yellow) != 0) {
-					cout << "Failed to set... " << strerror(errno) << endl;
-				}
-				cout << "exposure: " << m_exposure << endl;
-				v4l2_set_control(device1, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		//if statements for the other cameras
+		if (m_exposure >= 0) {
+			struct v4l2_control c_yellow;
+			c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
+			c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(device1, VIDIOC_S_CTRL, &c_yellow) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
 			}
-			if (m_gain >= 0) {
-				cout << "gain: " << m_gain << endl;
-				v4l2_set_control(device1, V4L2_CID_GAIN, m_gain*256);
-			}
-			if (m_brightness >= 0) {
-				cout << "brightness: " << m_brightness << endl;
-				v4l2_set_control(device1, V4L2_CID_BRIGHTNESS, m_brightness*256);
-			}
-			v4l2_close(device1);
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(device1, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(device1, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(device1, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(device1);
 
 
 #endif
@@ -397,12 +398,12 @@ public:
 	//calibration values. Maybe make a camera struct and include appropriate fields
 	//in functions that utilize calibration values
 
-	void print_detection(AprilTags::TagDetection& detection, camera camera) const {
+	void print_detection(AprilTags::TagDetection& detection, camera camera, string name) const {
 		//cout << "  Id: " << detection.id
 		//		<< " (Hamming: " << detection.hammingDistance << ")";
-	//void print_detection(AprilTags::TagDetection& detection, std::vector<tagCache>& dataRecords, int cameraID) const {
-	//	cout << "\t\t  Id: " << detection.id
-	//			<< " (Hamming: " << detection.hammingDistance << ")";
+		//void print_detection(AprilTags::TagDetection& detection, std::vector<tagCache>& dataRecords, int cameraID) const {
+		//	cout << "\t\t  Id: " << detection.id
+		//			<< " (Hamming: " << detection.hammingDistance << ")";
 
 
 		// recovering the relative pose of a tag:
@@ -464,20 +465,23 @@ public:
 		//ex->Publish(msg, sizeof(msg), "loc.post");
 
 		//Outputting the vector components to the AprilTag
-/*		cout << "  distance=" << translation.norm()
+		/*		cout << "  distance=" << translation.norm()
         										 << "m, x=" << translation(0)
 												 << ", y=" << translation(1)
 												 << ", z=" << translation(2)
 												 << ", yaw(x)=" << yaw
 												 << ", pitch(z)=" << pitch
-												 << ", roll(y)=" << roll;*/
-		cout   << endl; //added ; cout to fix eclipse bug
+												 << ", roll(y)=" << roll;
+		cout   << endl;*/ //added ; cout to fix eclipse bug
 
 		tagCache toAdd;
 		/*TODO integrate these with the new version if needed*/
 		//toAdd.cameraID = cameraID;
+		toAdd.cameraID = name;
 		toAdd.tagID = detection.id;
 		toAdd.capturedVector = translation;
+
+		capturedTagCaches.push_back(toAdd);
 
 		//dataRecords.push_back(toAdd);
 
@@ -498,7 +502,7 @@ public:
 
 	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name) {
 
-	//bool processImage(cv::Mat& image, cv::Mat& image_gray, std::vector<tagCache>& dataRecords, int cameraID) {
+		//bool processImage(cv::Mat& image, cv::Mat& image_gray, std::vector<tagCache>& dataRecords, int cameraID) {
 		//TODO fix this method above
 
 		// alternative way is to grab, then retrieve; allows for
@@ -526,7 +530,7 @@ public:
 		bool ret = false;
 		//cout << "\tdetections.size: "<< detections.size() << endl;
 		for (int i=0; i<detections.size(); i++){
-			print_detection(detections[i], camera); //previously commented out
+			print_detection(detections[i], camera, name); //previously commented out
 			//TODO fix this part print_detection(detections[i], capturedTags, cameraID);
 			ret = true;
 		}
@@ -628,8 +632,8 @@ public:
 
 
 
-//		return ret; TODO check if this needs to be fixed after commenting out merge conflict version
-//	}
+	//		return ret; TODO check if this needs to be fixed after commenting out merge conflict version
+	//	}
 
 	// Load and process a single image
 	/*void loadImages() {
@@ -674,7 +678,8 @@ public:
 			processImage(green_image, green_image_gray, greenCam, windowGreenCam);
 			processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam);
 
-			com::cwrubotix::glennifer::LocalizationPosition msg;
+			//TODO: uncomment
+			/*com::cwrubotix::glennifer::LocalizationPosition msg;
 				float x = 10;
 				float y = 15;
 				msg.set_x_position(x);
@@ -688,9 +693,9 @@ public:
 				AMQPQueue *queue = amqp.createQueue("localization.data");
 				queue->Declare();
 				queue->Bind("amq.topic", "localization.data");
-				ex->Publish((char*)msg_buff, msg_size, "localization.data");
+				ex->Publish((char*)msg_buff, msg_size, "localization.data");*/
 
-				//sleep(100);
+			//sleep(100);
 
 			//AMQPExchange * ax = amqp.createExchange("amq.topic");
 			//ax->Declare("amq.topic", "topic", AMQP_DURABLE);
@@ -700,7 +705,163 @@ public:
 			//qu2->Bind( "amq.topic", "localization.data");
 			//ax->Publish((char*)msg_buff, msg_size, "localization.data");
 
-			capturedTags.clear();
+			cout << "num of cached instances=" << capturedTagCaches.size() << endl;
+
+			std::vector<Eigen::Vector3d> foundStandards;
+
+			int length = capturedTagCaches.size();
+			for(int i = 0; i < length; i++){
+				for(int j = 0; j < length; j++){
+					if(j != i){
+
+						if(capturedTagCaches.at(i).cameraID == capturedTagCaches.at(j).cameraID){
+
+							cout << "\tchecking camera " << capturedTagCaches.at(i).cameraID
+									<< " which caught tag " << capturedTagCaches.at(i).tagID
+									<< " and " << capturedTagCaches.at(j).tagID << endl;
+
+							//create standardized vector
+							float a = 0.0f;
+							float b = 0.0f;
+							switch(capturedTagCaches.at(i).tagID){
+							case 1:
+								a = distToStandard01;
+								break;
+							case 3:
+								a = distToStandard03;
+								break;
+							case 5:
+								a = distToStandard05;
+								break;
+							case 9:
+								a = distToStandard09;
+								break;
+							case 10:
+								a = distToStandard10;
+								break;
+							case 7:
+								a = distToStandard11;
+								break;
+							default:
+								a = 0.0f;
+							}
+
+							switch(capturedTagCaches.at(j).tagID){
+							case 1:
+								b = distToStandard01;
+								break;
+							case 3:
+								b = distToStandard03;
+								break;
+							case 5:
+								b = distToStandard05;
+								break;
+							case 9:
+								b = distToStandard09;
+								break;
+							case 10:
+								b = distToStandard10;
+								break;
+							case 7:
+								b = distToStandard11;
+								break;
+							default:
+								b = 0.0f;
+							}
+
+							cout << "\ta = " << a << " b = " << b << endl;
+
+							Eigen::Vector3d stdFromCamera;
+
+							if((a > 0 && b > 0) && a > b){//++
+
+								cout << "\t\tfound as a ++" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
+								float scaler = (a) / (a - b);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(i).capturedVector + helper2;
+
+
+							}else if((a > 0 && b > 0) && b > a){//++ fliped
+
+								cout << "\t\tfound as a ++ flip" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(j).capturedVector - capturedTagCaches.at(i).capturedVector;
+								float scaler = (b) / (b - a);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(j).capturedVector + helper2;
+
+							}else if((a < 0 && b < 0) && a < b){//--
+
+								cout << "\t\tfound as a --" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
+								float scaler = (a) / (a - b);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(i).capturedVector + helper2;
+
+							}else if((a < 0 && b < 0) && a > b){//-- fliped
+
+								cout << "\t\tfound as a -- flip" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(j).capturedVector - capturedTagCaches.at(i).capturedVector;
+								float scaler = (b) / (b - a);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(j).capturedVector + helper2;
+
+							}else if(a > 0 && b < 0){//+-
+
+								cout << "\t\tfound as a +-" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
+								float scaler = (a) / (a - b);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(i).capturedVector + helper2;
+
+							}else if(a < 0 && b > 0){//-+
+
+								cout << "\t\tfound as a -+" << endl;
+								Eigen::Vector3d helper1 = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
+								float scaler = (a) / (a - b);
+								Eigen::Vector3d helper2 = scaler * helper1;
+								stdFromCamera = capturedTagCaches.at(i).capturedVector + helper2;
+
+							}else{
+								cout << "\tERROR, undefined combination for 2 tags a = " << a << " b = " << b << endl;
+							}
+
+							cout << "\tStdVector:" << endl;
+
+							cout << "\t\tdistance=" << stdFromCamera.norm()
+																				<< "m x=" << stdFromCamera(0)
+																				<< " y=" << stdFromCamera(1)
+																				<< " z=" << stdFromCamera(2);
+							cout << endl;
+
+							foundStandards.push_back(stdFromCamera);
+
+						}
+					}
+				}
+			}
+
+			float norm,x,y,z;
+
+			for(int i = 0; i < foundStandards.size(); i++){
+				norm += foundStandards.at(i).norm();
+				x += foundStandards.at(i)(0);
+				y += foundStandards.at(i)(1);
+				z += foundStandards.at(i)(2);
+			}
+
+			norm = norm / foundStandards.size();
+			x = x / foundStandards.size();
+			y = y / foundStandards.size();
+			z = z / foundStandards.size();
+
+			cout << "\tOVERALL VECTOR:\n"
+					<< "\t\tdist=" << norm
+					<< " x=" << x
+					<< " y=" << y
+					<< " z=" << z << endl;
+
+			capturedTagCaches.clear();
 
 			//processing the port camera
 			// capture frame
@@ -711,31 +872,31 @@ public:
 
 			//TODO integrate this part with the new code
 			//cout << "camera 0" << endl;
-			bool result = processImage(image, image_gray, capturedTags, 0);
+			//bool result = processImage(image, image_gray, capturedTags, 0);
 			/*				if(result){
 					cout << "communicating data..." << endl;
 					time_last_located = tic();
 				}*/
 
 			//cout << "camera 1" << endl;
-			m_cap1 >> image;
-			result = processImage(image, image_gray, capturedTags, 1);
+			//m_cap1 >> image;
+			//result = processImage(image, image_gray, capturedTags, 1);
 
-			cout << "num of cached instances=" << capturedTags.size() << endl;
+			//cout << "num of cached instances=" << capturedTagCaches.size() << endl;
 
-			Eigen::Vector3d standardizedVector;
-			int length = capturedTags.size();
+			/*Eigen::Vector3d standardizedVector;
+			int length = capturedTagCaches.size();
 			for(int i = 0; i < length; i++){
 				for(int j = 0; j < length; j++){
 					if(j != i){
-						if(capturedTags.at(i).cameraID == capturedTags.at(j).cameraID){
+						if(capturedTagCaches.at(i).cameraID == capturedTagCaches.at(j).cameraID){
 							//create standardized vector
-							Eigen::Vector3d helper = capturedTags.at(i).capturedVector - capturedTags.at(j).capturedVector;
+							Eigen::Vector3d helper = capturedTagCaches.at(i).capturedVector - capturedTagCaches.at(j).capturedVector;
 
 						}
 					}
 				}
-			}
+			}*/
 
 			/*if(result){
 				cout << "communicating data1..." << endl;
