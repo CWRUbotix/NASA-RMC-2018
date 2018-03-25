@@ -1,24 +1,12 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-
-import com.rabbitmq.client.AMQP;
-
-import com.cwrubotix.glennifer.Messages;
-import com.cwrubotix.glennifer.Messages.UnixTime;
-import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.LaunchTransit;
-import com.cwrubotix.glennifer.Messages.LaunchDrill;
-import com.cwrubotix.glennifer.Messages.LaunchDump;
 import com.cwrubotix.glennifer.Messages.TransitSoftStop;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
@@ -58,6 +46,8 @@ public class AutoModule extends Module {
 		factory.setHost("localhost");
 		this.connection = factory.newConnection();
 		this.channel = connection.createChannel();
+
+		// TODO AutoModule needs to turn around and scan for AprilTags
 
 		// Setup timer for timing tasks
 		Timer taskTimer = new Timer("Task Timer");

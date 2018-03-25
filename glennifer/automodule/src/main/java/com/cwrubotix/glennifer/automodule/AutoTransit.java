@@ -1,20 +1,9 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-
-import com.rabbitmq.client.AMQP;
-
 import com.cwrubotix.glennifer.Messages;
-import com.cwrubotix.glennifer.Messages.Fault;
-import com.cwrubotix.glennifer.Messages.UnixTime;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -27,6 +16,7 @@ public class AutoTransit extends Module {
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0);
 	private final float CLEARANCE_DIST = 0.3F; //Setting this to 30cm for now. Will have to change it after testing locomotion.
+    private final float TRAVEL_SPEED = 1.0F; // Sensible speed at which to travel
 	private static Position currentPos;
 	private PathFinder pathFinder;
 
@@ -34,6 +24,7 @@ public class AutoTransit extends Module {
 	private String exchangeName;
 	private Connection connection;
 	private Channel channel;
+
 
 	/*
 	 * TODO LIST
@@ -70,7 +61,16 @@ public class AutoTransit extends Module {
 					cmd.getDestYPos(),
 					0f);
 
-			// TODO Construct pathFinder when algorithms available
+			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
+			Path currentPath = pathFinder.getPath();
+
+			/* TODO Translate Path positions to HCI -- This possibly should be run in a loop on a separate method
+				1. Create delta between first and next position in path
+				2. Work with Steven to translate that to a message
+				3. Construct message to send to HCI
+			 */
+			moveToPos(currentPath.getPoint(0), currentPath.getPoint(1));
+
         }
 	}
 
@@ -132,6 +132,41 @@ public class AutoTransit extends Module {
 		return currentPos;
 	}
 
+	private void moveToPos(Position currPos, Position destPos) {
+		// Compute angle to turn to -- clockwise is positive
+        double angleBetween = Position.angleBetween(currPos, destPos);
+
+		turnAngle(angleBetween);
+		driveTo(destPos);
+	}
+
+	private void turnAngle(double angle) {
+        /*
+        Determine direction
+        Tell robot to turn
+        while we're not at correct heading
+            sleep 100ms
+        stop
+         */
+        if (angle > 0) {
+            // right front + back go backwards
+            // left front + back go forwards
+            // use RpmUpdate to tell motors to move
+        } else if (angle < 0) {
+            // opposite
+        }
+    }
+
+    private void driveTo(Position destPos) {
+	    /*
+	    Time = distance / speed
+	    Tell robot to drive
+	    while !equalsWithinError(curr, dest, error)
+	        sleep 100ms
+        stop
+	     */
+    }
+
     @Override
     protected void runWithExceptions() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
@@ -141,20 +176,22 @@ public class AutoTransit extends Module {
 
         // Listeners for commands
 		String queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "launch.transit");
+		this.channel.queueBind(queueName, exchangeName, "launch.transit");
 		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
 
 		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "softstop.transit");
+		this.channel.queueBind(queueName, exchangeName, "softstop.transit");
 		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
 
 		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "hardstop.transit");
+		this.channel.queueBind(queueName, exchangeName, "hardstop.transit");
 		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
 
 		queueName = channel.queueDeclare().getQueue();
-		channel.queueBind(queueName, exchangeName, "newobstacle.transit");
+		this.channel.queueBind(queueName, exchangeName, "newobstacle.transit");
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
+
+		// TODO Move to position[1], remove position[0], repeat
     }
 
 }

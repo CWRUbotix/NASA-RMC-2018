@@ -86,5 +86,30 @@ public class Position extends Coordinate implements Cloneable {
         return hash;
     }
 
-    
+    /**
+     * Compute distance between two Positions. Uses the distance formula.
+     * @param pos1 First position
+     * @param pos2 Second position.
+     * @return A double with the distance between the two points.
+     */
+    public static double distance(Position pos1, Position pos2) {
+        return Math.sqrt(Math.pow(pos1.getX() - pos2.getX(), 2) +
+                         Math.pow(pos1.getY() - pos2.getY(), 2));
+    }
+
+    public static double angleBetween(Position pos1, Position pos2) {
+        double heading = pos1.getAngle();
+        return heading + Math.asin((pos2.getX() - pos1.getX()) / distance(pos1, pos2));
+    }
+
+    /**
+     * Check if two positions are close enough to each other within a specified tolerance
+     * @param pos1
+     * @param pos2
+     * @param tolerance
+     * @return
+     */
+    public static boolean equalsWithinError(Position pos1, Position pos2, double tolerance) {
+        return distance(pos1, pos2) < tolerance;
+    }
 }
