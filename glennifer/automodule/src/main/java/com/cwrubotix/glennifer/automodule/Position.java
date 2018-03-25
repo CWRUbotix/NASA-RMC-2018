@@ -26,15 +26,15 @@ public class Position extends Coordinate implements Cloneable {
     }
     
     public Position(float x_pos, float y_pos){
-	this(x_pos, y_pos, 0.0);
+        this(x_pos, y_pos, 0.0);
     }
     
     public double getHeading(){
-	return heading;
+        return heading;
     }
     
     public void setHeading(double heading){
-	this.heading = heading;
+        this.heading = heading;
     }
     
     public boolean setX(float x_pos) {
@@ -77,8 +77,7 @@ public class Position extends Coordinate implements Cloneable {
             Position compare = (Position) obj;
             float x_diff = compare.getX() - getX();
             float y_diff = compare.getY() - getY();
-            if (Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
-                return true;
+            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5;
         }
         return false;
     }
@@ -115,16 +114,16 @@ public class Position extends Coordinate implements Cloneable {
     }
 
     public static double angleBetween(Position pos1, Position pos2) {
-        double heading = pos1.getAngle();
+        double heading = pos1.getHeading();
         return heading + Math.asin((pos2.getX() - pos1.getX()) / distance(pos1, pos2));
     }
 
     /**
-     * Check if two positions are close enough to each other within a specified tolerance
-     * @param pos1
-     * @param pos2
-     * @param tolerance
-     * @return
+     * Check if two positions are close enough to each other within a specified tolerance.
+     * @param pos1 First position
+     * @param pos2 Second position
+     * @param tolerance Maximum distance between pos1 and pos2 to be considered close
+     * @return Whether pos1 and pos2 are within tolerance distance of each other
      */
     public static boolean equalsWithinError(Position pos1, Position pos2, double tolerance) {
         return distance(pos1, pos2) < tolerance;
