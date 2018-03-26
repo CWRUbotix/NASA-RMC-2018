@@ -8,7 +8,7 @@ CMD_HCI_TEST 		= 3
 HCI_TEST_SEND 		= 0x5A
 HCI_TEST_RPY 		= 0xA5
 
-
+#===============================================================================
 def dispAvailableCOM():
 	print('='*79)
 	print("AVAILABLE COM PORTS:\n")
@@ -16,6 +16,7 @@ def dispAvailableCOM():
 	print('='*79)
 	print(" ")
 
+#===============================================================================
 def dispCMDTypes():
 	print('='*79)
 	print("CMD tpyes are:")
@@ -121,6 +122,7 @@ def main():
 
 		#--------------------------------------------------------------------
 	
+	
 	except Exception as e:
 		print("Error:\t")
 	
@@ -128,6 +130,6 @@ def main():
 		ser.close()
 
 
-
+#===============================================================================
 if __name__ == '__main__':
 	main()

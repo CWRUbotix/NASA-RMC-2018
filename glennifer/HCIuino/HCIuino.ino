@@ -4,6 +4,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 #include <ODriveArduino.h>
+#include <SabertoothSimplified.h>
 #include <math.h>
 
 #include "values_and_types.h"

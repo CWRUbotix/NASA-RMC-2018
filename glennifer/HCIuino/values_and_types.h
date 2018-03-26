@@ -19,6 +19,8 @@
 #define NUM_SENSORS 			(256)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
+#define SABERTOOTH_BAUD 		(38400)
+#define SERIAL_BAUD 			HCI_BAUD
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -30,6 +32,9 @@
 #define NUM_MOTORS 				(9)
 #define NUM_SENSORS 			(100)
 
+//ODrive Stuff
+#define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
+#define PARAM_ENC_VEL 			PARAM_FLOAT_ENCODER_PLL_VEL
 
 // FAULT CODES
 #define FAULT_T 				uint8_t
@@ -45,8 +50,8 @@
 #define FAULT_LOG_FULL			(7)
 
 //Motor Control Boards
-#define BRUSHED_0_SLP 			(22)
-
+#define SABERTOOTH_0_SLCT 		(22)
+#define SABERTOOTH_1_SLCT 		(23)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,11 +78,11 @@ enum SensorHardware {
 typedef struct SensorInfo{
 	SensorHardware hardware;
 	uint8_t  addr; 				// When hardware = SH_I2C_* or ...
-	uint8_t  whichMotor; 		// When hardware = SH_RC_*
+	uint8_t  whichMotor; 		// Holds the ID of the motor if applicable
 	int      whichPin; 			// 
 	bool     is_reversed;		// When hardware = SH_PIN_LIMIT
-	float    responsiveness;	// 1 = responsiveness
-	uint16_t scale; 			// 1 unless needed
+	float    responsiveness = 1;// 1 = responsiveness
+	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
 }SensorInfo;
 
@@ -87,10 +92,9 @@ enum MotorHardware {
 	MH_BL_VEL,		// 
 	MH_BL_POS,		// 
 	MH_BL_POS_BOTH,	// 
-	MH_BR_PWM, 		// BR := brushed
-	MH_BR_POS,		// 
-	MH_BR_PWM_BOTH,	// 
-	MH_PIN_PWM,		// 
+	MH_ST_PWM, 		//
+	MH_ST_VEL, 		//
+	MH_ST_POS, 		//
 	MH_ALL			// 
 };
 
@@ -101,9 +105,10 @@ enum MCType{
 };
 
 typedef struct MCInfo {
-	MCType type = MC_NONE; 	// refer to the MCType en = NULL
-	uint8_t SLPpin; 		// if MC_BRUSHED
-	ODriveArduino* odrive; 	// if MC_ODRIVE
+	MCType type = MC_NONE; 		// default is NONE
+	SabertoothSimplified* ST; 	// the sabertooth board object if applicable
+	uint8_t selectPin; 			// slave select pin
+	ODriveArduino* odrive; 		// if MC_ODRIVE
 }MCInfo;
 
 //MOTOR INFO
@@ -111,11 +116,9 @@ typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 		// motor controller board info
 	uint8_t  addr; 			// 
-	uint8_t  whichMotor;	// if brushless motors
-	uint8_t  PWMpin; 		// if MH_BR_PWM
-	uint8_t  DIRpin; 		// 
+	uint8_t  whichMotor;	// motor 0 or 1 on the board?
 	uint16_t scale = 1; 	// 1 unless needed
-	uint16_t setPt; 		// set point for motor (rather that use an array)
+	uint16_t setPt = 0;		// set point for motor (rather that use an array)
 	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
 	float    ki; 			// When hardware = MH_RC_POS or MC_RC_VEL
 	float    kd; 			// When hardware = MH_RC_POS or MC_RC_VEL
@@ -126,7 +129,8 @@ typedef struct MotorInfo{
 	uint32_t accel;
 	uint16_t feedbackSensorID;
 	float    saturation;
-	int16_t  lastUpdateTime;// replaces the motor_lastUpdateTime array
+	uint32_t lastUpdateTime;// replaces the motor_lastUpdateTime array
+	uint16_t lastError; 	// for tracking the derivative
 	float    integral; 		// replaces the motor_integrals array
 }MotorInfo;
 
