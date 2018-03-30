@@ -225,7 +225,7 @@ public class AutoTransit extends Module {
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 
 		// TODO Maybe don't use a while loop?
-        while (!currentPath.getPath().isEmpty()) {
+        while (!currentPath.getPath().size() > 1) { // While we still have a position to go to
         	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
 		}
     }
