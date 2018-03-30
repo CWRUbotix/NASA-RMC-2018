@@ -1,6 +1,7 @@
 package com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.RpmUpdate;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ public class AutoTransit extends Module {
     private final float TRAVEL_SPEED = 1.0F; // Sensible speed at which to travel
 	private static Position currentPos;
 	private PathFinder pathFinder;
+	private Path currentPath;
 
 	// Messaging stuff
 	private String exchangeName;
@@ -62,7 +64,7 @@ public class AutoTransit extends Module {
 					0f);
 
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
-			Path currentPath = pathFinder.getPath();
+			currentPath = pathFinder.getPath();
 
 			/* TODO Translate Path positions to HCI -- This possibly should be run in a loop on a separate method
 				1. Create delta between first and next position in path
@@ -114,7 +116,12 @@ public class AutoTransit extends Module {
 			float obsDiameter = cmd.getDiameter();
 			Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
-			pathFinder.registerObstacle(newObs);
+			// Register new obstacle, and reset path if necessary
+			try {
+				pathFinder.registerObstacle(newObs);
+			} catch (PathFinder.DestinationModified destinationModified) {
+			    currentPath = pathFinder.getPath();
+			}
 		}
 	}
 
@@ -132,7 +139,7 @@ public class AutoTransit extends Module {
 		return currentPos;
 	}
 
-	private void moveToPos(Position currPos, Position destPos) {
+	private void moveToPos(Position currPos, Position destPos) throws IOException {
 		// Compute angle to turn to -- clockwise is positive
         double angleBetween = Position.angleBetween(currPos, destPos);
 
@@ -140,7 +147,9 @@ public class AutoTransit extends Module {
 		driveTo(destPos);
 	}
 
-	private void turnAngle(double angle) {
+	private void turnAngle(double angle) throws IOException {
+	    if (angle == 0) return;
+
         /*
         Determine direction
         Tell robot to turn
@@ -148,13 +157,29 @@ public class AutoTransit extends Module {
             sleep 100ms
         stop
          */
-        if (angle > 0) {
-            // right front + back go backwards
-            // left front + back go forwards
-            // use RpmUpdate to tell motors to move
-        } else if (angle < 0) {
-            // opposite
-        }
+        // Build messages
+        RpmUpdate rWheelsMsg = RpmUpdate.newBuilder()
+                .setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
+                .build();
+
+        RpmUpdate lWheelsMsg = RpmUpdate.newBuilder()
+                .setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
+                .build();
+
+        // Tell wheels to start moving
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+
+        // Stop when angle is reached
+		while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
     }
 
     private void driveTo(Position destPos) {
@@ -165,6 +190,20 @@ public class AutoTransit extends Module {
 	        sleep 100ms
         stop
 	     */
+
+	    // Drive
+	    RpmUpdate driveMsg = RpmUpdate.newBuilder()
+				.setRpm(TRAVEL_SPEED)
+				.build();
+
+	    // Stop when destination reached (within tolerance)
+        while (!Position.equalsWithinError(currentPos, destPos, 0.1)); {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
     }
 
     @Override
