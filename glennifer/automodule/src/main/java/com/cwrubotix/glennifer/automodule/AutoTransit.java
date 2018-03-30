@@ -176,7 +176,7 @@ public class AutoTransit extends Module {
 		}
     }
 
-    private void driveTo(Position destPos) {
+    private void driveTo(Position destPos) throws IOException {
 	    /*
 	    Time = distance / speed
 	    Tell robot to drive
@@ -189,6 +189,11 @@ public class AutoTransit extends Module {
 	    RpmUpdate driveMsg = RpmUpdate.newBuilder()
 				.setRpm(TRAVEL_SPEED)
 				.build();
+
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
 
 	    // Stop when destination reached (within tolerance)
         while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
