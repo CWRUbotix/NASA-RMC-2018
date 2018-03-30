@@ -66,12 +66,6 @@ public class AutoTransit extends Module {
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
 			currentPath = pathFinder.getPath();
 
-			/* TODO Translate Path positions to HCI -- This possibly should be run in a loop on a separate method
-				1. Create delta between first and next position in path
-				2. Work with Steven to translate that to a message
-				3. Construct message to send to HCI
-			 */
-			moveToPos(currentPath.getPoint(0), currentPath.getPoint(1));
 
         }
 	}
@@ -230,7 +224,10 @@ public class AutoTransit extends Module {
 		this.channel.queueBind(queueName, exchangeName, "newobstacle.transit");
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 
-		// TODO Move to position[1], remove position[0], repeat
+		// TODO Maybe don't use a while loop?
+        while (!currentPath.getPath().isEmpty()) {
+        	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
+		}
     }
 
 }
