@@ -9,10 +9,18 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.UnixTime;
+import com.cwrubotix.glennifer.Messages.Fault;
+import com.cwrubotix.glennifer.Messages.LaunchTransit;
+import com.cwrubotix.glennifer.Messages.LaunchDrill;
+import com.cwrubotix.glennifer.Messages.LaunchDump;
+import com.cwrubotix.glennifer.Messages.TransitSoftStop;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -23,19 +31,34 @@ import java.util.concurrent.TimeoutException;
  * depending on which state it is in.
  * 
  * @author Seohyun Jung
+ * @author Imran Hossain
  *
  */
-public class AutoModule{
+public class AutoModule extends Module {
 	private Stage currentStage;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
+
+	private String exchangeName;
+	private Connection connection;
+	private Channel channel;
 	
 	/*
 	 *TODO list
 	 *	1) Decide on course of actions on possible situations (Obstacles, Path plan, Setting up Dumping position)
 	 *	2) Create appropriate Consumers, Messages system for decision making messages.
 	 *	3) Subscribe for sensor values or modules needed.
-	 *	4) Come up with Error Handling mechanism.
+	 *	4) Come up with possible errors and handling mechanism.
 	 *	5) Set up Connection Factory.
 	 */
-	
+
+	@Override
+	protected void runWithExceptions() throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost("localhost");
+        this.connection = factory.newConnection();
+        this.channel = connection.createChannel();
+
+        // Listen for commands...
+
+	}
 }

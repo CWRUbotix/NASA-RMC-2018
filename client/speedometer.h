@@ -27,7 +27,7 @@
 #define SPEEDOMETER_H
 
 #include <QWidget>
-#include <QtDesigner/QDesignerExportWidget>
+//#include <QtDesigner/QDesignerExportWidget>
 
 class Speedometer : public QWidget
 {
