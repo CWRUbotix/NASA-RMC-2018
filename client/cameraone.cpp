@@ -1,14 +1,15 @@
 #include "cameraone.h"
 #include "ui_cameraone.h"
 #include "consumerthread.h"
-#include <opencv/cv.h>
-#include <opencv2/cvconfig.h>
-#include <opencv2/imgcodecs/imgcodecs.hpp>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
+//#include <opencv/cv.h>
+//#include <opencv2/cvconfig.h>
+//#include <opencv2/imgcodecs/imgcodecs.hpp>
+//#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <io.h>
+//#include <io.h>
 #include <iostream>
 #include <QPainter>
+#include <QTextStream>
 
 /* Deleted All other Camera Windows */
 
@@ -67,10 +68,23 @@ void CameraOne::handleFrameFour(QString key, QByteArray data) {
     ui->cam4lbl->setPixmap(pix);
 }
 
+QTextStream out(stdout);
+
 void CameraOne::handleFrameFive(QString key, QByteArray data) {
-    QPixmap pix;
-    pix.loadFromData((uchar*)data.data(), data.length(), "JPEG");
-    ui->cam5lbl->setPixmap(pix);
+    ObstaclePosition msg;
+    msg.ParseFromArray(data.data(), data.length());
+    float x_pos = msg.x_position();
+    float y_pos = msg.y_position();
+    float z_pos = msg.z_position();
+    float diameter = msg.diameter();
+    QString x = QString::number(x_pos);
+    QString y = QString::number(y_pos);
+    QString z = QString::number(z_pos);
+    QString d = QString::number(diameter);
+   // out << x << y << z << d << endl;
+    //QPixmap pix;
+   // pix.loadFromData((uchar*)data.data(), data.length(), "JPEG");
+    //ui->cam5lbl->setPixmap(pix);
 }
 
 void CameraOne::camOneSubscription() {
@@ -128,7 +142,7 @@ void CameraOne::camFourStream() {
 //Camera Five
 void CameraOne::camFiveSubscription() {
     QString login = str_login;
-    ConsumerThread *thread5 = new ConsumerThread(str_login, "camera.one");
+    ConsumerThread *thread5 = new ConsumerThread(str_login, "obstacle.position");
     connect(thread5, &ConsumerThread::receivedMessage, this, &CameraOne::handleFrameFive);
     connect(thread5, SIGNAL(finished()), thread5, SLOT(deleteLater()));
     thread5->start();

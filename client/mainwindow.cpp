@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -34,30 +34,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    /*
-
-    QMap<QLineEdit*, QSlider*> lineSliders;
-
-    lineSliders.insert(ui->lineEdit_BackLeftWheel, ui->slider_BackLeftWheel);
-
-    ui->lineEdit_FrontLeftWheel->setValidator(new QIntValidator(-60, 60));
-    */
-
-    /*
-    ui->lineEdit_FrontLeftWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_FrontRightWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_BackLeftWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_BackRightWheel->setValidator(new QDoubleValidator(-60, 60, 0));
-    ui->lineEdit_FrontLeftWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_FrontRightWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_BackLeftWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_BackRightWheelPod->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_DepositionDump->setValidator(new QDoubleValidator(-100, 100, 0));
-    ui->lineEdit_ExcavationArm->setValidator(new QDoubleValidator(0, 90, 0));
-    ui->lineEdit_ExcavationTranslation->setValidator(new QDoubleValidator(-100, 100, 0));
-    */
-
-    //ui->drill_Slider->setRange(0,);
 
     connect(ui->lineEdit_FrontLeftWheel, &IntEdit::valueEdited, ui->slider_FrontLeftWheel, &QSlider::setValue);
     connect(ui->lineEdit_FrontRightWheel, &IntEdit::valueEdited, ui->slider_FrontRightWheel, &QSlider::setValue);
@@ -229,11 +205,8 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleEStop);
     QObject::connect(ui->pushButton_EUnstop, &QPushButton::clicked,
                      this, &MainWindow::handleEUnstop);
-    /*
-    QObject::connect(ui->lineEdit_FrontLeftWheel, &QLineEdit::textChanged,
-                     ui->slider_BackLeftWheel, &QSlider::setValue)
-*/
-    //add tankPivotButtonR and tankPivotButtonL
+
+    //Add tankPivotButtonR and tankPivotButtonL
     QObject::connect(ui->tankPivotButtonR, &QPushButton::clicked,
                      this, &MainWindow::handleTankPivotR);
     QObject::connect(ui->tankPivotButtonR, &QPushButton::released,
@@ -396,62 +369,7 @@ void MainWindow::handleLocomotionRight() {
 }
 
 void MainWindow::handleLocomotionRelease() {
-    /*
-    if (0 == m_desiredConfig) { // straight
-        LocomotionControlCommandStraight msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.straight");
-
-        free(msg_buff);
-    } else if (1 == m_desiredConfig) { // turn
-        LocomotionControlCommandTurn msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.turn");
-
-        free(msg_buff);
-    } else if (2 == m_desiredConfig) { // strafe
-        LocomotionControlCommandStrafe msg;
-        msg.set_speed(0.0F);
-        msg.set_timeout(456);
-        int msg_size = msg.ByteSize();
-        void *msg_buff = malloc(msg_size);
-        if (!msg_buff) {
-            ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-            return;
-        }
-        msg.SerializeToArray(msg_buff, msg_size);
-
-        AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-        ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-        ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.strafe");
-
-        free(msg_buff);
-    } else {
-        ui->consoleOutputTextBrowser->append("Wrong config");
-    }
-    */
+   //Method does nothing. Used for Releasing locomotion buttons
 }
 
 void MainWindow::handleLocomotionStop() {
@@ -1191,6 +1109,12 @@ void MainWindow::initSubscription() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "state.subscribe");
 
+    //QString login = str_login;
+    ConsumerThread *threadDylann = new ConsumerThread(m_loginStr, "obstacle.position");
+    connect(threadDylann, &ConsumerThread::receivedMessage, this, &MainWindow::handleObstacleData);
+    connect(threadDylann, SIGNAL(finished()), threadDylann, SLOT(deleteLater()));
+    threadDylann->start();
+
     on_commandLinkButton_clicked();
 }
 
@@ -1503,22 +1427,6 @@ void MainWindow::on_commandLinkButton_clicked()
     cameraOne->CameraOne::camFourStream();
     cameraOne->CameraOne::camFiveStream();
     cameraOne->show();
-
-    /*cameraTwo = new CameraTwo(this, m_loginStr);
-    cameraTwo->CameraTwo::camTwoStream();
-    cameraTwo->show();
-
-    cameraThree = new CameraThree(this, m_loginStr);
-    cameraThree->CameraThree::camThreeStream();
-    cameraThree->show();
-
-    cameraFour = new CameraFour(this, m_loginStr);
-    cameraFour->CameraFour::camFourStream();
-    cameraFour->show();
-
-    cameraFive = new CameraFive(this, m_loginStr);
-    cameraFive->CameraFive::camFiveStream();
-    cameraFive->show();*/
 }
 
 
@@ -1544,10 +1452,12 @@ void MainWindow::handleTankPivotL() {
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
         handleBackLeftWheelSet(leftSide);
+       // msg.set_rpm(60 * (value / 100.0F));
 
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config, tank pivot only works on straight");
-    }
+    }//msg.set_rpm(60 * (value / 100.0F));
+
 }
 
 void MainWindow::handleTankPivotRK() {
@@ -1899,4 +1809,21 @@ void MainWindow::handleD_KeyPress() {
     }
     else                       //turn or strafe
         handleLocomotionRight();
+}
+
+void MainWindow::handleObstacleData(QString key, QByteArray data) {
+    ObstaclePosition msg;
+    msg.ParseFromArray(data.data(), data.length());
+    float x_pos = msg.x_position();
+    float y_pos = msg.y_position();
+    float z_pos = msg.z_position();
+    float diameter = msg.diameter();
+    QString x = QString::number(x_pos);
+    QString y = QString::number(y_pos);
+    QString z = QString::number(z_pos);
+    QString d = QString::number(diameter);
+    ui->consoleOutputTextBrowser->append(x + y + z + d);
+    //QPixmap pix;
+   // pix.loadFromData((uchar*)data.data(), data.length(), "JPEG");
+    //ui->cam5lbl->setPixmap(pix);
 }

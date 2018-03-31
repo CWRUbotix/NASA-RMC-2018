@@ -169,10 +169,10 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 
     private boolean isOnTheWay(AStarNode start, AStarNode end, Obstacle obs){
 	/*Making sure whether obstacle even has a chance to be on the way*/
-	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - 0.80;
-	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + 0.80;
-	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - 0.80;
-	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + 0.80;
+	double x_left_bound = Math.min(start.getX(), end.getX()) - obs.getRadius() - CLEARANCE;
+	double x_right_bound = Math.max(start.getX(), end.getY()) + obs.getRadius() + CLEARANCE;
+	double y_top_bound = Math.min(start.getY(), end.getY()) - obs.getRadius() - CLEARANCE;
+	double y_bottom_bound = Math.max(start.getY(), end.getY()) + obs.getRadius() + CLEARANCE;
 	
 	/*If it is not within the range we should worry about, return false*/
 	if(obs.getX() < x_left_bound || obs.getX() > x_right_bound || obs.getY() < y_top_bound || obs.getY() > y_bottom_bound){

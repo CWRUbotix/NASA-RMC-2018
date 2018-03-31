@@ -53,12 +53,12 @@ public class AutoTransit extends Module {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
-			Position currentPos = new Position(
+			Position currentPos = new RobotPosition(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
 					cmd.getCurHeading());
 
-			Position destinationPos = new Position(
+			Position destinationPos = new RobotPosition(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
 					0f);

@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
-abstract class Module {
+public abstract class Module {
     protected String exchangeName;
     protected Connection connection;
     protected Channel channel;
