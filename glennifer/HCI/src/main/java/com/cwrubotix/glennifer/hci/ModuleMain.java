@@ -356,7 +356,7 @@ public class ModuleMain {
     }
 
     private static void generateDummyMessage() throws InvalidProtocolBufferException, IOException{
-        Messages.SpeedContolCommand msg = Messages.SpeedContolCommand.newBuilder()
+        Messages.SpeedControlCommand msg = Messages.SpeedControlCommand.newBuilder()
                             .setRpm(1000f)
                             .setTimeout(1000f)
                             .build();
@@ -397,7 +397,7 @@ public class ModuleMain {
             return;
         }
         double targetValue = 0;
-        Messages.SpeedContolCommand scc = Messages.SpeedContolCommand.parseFrom(body);
+        Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
         if (id % 2 == 0) { //Left wheels need reversed directions
             targetValue = -Mechanics.wheelRPMToValue(scc.getRpm());
         } else {
@@ -421,7 +421,7 @@ public class ModuleMain {
             System.out.println("Locomotion motor control routing key has invalid wheel");
             return;
         }
-        Messages.PositionContolCommand pcc = Messages.PositionContolCommand.parseFrom(body);
+        Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
         double targetValue = Mechanics.wheelPodPosToValue(pcc.getPosition());
         queueActuation(id, targetValue);
     }
@@ -433,17 +433,17 @@ public class ModuleMain {
         }
 
         if (keys[2].equals("conveyor_translation_displacement")) {
-            Messages.PositionContolCommand pcc = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 9;
             double targetValue = ((pcc.getPosition() / 100.0F) * 785) + 45;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
-            Messages.PositionContolCommand pcc = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 10;
             double targetValue = ((90- pcc.getPosition()) * 5.555) + 100 ;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
-            Messages.SpeedContolCommand scc = Messages.SpeedContolCommand.parseFrom(body);
+            Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 8;
             double targetValue = (scc.getRpm() / 100.0F) * 32767;
             queueActuation(id, targetValue);
@@ -460,17 +460,17 @@ public class ModuleMain {
             return;
         }
         if (keys[2].equals("dump_pos")) {
-            Messages.PositionContolCommand pcc = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 12;
             double targetValue = (pcc.getPosition() / 100.0F) * 127;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("conveyor_rpm")) {
-            Messages.SpeedContolCommand scc = Messages.SpeedContolCommand.parseFrom(body);
+            Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 11;
             double targetValue = (scc.getRpm() / 100.0F) * 127;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("vibration_rpm")) {
-            Messages.SpeedContolCommand scc = Messages.SpeedContolCommand.parseFrom(body);
+            Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 13;
             double targetValue = (scc.getRpm() / 100.0F) * 255;
             queueActuation(id, targetValue);

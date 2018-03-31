@@ -71,10 +71,8 @@ message ImuUpdate {
 	required UnixTime timestamp = 2;
 }
 
-// sensor.deposition.load.front_left
-// sensor.deposition.load.front_right
-// sensor.deposition.load.back_left
-// sensor.deposition.load.back_right
+// sensor.deposition.load.left
+// sensor.deposition.load.right
 message LoadUpdate {
 	required float load = 1;
 	required UnixTime timestamp = 2;
@@ -100,19 +98,15 @@ message Adjustment {
 // motorcontrol.excavation.bucket_conveyor_rpm
 // motorcontrol.deposition.conveyor_rpm
 // motorcontrol.deposition.vibration_rpm
-message SpeedContolCommand {
+message SpeedControlCommand {
 	required float rpm = 1;
 	required float timeout = 2;
 }
 
-// motorcontrol.locomotion.front_left.wheel_pod_pos
-// motorcontrol.locomotion.front_right.wheel_pod_pos
-// motorcontrol.locomotion.back_left.wheel_pod_pos
-// motorcontrol.locomotion.back_right.wheel_pod_pos
 // motorcontrol.excavation.arm_pos
 // motorcontrol.excavation.conveyor_translation_displacement
 // motorcontrol.deposition.dump_pos
-message PositionContolCommand {
+message PositionControlCommand {
 	required float position = 1;
 	required float timeout = 2;
 }
