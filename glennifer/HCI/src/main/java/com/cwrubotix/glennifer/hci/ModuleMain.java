@@ -421,25 +421,6 @@ public class ModuleMain {
         queueActuation(id, targetValue);
     }
 
-    private static void routeWheelPodPosMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
-        int id = -1;
-        if (keys[2].equals("front_left")) {
-            id = 4;
-        } else if (keys[2].equals("front_right")) {
-            id = 5;
-        } else if (keys[2].equals("back_left")) {
-            id = 6;
-        } else if (keys[2].equals("back_right")) {
-            id = 7;
-        } else {
-            System.out.println("Locomotion motor control routing key has invalid wheel");
-            return;
-        }
-        Messages.PositionContolCommand pcc = Messages.PositionContolCommand.parseFrom(body);
-        double targetValue = Mechanics.wheelPodPosToValue(pcc.getPosition());
-        queueActuation(id, targetValue);
-    }
-
     private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 3) {
             System.out.println("Excavation motor control routing key must have 3 elements");
