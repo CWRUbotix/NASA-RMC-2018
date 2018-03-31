@@ -28,11 +28,10 @@ using namespace std;
 #include <sys/time.h>
 #include <sys/wait.h>
 
-//#include "amqpcpp/AMQPcpp.h"
+#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
 
-//TODO: un-comment
-//#include "messages.pb.h"
+#include "messages.pb.h"
 
 //#include "utils.h"
 
@@ -664,6 +663,19 @@ public:
 																				<< " y=" << stdFromCamera(1)
 																				<< " z=" << stdFromCamera(2);
 							cout << endl;
+
+							//add amqp
+							AMQPExchange * ex = amqp.createExchange("amq.topic");
+							ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+							com::cwrubotix::glennifer::LocalizationPosition msg;
+							//float x = 10;
+						    //float y = 15;
+							msg.set_x_position(stdFromCamera(0));
+							msg.set_y_position(stdFromCamera(1));
+							int msg_size = msg.ByteSize();
+						    void *msg_buff = malloc(msg_size);
+							msg.SerializeToArray(msg_buff, msg_size);
+							ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
 							foundStandards.push_back(stdFromCamera);
 
