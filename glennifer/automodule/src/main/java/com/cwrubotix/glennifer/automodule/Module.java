@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
-abstract class Module {
+public abstract class Module {
     protected String exchangeName;
     protected Connection connection;
     protected Channel channel;
