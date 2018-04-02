@@ -19,6 +19,7 @@ message UnixTime {
 // sensor.locomotion.back_left.wheel_rpm
 // sensor.locomotion.back_right.wheel_rpm
 // sensor.excavation.bucket_conveyor_rpm
+// sensor.deposition.hopper_rpm
 message RpmUpdate {
 	required float rpm = 1;
 	required UnixTime timestamp = 2;
@@ -30,10 +31,6 @@ message DisplacementUpdate {
 	required UnixTime timestamp = 2;
 }
 
-// sensor.locomotion.front_left.wheel_pod_pos
-// sensor.locomotion.front_right.wheel_pod_pos
-// sensor.locomotion.back_left.wheel_pod_pos
-// sensor.locomotion.back_right.wheel_pod_pos
 // sensor.excavation.arm_pos
 // sensor.deposition.dump_pos
 message PositionUpdate {
@@ -47,14 +44,6 @@ message CurrentUpdate {
 	required UnixTime timestamp = 2;
 }
 
-// sensor.locomotion.front_left.wheel_pod_limit_extended
-// sensor.locomotion.front_right.wheel_pod_limit_extended
-// sensor.locomotion.back_left.wheel_pod_limit_extended
-// sensor.locomotion.back_right.wheel_pod_limit_extended
-// sensor.locomotion.front_left.wheel_pod_limit_retracted
-// sensor.locomotion.front_right.wheel_pod_limit_retracted
-// sensor.locomotion.back_left.wheel_pod_limit_retracted
-// sensor.locomotion.back_right.wheel_pod_limit_retracted
 // sensor.excavation.arm_limit_extended
 // sensor.excavation.arm_limit_retracted
 // sensor.excavation.bucket_conveyor_translation_limit_extended
