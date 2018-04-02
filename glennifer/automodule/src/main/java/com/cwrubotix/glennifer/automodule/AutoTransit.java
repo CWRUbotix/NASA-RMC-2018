@@ -1,20 +1,10 @@
-package main.java.com.cwrubotix.glennifer.automodule;
-
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-
-import com.rabbitmq.client.AMQP;
+package com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.Messages;
-import com.cwrubotix.glennifer.Messages.Fault;
-import com.cwrubotix.glennifer.Messages.UnixTime;
+import com.cwrubotix.glennifer.Messages.RpmUpdate;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -27,13 +17,16 @@ public class AutoTransit extends Module {
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0);
 	private final float CLEARANCE_DIST = 0.3F; //Setting this to 30cm for now. Will have to change it after testing locomotion.
+    private final float TRAVEL_SPEED = 1.0F; // Sensible speed at which to travel
 	private static Position currentPos;
 	private PathFinder pathFinder;
+	private Path currentPath;
 
 	// Messaging stuff
 	private String exchangeName;
 	private Connection connection;
 	private Channel channel;
+
 
 	/*
 	 * TODO LIST
@@ -60,18 +53,20 @@ public class AutoTransit extends Module {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
-			Position currentPos = new Position(
+			Position currentPos = new RobotPosition(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
-					cmd.getCurHeading(),
-					0f);
+					cmd.getCurHeading());
 
-			Position destinationPos = new Position(
+			Position destinationPos = new RobotPosition(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
-					0f, 0f);
+					0f);
 
-			// TODO Construct pathFinder when algorithms available
+			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
+			currentPath = pathFinder.getPath();
+
+
         }
 	}
 
@@ -115,7 +110,12 @@ public class AutoTransit extends Module {
 			float obsDiameter = cmd.getDiameter();
 			Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
-			pathFinder.registerObstacle(newObs);
+			// Register new obstacle, and reset path if necessary
+			try {
+				pathFinder.registerObstacle(newObs);
+			} catch (PathFinder.DestinationModified destinationModified) {
+			    currentPath = pathFinder.getPath();
+			}
 		}
 	}
 
@@ -133,13 +133,106 @@ public class AutoTransit extends Module {
 		return currentPos;
 	}
 
+	private void moveToPos(Position currPos, Position destPos) throws IOException {
+		// Compute angle to turn to -- clockwise is positive
+        double angleBetween = Position.angleBetween(currPos, destPos);
+
+		turnAngle(angleBetween);
+		driveTo(destPos);
+	}
+
+	private void turnAngle(double angle) throws IOException {
+	    if (angle == 0) return;
+
+        /*
+        Determine direction
+        Tell robot to turn
+        while we're not at correct heading
+            sleep 100ms
+        stop
+         */
+        // Build messages
+        RpmUpdate rWheelsMsg = RpmUpdate.newBuilder()
+                .setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
+                .build();
+
+        RpmUpdate lWheelsMsg = RpmUpdate.newBuilder()
+                .setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
+                .build();
+
+        // Tell wheels to start moving
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+        this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+
+        // Stop when angle is reached
+		while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+    }
+
+    private void driveTo(Position destPos) throws IOException {
+	    /*
+	    Time = distance / speed
+	    Tell robot to drive
+	    while !equalsWithinError(curr, dest, error)
+	        sleep 100ms
+        stop
+	     */
+
+	    // Drive
+	    RpmUpdate driveMsg = RpmUpdate.newBuilder()
+				.setRpm(TRAVEL_SPEED)
+				.build();
+
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
+		this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
+
+	    // Stop when destination reached (within tolerance)
+        while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+    }
+
     @Override
     protected void runWithExceptions() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
         this.connection = factory.newConnection();
         this.channel = connection.createChannel();
-        // Listen for commands...
+
+        // Listeners for commands
+		String queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "launch.transit");
+		this.channel.basicConsume(queueName, true, new TransitLaunchConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "softstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitSoftStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "hardstop.transit");
+		this.channel.basicConsume(queueName, true, new TransitHardStopConsumer(channel));
+
+		queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "newobstacle.transit");
+		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
+
+		// TODO Maybe don't use a while loop?
+        while (!currentPath.getPath().size() > 1) { // While we still have a position to go to
+        	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
+		}
     }
 
 }

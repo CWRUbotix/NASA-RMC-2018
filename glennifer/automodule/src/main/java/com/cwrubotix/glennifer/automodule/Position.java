@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 /**
  * Data type that represents a location inside the arena.
@@ -26,15 +26,15 @@ public class Position extends Coordinate implements Cloneable {
     }
     
     public Position(float x_pos, float y_pos){
-	this(x_pos, y_pos, 0.0);
+        this(x_pos, y_pos, 0.0);
     }
     
     public double getHeading(){
-	return heading;
+        return heading;
     }
     
     public void setHeading(double heading){
-	this.heading = heading;
+        this.heading = heading;
     }
     
     public boolean setX(float x_pos) {
@@ -58,8 +58,8 @@ public class Position extends Coordinate implements Cloneable {
     /**
      * Returns heading the robot need to be in order to face position b
      *
-     * @param b the destination
-     * @return heading the robot need to be in order to face position b
+     * @param p the destination
+     * @return angle the robot need to be in order to face position b
      */
     public double getHeadingTo(Coordinate p){
    	float x_diff = p.getX() - getX();
@@ -77,8 +77,7 @@ public class Position extends Coordinate implements Cloneable {
             Position compare = (Position) obj;
             float x_diff = compare.getX() - getX();
             float y_diff = compare.getY() - getY();
-            if (Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5)
-                return true;
+            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5;
         }
         return false;
     }
@@ -103,5 +102,30 @@ public class Position extends Coordinate implements Cloneable {
         return hash;
     }
 
-    
+    /**
+     * Compute distance between two Positions. Uses the distance formula.
+     * @param pos1 First position
+     * @param pos2 Second position.
+     * @return A double with the distance between the two points.
+     */
+    public static double distance(Position pos1, Position pos2) {
+        return Math.sqrt(Math.pow(pos1.getX() - pos2.getX(), 2) +
+                         Math.pow(pos1.getY() - pos2.getY(), 2));
+    }
+
+    public static double angleBetween(Position pos1, Position pos2) {
+        double heading = pos1.getHeading();
+        return heading + Math.asin((pos2.getX() - pos1.getX()) / distance(pos1, pos2));
+    }
+
+    /**
+     * Check if two positions are close enough to each other within a specified tolerance.
+     * @param pos1 First position
+     * @param pos2 Second position
+     * @param tolerance Maximum distance between pos1 and pos2 to be considered close
+     * @return Whether pos1 and pos2 are within tolerance distance of each other
+     */
+    public static boolean equalsWithinError(Position pos1, Position pos2, double tolerance) {
+        return distance(pos1, pos2) < tolerance;
+    }
 }
