@@ -133,7 +133,7 @@ public class ModuleMain {
                     .build();
                 if (sensorDataID == 1)
                     channel.basicPublish("amq.topic", "sensor.locomotion.front_right.wheel_rpm", null, msg.toByteArray());
-                else if (sensorDataID == 2\3)
+                else if (sensorDataID == 3)
                     channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_rpm", null, msg.toByteArray());
                 break;
 
