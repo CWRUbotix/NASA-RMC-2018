@@ -87,124 +87,145 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
-        /*try {
+        try {
             while (true) {
                 System.out.println("Looping in main");
                 SensorData sensorData = hci.pollSensorUpdate();
-                int sensorDataID =  sensorData.id;
-                double value = sensorData.data;
-                long time_ms = sensorData.timestamp;
-                Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
-                        .setTimeInt(time_ms / 1000)
-                        .setTimeFrac((time_ms % 1000) / (1000.0F))
-                        .build();
-                //LEFT WHEEL RPM    
-                if (sensorDataID == 0 || sensorDataID == 2){
-                    value = -(Mechanics.wheelValueToRPM(value));
-                    Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
-                            .setRpm((float)value)
-                            .setTimestamp(unixTime)
-                            .build();
-                    if (sensorDataID == 0)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
-                    else if (sensorDataID == 2)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_rpm", null, msg.toByteArray());
-                } 
-                //RIGHT WHEEL RPM
-                else if (sensorDataID == 1 || sensorDataID == 3){
-                    value = Mechanics.wheelValueToRPM(value);
-                    Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
-                            .setRpm((float)value)
-                            .setTimestamp(unixTime)
-                            .build();
-                    if (sensorDataID == 1)        
-                        channel.basicPublish("amq.topic", "sensor.locomotion.front_right.wheel_rpm", null, msg.toByteArray());
-                    else if (sensorDataID == 3)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_rpm", null, msg.toByteArray());
-                }
-                //WHEEL POD POSITION
-                else if (sensorDataID == 4 || sensorDataID == 5 || sensorDataID == 6 || sensorDataID == 7){
-                    value = Mechanics.wheelPodValueToPos(value);
-                    if (value > 1) value = 1;
-                    if (value < -1) value = -1;
-                    value = Mechanics.wheelPosToRad(value);
-                    Messages.PositionUpdate msg = Messages.PositionUpdate.newBuilder()
-                            .setPosition((float)value)
-                            .setTimestamp(unixTime)
-                            .build();
-                    if (sensorDataID == 4)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.front_left.wheel_pod_pos", null, msg.toByteArray());
-                    else if (sensorDataID == 5)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.front_right.wheel_pod_pos", null, msg.toByteArray());
-                    else if (sensorDataID == 6)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_pod_pos", null, msg.toByteArray());
-                    else if (sensorDataID == 7)
-                        channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_pod_pos", null, msg.toByteArray());
-                }
-                //WHEEL POD LIMIT EXTENDED
-                /*
-                else if (sensorDataID == 5 || sensorDataID == 8 || sensorDataID == 11 || sensorDataID == 14){
-                    Messages.LimitUpdate msg = Messages.LimitUpdate.newBuilder()
-                            .setPressed();
-                }
-                // BC limits
-                else if (sensorDataID == 23 || sensorDataID == 24 || sensorDataID == 25 || sensorDataID == 26) {
-                    Messages.LimitUpdate msg = Messages.LimitUpdate.newBuilder()
-                            .setPressed(value > 0)
-                            .setTimestamp(unixTime)
-                            .build();
-                    if (sensorDataID == 23) {
-                        channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_retracted.left", null, msg.toByteArray());
-                    }
-                    else if (sensorDataID == 24) {
-                        channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_extended.left", null, msg.toByteArray());
-                    }
-                    else if (sensorDataID == 25) {
-                        channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_retracted.right", null, msg.toByteArray());
-                    }
-                    else if (sensorDataID == 26) {
-                        channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_extended.right", null, msg.toByteArray());
-                    }
-                }
-                // sensor.locomotion.front_left.wheel_pod_limit_extended
-                // sensor.locomotion.front_right.wheel_pod_limit_extended
-                // sensor.locomotion.back_left.wheel_pod_limit_extended
-                // sensor.locomotion.back_right.wheel_pod_limit_extended
-                else if(sensorDataID == 16){
-                    Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
-                            .setRpm((float)convertToBCAngle(value))
-                            .setTimestamp(unixTime)
-                            .build();
-                    channel.basicPublish("amq.topic","sensor.excavation.arm_pos_a", null, msg.toByteArray());
-                } else if(sensorDataID == 19){
-                    Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
-                            .setRpm((float)convertToBCAngle(value))
-                            .setTimestamp(unixTime)
-                            .build();
-                    channel.basicPublish("amq.topic", "sensor.excavation.arm_pos_b", null, msg.toByteArray());
-                } else if(sensorDataID == 22){
-                    Messages.PositionUpdate msg = Messages.PositionUpdate.newBuilder()
-                            .setPosition((((float)value - 45.0F) / 785.0F) * 100.0F)
-                            .setTimestamp(unixTime)
-                            .build();
-                    channel.basicPublish("amq.topic","sensor.excavation.translation_pos", null,msg.toByteArray());
-                } else if(sensorDataID == 38) { // Excavation conveyor current
-                    Messages.CurrentUpdate msg = Messages.CurrentUpdate.newBuilder()
-                            .setCurrent((float)value / 100.0F)
-                            .setTimestamp(unixTime)
-                            .build();
-                    channel.basicPublish("amq.topic","sensor.excavation.conveyor_current", null,msg.toByteArray());
-                } else {
-                    // TODO: do others
-                }
+                generateSensorUpdateMessage(sensorData);
+
                 if (!hciThread.isAlive()) {
                     break;
                 }
             }
-        } catch (InterruptedException e) { }*/
-        generateDummyMessage();
-	}
+        } catch (InterruptedException e) {}
+    }
 
+    private static void generateSensorUpdateMessage(SensorData sensorData){
+        int sensorDataID =  sensorData.id;
+        double value = sensorData.data;
+        long time_ms = sensorData.timestamp;
+        Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
+                .setTimeInt(time_ms / 1000)
+                .setTimeFrac((time_ms % 1000) / (1000.0F))
+                .build();
+        switch(sensorDataID){
+            // LEFT WHEEL RPM
+            case 0:
+            case 2:
+                value = -(Mechanics.wheelValueToRPM(value));
+                Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
+                    .setRpm((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                if (sensorDataID == 0)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
+                else if (sensorDataID == 2)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_rpm", null, msg.toByteArray());
+                break;
+
+            // RIGHT WHEEL RPM
+            case 1:
+            case 3:
+                value = (Mechanics.wheelValueToRPM(value));
+                Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
+                    .setRpm((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                if (sensorDataID == 1)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.front_right.wheel_rpm", null, msg.toByteArray());
+                else if (sensorDataID == 3)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_rpm", null, msg.toByteArray());
+                break;
+
+            // EXCAVATION ARM POSITION
+            case 4:
+            case 5:
+                value = (float)convertToBCAngle(value);
+                Messages.PositionUpdate msg = Messages.PositionUpdate.newBuilder()
+                    .setPosition((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                channel.basicPublish("amq.topic", "sensor.excavation.arm_pos", null, msg.toByteArray());
+                break;
+
+            // EXCAVATION BC TRANSLATION DISPLACEMENT
+            case 8:
+                Messages.DisplacementUpdate msg = Messages.DisplacementUpdate.newBuilder()
+                    .setDisplacement((float)value - 45.0F) / 785.0F) * 100.0F)
+                    .setTimestamp(unixTime)
+                    .build();
+                channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_displacement", null, msg.toByteArray());
+                break;
+
+            // EXCAVATION BC DIGGING CURRENT
+            case 13:
+                Messages.CurrentUpdate msg = Messages.CurrentUpdate.newBuilder()
+                    .setCurrent((float)value / 100.0F)
+                    .setTimestamp(unixTime)
+                    .build();
+                channel.basicPublish("amq.topic", "sensor.excavation.conveyor_current", null, msg.toByteArray());
+                break;
+
+            // DEPOSITION HOPPER RPM 
+            // maybe it should be position controlled instead of speed controlled
+            case 14:
+                Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
+                    .setRpm((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                channel.basicPublish("amq.topic", "sensor.deposition.hopper_rpm", null, msg.toByteArray());
+                break;
+
+            // LOAD CELLS
+            case 15:
+            case 16:
+                Messages.LoadUpdate msg = Messages.LoadUpdate.newBuilder()
+                    .setLoad((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                if (sensorDataID == 15)
+                    channel.basicPublish("amq.topic", "sensor.deposition.load.left", null, msg.toByteArray());
+                else if (sensorDataID == 16)
+                    channel.basicPublish("amq.topic", "sensor.deposition.load.right", null, msg.toByteArray());
+                break;
+
+            // LIMIT SWITCHES
+            case 6:
+            case 7:
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 17:
+            case 18:
+            case 19:
+            case 20:
+                Messages.LimitUpdate msg = Messages.LimitUpdate.newBuilder()
+                    .setPressed(value > 0)
+                    .setTimestamp(unixTime)
+                    .build();
+                if (sensorDataID == 6)
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.left", null, msg.toByteArray());
+                else if (sensorDataID == 7)
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.right", null, msg.toByteArray());
+                else if (sensorDataID == 9)
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.left", null, msg.toByteArray());
+                else if (sensorDataID == 10)
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.right", null, msg.toByteArray());
+                else if (sensorDataID == 11)
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.left", null, msg.toByteArray());
+                else if (sensorDataID == 12)
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.right", null, msg.toByteArray());
+                else if (sensorDataID == 17)
+                    channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_extended.left", null, msg.toByteArray());
+                else if (sensorDataID == 18)
+                    channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_extended.right", null, msg.toByteArray());
+                else if (sensorDataID == 19)
+                    channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_retracted.left", null, msg.toByteArray());
+                else if (sensorDataID == 20)
+                    channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_retracted.right", null, msg.toByteArray());
+        }
+    }
 
     private static void getVarsFromConfigFile(String path) throws RuntimeException, IOException{
         InputStream input = new FileInputStream(path);
