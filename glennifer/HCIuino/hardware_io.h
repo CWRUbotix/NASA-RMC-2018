@@ -13,6 +13,7 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 	int32_t val32 			= 0;
 	int16_t dummy 			= 0;
 	int16_t readVal 		= 0;
+	MotorInfo* motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
 
 	switch (sensor->hardware) {
 		case SH_PIN_LIMIT:
@@ -28,13 +29,30 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
 			*val 					= sensor->storedVal;
 			break;
-		case SH_BL_ENC:
-			MotorInfo* motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
-			MCInfo* board 			= motor->board;
-			ODriveArduino odv 		= *(board->odrive);
-			readVal 				= (uint16_t)odv.GetParameter(motor->whichMotor , odv.PARAM_ENC_VEL); // returns a float
+
+		case SH_BL_ENC_VEL: {
+			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
+			// MCInfo* board 			= motor->board;
+			ODriveArduino* odv1 	= (motor->board->odrive);
+			readVal 				= (uint16_t) ( odv1->GetParameter(motor->whichMotor , odv1->PARAM_ENC_VEL)); // returns a float
 			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
 			*val 					= sensor->storedVal;
+			break;}
+
+		case SH_BL_ENC_POS: {
+			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
+			// MCInfo* board 			= motor->board;
+			ODriveArduino* odv2 	= (motor->board->odrive);
+			readVal 				= (uint16_t) ( odv2->GetParameter(motor->whichMotor , odv2->PARAM_ENC_POS)); // returns a float
+			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
+			*val 					= sensor->storedVal;
+			break; }
+		case SH_LD_CELL: {
+			readVal 				= sensor->loadCell->get_units(3);
+			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
+			*val 					= sensor->storedVal;
+		}
+
 	}
 	return NO_FAULT;
 }
@@ -79,23 +97,6 @@ void maintain_motors(byte* cmd, bool success){
 			Serial.print("Value Received:\t");
 			Serial.println(val);
 			motor->setPt = val; 	// deref the ptr and set the struct field
-
-			// switch(motor->hardware){
-			// 	case MH_NONE:
-			// 		break;
-
-			// 	case MH_BR_PWM:
-			// 		analogWrite(motor->PWMpin,  motor->setPt);
-			// 		break;
-
-			// 	case MH_BL_VEL:
-			// 		(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
-			// 		break;
-
-			// 	case MH_BL_POS:
-			// 		(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
-			// 		break;
-			// }
 			
 		}
 	}
@@ -112,14 +113,20 @@ void maintain_motors(byte* cmd, bool success){
 				break;
 
 			case MH_ST_PWM:
+				Serial.end();
+				Serial.begin(SABERTOOTH_BAUD);
 				digitalWrite( motor->board->selectPin, HIGH);
 				(*(motor->board->ST)).motor(motor->whichMotor, motor->setPt);
 				delayMicroseconds(50);
 				digitalWrite( motor->board->selectPin, LOW);
+				Serial.end();
+				Serial.begin(HCI_BAUD);
 				break;
 
 			case MH_ST_VEL:
 				// do things
+				break;
+			case MH_ST_POS:
 				break;
 
 			case MH_BL_VEL:
@@ -129,6 +136,11 @@ void maintain_motors(byte* cmd, bool success){
 			case MH_BL_POS:
 				(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
 				break;
+
+			case MH_BL_BOTH:
+
+				break;
+
 		}
 
 		motor->lastUpdateTime = millis();

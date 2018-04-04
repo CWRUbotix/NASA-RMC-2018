@@ -5,6 +5,7 @@
 void setup_sensors(){
 	// SENSORS
 	// For testing
+	analogReadResolution(ANLG_READ_RES);
 	SensorInfo sensor_0;
 	sensor_0.hardware 	= SH_PIN_POT;
 	sensor_0.whichPin 	= A0;
@@ -12,9 +13,14 @@ void setup_sensors(){
 	sensor_0.scale 		= 1;
 	sensor_infos[0] 	= sensor_0;
 
+	SensorInfo sensor_1;
+	HX711 loadBoi(40,41);
+	sensor_1.loadCell = & loadBoi;
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
+	analogWriteResolution(ANLG_WRITE_RES);
 	// Motor related serial stuff
 	Serial1.begin(ODRIVE_BAUD);	// UART with ODrive: 18 (TX) & 19 (RX)
 	Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 
@@ -114,49 +120,3 @@ void setup_motors(){
 
 #endif
 
-
-// MotorInfo odrive_m00;
-// 	odrive_m00.board 		= odrive_board_0;
-// 	odrive_m00.whichMotor 	= 0;
-// 	motor_infos[0] 			= odrive_m00;
-
-// 	MotorInfo odrive_m01;
-// 	odrive_m01.board 		= odrive_board_0;
-// 	odrive_m01.whichMotor 	= 1;
-// 	motor_infos[1] 			= odrive_m01
-
-// 	MotorInfo odrive_m10;
-// 	odrive_m10.board 		= odrive_board_1;
-// 	odrive_m10.whichMotor 	= 0;
-// 	motor_infos[2] 			= odrive_m10;
-
-// 	MotorInfo odrive_m11;
-// 	odrive_m11.board		= odrive_board_1;
-// 	odrive_m11.whichMotor 	= 1;
-// 	motor_infos[3] 			= odrive_m11;
-
-// 	MotorInfo odrive_m20;
-// 	odrive_m20.board 		= odrive_board_2;
-// 	odrive_m20.whichMotor 	= 0;
-// 	motor_infos[4] 			= odrive_m20;
-
-// 	MotorInfo motor_0;
-// 	motor_0.board 		= & board_0;
-// 	motor_0.hardware 	= MH_ST_PWM;
-// 	motor_0.whichMotor 	= 0;
-// 	motor_0.setPt 		= 0;
-// 	motor_infos[5] 		= motor_0;
-
-// 	MotorInfo motor_1;
-// 	motor_1.board 		= & board_0;
-// 	motor_1.hardware 	= MH_ST_PWM;
-// 	motor_1.whichMotor 	= 1;
-// 	motor_1.setPt 		= 0;
-// 	motor_infos[6] 		= motor_1;
-
-// 	MotorInfo motor_2;
-// 	motor_2.board 		= & board_1;
-// 	motor_2.hardware 	= MH_ST_PWM;
-// 	motor_2.whichMotor 	= 0;
-// 	motor_2.setPt 		= 0;
-// 	motor_infos[7] 		= motor_1;
