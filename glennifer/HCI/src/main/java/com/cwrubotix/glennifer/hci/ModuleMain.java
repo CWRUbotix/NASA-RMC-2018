@@ -87,6 +87,7 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
+        generateDummyMessage();
         try {
             while (true) {
                 System.out.println("Looping in main");
@@ -100,7 +101,7 @@ public class ModuleMain {
         } catch (InterruptedException e) {}
     }
 
-    private static void generateSensorUpdateMessage(SensorData sensorData){
+    private static void generateSensorUpdateMessage(SensorData sensorData) throws IOException{
         int sensorDataID =  sensorData.id;
         double value = sensorData.data;
         long time_ms = sensorData.timestamp;
@@ -111,7 +112,7 @@ public class ModuleMain {
         switch(sensorDataID){
             // LEFT WHEEL RPM
             case 0:
-            case 2:
+            case 2: {
                 value = -(Mechanics.wheelValueToRPM(value));
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
@@ -122,10 +123,11 @@ public class ModuleMain {
                 else if (sensorDataID == 2)
                     channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_rpm", null, msg.toByteArray());
                 break;
+            }
 
             // RIGHT WHEEL RPM
             case 1:
-            case 3:
+            case 3: {
                 value = (Mechanics.wheelValueToRPM(value));
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
@@ -136,10 +138,11 @@ public class ModuleMain {
                 else if (sensorDataID == 3)
                     channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_rpm", null, msg.toByteArray());
                 break;
+            }
 
             // EXCAVATION ARM POSITION
             case 4:
-            case 5:
+            case 5: {
                 value = (float)convertToBCAngle(value);
                 Messages.PositionUpdate msg = Messages.PositionUpdate.newBuilder()
                     .setPosition((float)value)
@@ -147,38 +150,42 @@ public class ModuleMain {
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.arm_pos", null, msg.toByteArray());
                 break;
+            }
 
             // EXCAVATION BC TRANSLATION DISPLACEMENT
-            case 8:
+            case 8: {
                 Messages.DisplacementUpdate msg = Messages.DisplacementUpdate.newBuilder()
-                    .setDisplacement((float)value - 45.0F) / 785.0F) * 100.0F)
+                    .setDisplacement((((float)value - 45.0F) / 785.0F) * 100.0F)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_displacement", null, msg.toByteArray());
                 break;
+            }
 
             // EXCAVATION BC DIGGING CURRENT
-            case 13:
+            case 13: {
                 Messages.CurrentUpdate msg = Messages.CurrentUpdate.newBuilder()
                     .setCurrent((float)value / 100.0F)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.conveyor_current", null, msg.toByteArray());
                 break;
+            }
 
             // DEPOSITION HOPPER RPM 
             // maybe it should be position controlled instead of speed controlled
-            case 14:
+            case 14: {
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.deposition.hopper_rpm", null, msg.toByteArray());
                 break;
+            }
 
             // LOAD CELLS
             case 15:
-            case 16:
+            case 16: {
                 Messages.LoadUpdate msg = Messages.LoadUpdate.newBuilder()
                     .setLoad((float)value)
                     .setTimestamp(unixTime)
@@ -188,6 +195,7 @@ public class ModuleMain {
                 else if (sensorDataID == 16)
                     channel.basicPublish("amq.topic", "sensor.deposition.load.right", null, msg.toByteArray());
                 break;
+            }
 
             // LIMIT SWITCHES
             case 6:
@@ -199,7 +207,7 @@ public class ModuleMain {
             case 17:
             case 18:
             case 19:
-            case 20:
+            case 20: {
                 Messages.LimitUpdate msg = Messages.LimitUpdate.newBuilder()
                     .setPressed(value > 0)
                     .setTimestamp(unixTime)
@@ -224,6 +232,7 @@ public class ModuleMain {
                     channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_retracted.left", null, msg.toByteArray());
                 else if (sensorDataID == 20)
                     channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_retracted.right", null, msg.toByteArray());
+            }
         }
     }
 
