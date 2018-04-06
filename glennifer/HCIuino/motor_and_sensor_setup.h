@@ -5,7 +5,6 @@
 void setup_sensors(){
 	// SENSORS
 	// For testing
-	analogReadResolution(ANLG_READ_RES);
 	SensorInfo sensor_0;
 	sensor_0.hardware 	= SH_PIN_POT;
 	sensor_0.whichPin 	= A0;
@@ -13,14 +12,14 @@ void setup_sensors(){
 	sensor_0.scale 		= 1;
 	sensor_infos[0] 	= sensor_0;
 
-	SensorInfo sensor_1;
-	HX711 loadBoi(40,41);
-	sensor_1.loadCell = & loadBoi;
+	// SensorInfo sensor_1;
+	// HX711 loadBoi(40,41);
+	// sensor_1.loadCell 	= & loadBoi;
+	// sensor_infos[1] 	= sensor_1;
 
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
-	analogWriteResolution(ANLG_WRITE_RES);
 	// Motor related serial stuff
 	Serial1.begin(ODRIVE_BAUD);	// UART with ODrive: 18 (TX) & 19 (RX)
 	Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 

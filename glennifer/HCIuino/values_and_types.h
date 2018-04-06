@@ -85,7 +85,7 @@ typedef struct SensorInfo{
 	uint8_t  addr; 				// When hardware = SH_I2C_* or ...
 	uint8_t  whichMotor; 		// Holds the ID of the motor if applicable
 	int      whichPin; 			// 
-	bool  is_reversed = false;	// When hardware = SH_PIN_LIMIT
+	bool     is_reversed;		// When hardware = SH_PIN_LIMIT
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
@@ -122,7 +122,7 @@ typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 		// motor controller board info
 	uint8_t  addr; 			// 
-	uint8_t  whichMotor;	// motor 0 or 1 on the board?
+	uint8_t  whichMotor; 	// motor 0 or 1 on the board?
 	uint16_t scale = 1; 	// 1 unless needed
 	uint16_t setPt = 0;		// set point for motor (rather that use an array)
 	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
@@ -164,7 +164,7 @@ int lastTime = 0;
 int debugging[5] = {};
 
 ODriveArduino odrive0(Serial1);
-ODriveArduino odrive1(Serial1);
-ODriveArduino odrive2(Serial1);
+ODriveArduino odrive1(Serial2);
+ODriveArduino odrive2(Serial3);
 
 #endif
