@@ -33,7 +33,7 @@ FAULT_T hciRead(byte * cmd){
 	uint8_t bodyLen;
 	uint8_t retval;
 
-	retval = SerialUSB.readBytes(cmd, CMD_HEADER_SIZE);	// populate the array
+	retval = Serial.readBytes(cmd, CMD_HEADER_SIZE);	// populate the array
 	if(retval != CMD_HEADER_SIZE){
 		return FAULT_INCOMPLETE_HEADER;
 	}
@@ -47,7 +47,7 @@ FAULT_T hciRead(byte * cmd){
 	debugging[1] = cmd[0];
 	debugging[2] = bodyLen;
 
-	retval = SerialUSB.readBytes(cmd + CMD_HEADER_SIZE, bodyLen);
+	retval = Serial.readBytes(cmd + CMD_HEADER_SIZE, bodyLen);
 
 	if(retval < bodyLen){
 		return FAULT_INCOMPLETE_BODY;
