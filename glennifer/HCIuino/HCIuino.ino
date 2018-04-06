@@ -6,6 +6,7 @@
 #include <ODriveArduino.h>
 #include <SabertoothSimplified.h>
 #include <math.h>
+#include <HX711.h>
 
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"

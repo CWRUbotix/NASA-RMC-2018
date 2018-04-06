@@ -31,6 +31,8 @@
 #define MOTOR_INSTRUC_SIZE 		(2)
 #define NUM_MOTORS 				(9)
 #define NUM_SENSORS 			(100)
+#define ANLG_READ_RES 			(12)
+#define ANLG_WRITE_RES 			(12)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -49,6 +51,7 @@
 //Logging faults
 #define FAULT_LOG_FULL			(7)
 
+// PIN NUMBERS
 //Motor Control Boards
 #define SABERTOOTH_0_SLCT 		(22)
 #define SABERTOOTH_1_SLCT 		(23)
@@ -64,14 +67,16 @@
 enum SensorHardware {
 	SH_NONE,
 	SH_BL_POT,		// BL := brushless motor
-	SH_BL_ENC,		//
+	SH_BL_ENC_VEL, 	//
+	SH_BL_ENC_POS, 	//
 	SH_BL_CUR,		// Motor Current
 	SH_BR_POT,		// BR := brushed motor
 	SH_BR_ENC,		// 
 	SH_BR_CUR,		// Motor Current Sense
 	SH_I2C_BAT,		// 
 	SH_PIN_LIMIT,	// Limit switch
-	SH_PIN_POT		// Uses an ADC
+	SH_PIN_POT,		// Uses an ADC
+	SH_LD_CELL
 };
 
 //SENSOR INFO
@@ -84,6 +89,7 @@ typedef struct SensorInfo{
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
+	HX711*   loadCell; 			// if this happens to be a load cell
 }SensorInfo;
 
 //MOTOR STUFF
@@ -91,7 +97,7 @@ enum MotorHardware {
 	MH_NONE,
 	MH_BL_VEL,		// 
 	MH_BL_POS,		// 
-	MH_BL_POS_BOTH,	// 
+	MH_BL_BOTH,		// 
 	MH_ST_PWM, 		//
 	MH_ST_VEL, 		//
 	MH_ST_POS, 		//
@@ -116,7 +122,7 @@ typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 		// motor controller board info
 	uint8_t  addr; 			// 
-	uint8_t  whichMotor;	// motor 0 or 1 on the board?
+	uint8_t  whichMotor; 	// motor 0 or 1 on the board?
 	uint16_t scale = 1; 	// 1 unless needed
 	uint16_t setPt = 0;		// set point for motor (rather that use an array)
 	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
@@ -158,7 +164,7 @@ int lastTime = 0;
 int debugging[5] = {};
 
 ODriveArduino odrive0(Serial1);
-ODriveArduino odrive1(Serial1);
-ODriveArduino odrive2(Serial1);
+ODriveArduino odrive1(Serial2);
+ODriveArduino odrive2(Serial3);
 
 #endif
