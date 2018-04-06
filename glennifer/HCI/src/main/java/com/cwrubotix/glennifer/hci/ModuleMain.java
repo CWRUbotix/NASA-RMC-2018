@@ -87,7 +87,7 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
-        generateDummyMessage();
+        //generateDummyMessage();
         try {
             while (true) {
                 System.out.println("Looping in main");
