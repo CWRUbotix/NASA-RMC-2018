@@ -1,4 +1,4 @@
-package com.cwrubotix.glennifer.automodule;
+package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.RpmUpdate;
@@ -53,12 +53,12 @@ public class AutoTransit extends Module {
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
-			Position currentPos = new RobotPosition(
+			Position currentPos = new Position(
 					cmd.getCurXPos(),
 					cmd.getCurYPos(),
 					cmd.getCurHeading());
 
-			Position destinationPos = new RobotPosition(
+			Position destinationPos = new Position(
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
 					0f);
@@ -230,7 +230,7 @@ public class AutoTransit extends Module {
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 
 		// TODO Maybe don't use a while loop?
-        while (!currentPath.getPath().size() > 1) { // While we still have a position to go to
+        while (currentPath.getPath().size() > 1) { // While we still have a position to go to
         	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
 		}
     }
