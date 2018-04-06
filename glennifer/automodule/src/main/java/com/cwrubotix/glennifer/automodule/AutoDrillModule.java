@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -10,7 +10,7 @@ import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.LocomotionControlCommandStraight;
-import com.cwrubotix.glennifer.Messages.SpeedContolCommand;
+import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.UnixTime;
 
@@ -168,7 +168,7 @@ public class AutoDrillModule extends Module {
          */
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-            Messages.PositionContolCommand cmd = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand cmd = Messages.PositionControlCommand.parseFrom(body);
             currentLowerLimit = cmd.getPosition();
             detectStall();
             updateMotors();
@@ -195,7 +195,7 @@ public class AutoDrillModule extends Module {
          */
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-            Messages.PositionContolCommand cmd = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand cmd = Messages.PositionControlCommand.parseFrom(body);
             currentUpperLimit = cmd.getPosition();
             detectStall();
             updateMotors();
@@ -222,7 +222,7 @@ public class AutoDrillModule extends Module {
          */
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-            Messages.PositionContolCommand cmd = Messages.PositionContolCommand.parseFrom(body);
+            Messages.PositionControlCommand cmd = Messages.PositionControlCommand.parseFrom(body);
             digSpeed = cmd.getPosition();
             updateMotors();
         }
@@ -368,7 +368,7 @@ public class AutoDrillModule extends Module {
      * @throws IOException when failed to create/publish message
      */
     private void excavationTranslationControl(float targetValue) throws IOException {
-        Messages.PositionContolCommand pcc = Messages.PositionContolCommand.newBuilder()
+        Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder()
                 .setPosition(targetValue)
                 .setTimeout(123)
                 .build();
@@ -382,7 +382,7 @@ public class AutoDrillModule extends Module {
      * @throws IOException when failed to create/publish message
      */
     private void excavationAngleControl(float targetValue) throws IOException {
-        Messages.PositionContolCommand pcc = Messages.PositionContolCommand.newBuilder()
+        Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder()
                 .setPosition(targetValue)
                 .setTimeout(123)
                 .build();
@@ -396,7 +396,7 @@ public class AutoDrillModule extends Module {
      * @throws IOException when failed to create/publish message
      */
     private void excavationConveyorRPM(float targetValue) throws IOException {
-        Messages.SpeedContolCommand msg = SpeedContolCommand.newBuilder()
+        Messages.SpeedControlCommand msg = SpeedControlCommand.newBuilder()
                 .setRpm(targetValue)
                 .setTimeout(123)
                 .build();
