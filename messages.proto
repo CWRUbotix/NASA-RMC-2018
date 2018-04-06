@@ -100,7 +100,7 @@ message Adjustment {
 // motorcontrol.excavation.bucket_conveyor_rpm
 // motorcontrol.deposition.conveyor_rpm
 // motorcontrol.deposition.vibration_rpm
-message SpeedContolCommand {
+message SpeedControlCommand {
 	required float rpm = 1;
 	required float timeout = 2;
 }
@@ -112,7 +112,7 @@ message SpeedContolCommand {
 // motorcontrol.excavation.arm_pos
 // motorcontrol.excavation.conveyor_translation_displacement
 // motorcontrol.deposition.dump_pos
-message PositionContolCommand {
+message PositionControlCommand {
 	required float position = 1;
 	required float timeout = 2;
 }

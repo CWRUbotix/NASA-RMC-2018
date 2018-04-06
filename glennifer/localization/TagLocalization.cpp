@@ -109,6 +109,8 @@ double tic() {
 
 
 #include <cmath>
+#include <math.h>
+#include <stdio.h>
 
 #ifndef PI
 const double PI = 3.14159265358979323846;
@@ -679,12 +681,18 @@ public:
 
 							foundStandards.push_back(stdFromCamera);
 
+							/*double result;
+							result = 90 - (acos (stdFromCamera(1)/stdFromCamera.norm()) * 180 / PI);
+
+							cout << "Angle is: " << result << "\n" << endl;*/
+
 						}
 					}
 				}
 			}
 
-			/*float norm,x,y,z;
+
+			float norm,x,y,z;
 
 			for(int i = 0; i < foundStandards.size(); i++){
 				norm += foundStandards.at(i).norm();
@@ -702,12 +710,18 @@ public:
 					<< "\t\tdist=" << norm
 					<< " x=" << x
 					<< " y=" << y
-					<< " z=" << z << endl;*/
+					<< " z=" << z << endl;
+
+			double result;
+			result = (acos (x/norm) * 180 / PI);
+
+			cout << "Angle is: " << result << "\n" << endl;
 
 			capturedTagCaches.clear();
 
 			// exit if any key is pressed
 			if (cv::waitKey(10) >= 0) break;
+		    sleep(1);
 
 		}
 	}

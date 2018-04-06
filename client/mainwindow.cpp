@@ -476,7 +476,7 @@ void MainWindow::handleFrontLeftWheelStop() {
 }
 
 void MainWindow::handleFrontLeftWheelSet(int value) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     msg.set_rpm(60 * (value / 100.0F));
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -501,7 +501,7 @@ void MainWindow::handleFrontRightWheelStop() {
 }
 
 void MainWindow::handleFrontRightWheelSet(int value) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     msg.set_rpm(60 * (value / 100.0F));
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -526,7 +526,7 @@ void MainWindow::handleBackLeftWheelStop() {
 }
 
 void MainWindow::handleBackLeftWheelSet(int value) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     msg.set_rpm(60 * (value / 100.0F));
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -551,7 +551,7 @@ void MainWindow::handleBackRightWheelStop() {
 }
 
 void MainWindow::handleBackRightWheelSet(int value) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     msg.set_rpm(60 * (value / 100.0F));
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -584,7 +584,7 @@ void MainWindow::handleFrontLeftWheelPodStraight() {
 }
 
 void MainWindow::handleFrontLeftWheelPodSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -617,7 +617,7 @@ void MainWindow::handleFrontRightWheelPodStraight() {
 }
 
 void MainWindow::handleFrontRightWheelPodSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -650,7 +650,7 @@ void MainWindow::handleBackLeftWheelPodStraight() {
 }
 
 void MainWindow::handleBackLeftWheelPodSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -683,7 +683,7 @@ void MainWindow::handleBackRightWheelPodStraight() {
 }
 
 void MainWindow::handleBackRightWheelPodSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -704,7 +704,7 @@ void MainWindow::handleBackRightWheelPodSet(int value) {
 }
 
 void MainWindow::handleExcavationArmSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -741,7 +741,7 @@ void MainWindow::handleExcavationArmStore() {
 }
 
 void MainWindow::handleExcavationTranslationSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -774,7 +774,7 @@ void MainWindow::handleExcavationTranslationRetract() {
 }
 
 void MainWindow::handleExcavationConveyor(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->slider_ExcavationConveyor->value();
     speed = ui->checkBox_ExcavationConveyorReverse->isChecked() ? speed : -speed;
     speed = checked ? speed : 0;
@@ -800,7 +800,7 @@ void MainWindow::handleDepositionDumpSet(int value) {
 }
 
 void MainWindow::handleDepositionDumpDump() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(100);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -821,7 +821,7 @@ void MainWindow::handleDepositionDumpDump() {
 }
 
 void MainWindow::handleDepositionDumpStop() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(0);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -842,7 +842,7 @@ void MainWindow::handleDepositionDumpStop() {
 }
 
 void MainWindow::handleDepositionDumpStore() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(-100);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -863,7 +863,7 @@ void MainWindow::handleDepositionDumpStore() {
 }
 
 void MainWindow::handleDepositionConveyor(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->slider_DepositionConveyor->value();
     speed = ui->checkBox_DepositionConveyorReverse->isChecked() ? speed : -speed;
     speed = checked ? speed : 0;
@@ -885,7 +885,7 @@ void MainWindow::handleDepositionConveyor(bool checked) {
 }
 
 void MainWindow::handleLowerCurrent(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -904,7 +904,7 @@ void MainWindow::handleLowerCurrent(int value) {
 }
 
 void MainWindow::handleVibrate(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->spinBox_Vibrate->value();
     speed = checked ? speed : 0;
     msg.set_rpm(speed);
@@ -925,7 +925,7 @@ void MainWindow::handleVibrate(bool checked) {
 }
 
 void MainWindow::handleUpperCurrent(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -944,7 +944,7 @@ void MainWindow::handleUpperCurrent(int value) {
 }
 
 void MainWindow::handleDigSpeed(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value / 10.0F);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -1230,12 +1230,12 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
         case (Qt::Key_K):
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() + 10);
             break;
-        //case (Qt::Key_R):
-          //  handleTankPivotRK();
-          //  break;
-        //case (Qt::Key_L):
-          //  handleTankPivotLK;
-          //  break;
+        case (Qt::Key_R):
+            handleTankPivotRK();
+            break;
+        case (Qt::Key_L):
+            handleTankPivotLK();
+            break;
         case (Qt::Key_E):
              actionTabRight();
              break;
@@ -1595,7 +1595,7 @@ void MainWindow::strafeConfig() {
 
 /* * ON ALL OF THESE MAKE SURE THE KEY RELEASE WORKS AS IT IS MEANT TO * */
 void MainWindow::drill(float value, QString key) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -1784,7 +1784,7 @@ void MainWindow::dumpConveyor(bool checked) {
 /* Anti Bucket Conveyor Sends negative Speed */
 void MainWindow::inverseExcavationConveyer(bool checked) {
     if(m_digConfig == 1) {
-        SpeedContolCommand msg;
+        SpeedControlCommand msg;
         int speed = (-1)*(ui->slider_ExcavationConveyor->value());
         msg.set_rpm(checked ? speed : 0);
         msg.set_timeout(456);
