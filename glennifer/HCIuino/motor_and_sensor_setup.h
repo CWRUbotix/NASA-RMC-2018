@@ -27,7 +27,7 @@ void setup_motors(){
 	
 	// Using Simplified Serial mode for the Sabertooths WITH slave select
 	// We have to use Serial for them bc software serial isn't supported on the Due
-	Serial.begin(SERIAL_BAUD); 			// will be SABERTOOTH_BAUD later
+	SerialUSB.begin(SERIAL_BAUD); 			// will be SABERTOOTH_BAUD later
 	SabertoothSimplified ST(Serial); 	// Use Serial as the serial port.
 
 	// MOTOR CONTROLLERS (BOARDS)

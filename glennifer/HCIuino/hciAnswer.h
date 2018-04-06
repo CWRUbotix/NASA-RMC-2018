@@ -34,7 +34,7 @@ uint8_t cmd_sense_sensor_id(byte* cmd, uint8_t i){
 FAULT_T hciWrite(byte rpy[]){
   uint16_t len  = rpy_len(rpy); // DIFF from last year
   FAULT_T fault = FAULT_FAILED_WRITE;
-  uint8_t retval  = SerialUSB.write(rpy,len+2);
+  uint8_t retval  = Serial.write(rpy,len+2);
   
   if (retval == len+2) {
       fault = NO_FAULT;
@@ -97,7 +97,7 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 	rpy_set_len(rpy, bodyLen); 	// we only want to consider body length
 	size 	= RPY_HEADER_SIZE + bodyLen;
 	debugging[4] = size;
-	retval 	= SerialUSB.write(rpy, size);
+	retval 	= Serial.write(rpy, size);
 	success = (retval == size);
 	if(success){
 		//clear_fault_log();

@@ -93,8 +93,8 @@ void maintain_motors(byte* cmd, bool success){
 			val += cmd[i+1];
 			val = val << 8;
 			val += cmd[i+2];
-			Serial.print("Value Received:\t");
-			Serial.println(val);
+			SerialUSB.print("Value Received:\t");
+			SerialUSB.println(val);
 			motor->setPt = val; 	// deref the ptr and set the struct field
 
 			switch(motor->hardware){
@@ -102,14 +102,14 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_ST_PWM:
-					Serial.end();
-					Serial.begin(SABERTOOTH_BAUD);
+					SerialUSB.end();
+					SerialUSB.begin(SABERTOOTH_BAUD);
 					digitalWrite( motor->board->selectPin, HIGH);
 					(*(motor->board->ST)).motor(motor->whichMotor, motor->setPt);
 					delayMicroseconds(50);
 					digitalWrite( motor->board->selectPin, LOW);
-					Serial.end();
-					Serial.begin(HCI_BAUD);
+					SerialUSB.end();
+					SerialUSB.begin(HCI_BAUD);
 					break;
 
 				case MH_ST_VEL:
@@ -149,14 +149,14 @@ void maintain_motors(byte* cmd, bool success){
 	// 			break;
 
 	// 		case MH_ST_PWM:
-	// 			Serial.end();
-	// 			Serial.begin(SABERTOOTH_BAUD);
+	// 			SerialUSB.end();
+	// 			SerialUSB.begin(SABERTOOTH_BAUD);
 	// 			digitalWrite( motor->board->selectPin, HIGH);
 	// 			(*(motor->board->ST)).motor(motor->whichMotor, motor->setPt);
 	// 			delayMicroseconds(50);
 	// 			digitalWrite( motor->board->selectPin, LOW);
-	// 			Serial.end();
-	// 			Serial.begin(HCI_BAUD);
+	// 			SerialUSB.end();
+	// 			SerialUSB.begin(HCI_BAUD);
 	// 			break;
 
 	// 		case MH_ST_VEL:
