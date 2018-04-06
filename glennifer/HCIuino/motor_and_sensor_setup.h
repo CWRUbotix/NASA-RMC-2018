@@ -29,7 +29,7 @@ void setup_motors(){
 	// We have to use Serial for them bc software serial isn't supported on the Due
 	SerialUSB.begin(SERIAL_BAUD); 			// will be SABERTOOTH_BAUD later
 	SabertoothSimplified ST(Serial); 	// Use Serial as the serial port.
-
+  
 	// MOTOR CONTROLLERS (BOARDS)
 	// ODrive motors were "setup" in values_and_types.h
 	MCInfo odrive_board_0;

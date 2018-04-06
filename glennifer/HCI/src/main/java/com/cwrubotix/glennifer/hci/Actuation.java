@@ -18,4 +18,12 @@ public class Actuation {
 	// The current raw output of this actuation
 	// Most often will be in PWM
 	int currentOutput;
+
+	Actuation(int ID, double targetValue){
+		this.override = true;
+		this.hold = true;
+		this.actuatorID = ID;
+		this.type = HardwareControlInterface.ActuationType.AngVel;
+		this.targetValue = targetValue;
+	}
 }

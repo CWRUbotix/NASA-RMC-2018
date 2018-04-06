@@ -31,12 +31,8 @@ public class HardwareControlInterface implements Runnable {
 
 	// Queue of actuations to be checked in
 	private LinkedBlockingQueue<Actuation> actuationQueue = new LinkedBlockingQueue<Actuation>();
-	// Queue of coordinated actuations to be checked in
-	private LinkedBlockingQueue<CoordinatedActuation> coordinatedActuationQueue = new LinkedBlockingQueue<CoordinatedActuation>();
 	// Queue of sensor updates detected that can be consumed externally for sending
-	private LinkedBlockingQueue<LabeledSensorData> sensorUpdateQueue = new LinkedBlockingQueue<>();
-	// List of constraints set on various motors, etc.
-	private ArrayList<ActuationConstraint> constraints = new ArrayList<ActuationConstraint>();
+	private LinkedBlockingQueue<SensorData> sensorUpdateQueue = new LinkedBlockingQueue<>();
 	// Hashmap of actuators to their ID's
 	private HashMap<Integer, Actuator> actuators = new HashMap<Integer,Actuator>();
 	// Hashmap of sensors to their ID's
@@ -44,7 +40,6 @@ public class HardwareControlInterface implements Runnable {
 	// List of active actuation jobs
 	private ArrayList<Actuation> activeActuations = new ArrayList<Actuation>();
 	// List of active coordinated actuation jobs
-	private ArrayList<CoordinatedActuation> activeCoordinatedActuations = new ArrayList<CoordinatedActuation>();
 	private SerialPort port;
 	/**
 	 * Queue's an actuation to be checked in
@@ -53,20 +48,12 @@ public class HardwareControlInterface implements Runnable {
 	public void queueActuation(Actuation actuation) {
 		actuationQueue.add(actuation);
 	}
-	
-	/**
-	 * Queue's a coordinated actuation to be checked in
-	 * @param coordinatedActuation The actuation job that is to be checked in
-	 */
-	public void queueCoordinatedActuation(CoordinatedActuation coordinatedActuation) {
-		coordinatedActuationQueue.add(coordinatedActuation);
-	}
 
 	/**
 	 * Blocking wait until there is a sensor update to be consumed, and then pop it.
 	 * @return the sensor data
 	 */
-	public LabeledSensorData pollSensorUpdate() throws InterruptedException {
+	public SensorData pollSensorUpdate() throws InterruptedException {
 		return sensorUpdateQueue.poll(1000000, TimeUnit.DAYS);
 	}
 	
@@ -85,12 +72,15 @@ public class HardwareControlInterface implements Runnable {
 	 * @param id The ID of the actuator
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
-	public int addActuator(Actuator actuator, int id) {
-		if(actuators.containsKey(id)) {
-			System.out.println("Fail to add actuator #" + id);
+	public int addActuator(ActuatorConfig config) {
+		Actuator actuator = new Actuator(config);
+		int ID = config.ID;
+
+		if(actuators.containsKey(ID)) {
+			System.out.println("Fail to add actuator #" + ID);
 			return 1;
 		} else {
-			actuators.put(id, actuator);
+			actuators.put(ID, actuator);
 			return 0;
 		}
 	}
@@ -101,11 +91,14 @@ public class HardwareControlInterface implements Runnable {
 	 * @param id The ID of the sensor
 	 * @return 0 if success, 1 if that ID is already registered
 	 */
-	public int addSensor(Sensor sensor, int id) {
-		if(sensors.containsKey(id)) {
+	public int addSensor(SensorConfig config) {
+		Sensor sensor = new Sensor(config);
+		int ID = config.ID;
+
+		if(sensors.containsKey(ID)) {
 			return 1;
 		} else {
-			sensors.put(id, sensor);
+			sensors.put(ID, sensor);
 			return 0;
 		}
 	}
@@ -115,7 +108,7 @@ public class HardwareControlInterface implements Runnable {
 		while(true) {
 			try {
 				// Read sensors
-				readSensors();
+				// readSensors(); //TODO
 				// Update actuator data
 				for(int id:actuators.keySet()) {
 					actuators.get(id).update();
@@ -195,19 +188,6 @@ public class HardwareControlInterface implements Runnable {
 				}
 			}
 		}
-		Iterator<CoordinatedActuation> itca = activeCoordinatedActuations.iterator();
-		while(itca.hasNext()) {
-			CoordinatedActuation ca = itca.next();
-			// For all active actuations
-			if(ca.actuatorID == act.actuatorID) {
-				// If target is already set and override, remove it, otherwise return false
-				if(act.override) {
-					itca.remove();
-				} else {
-					return false;
-				}
-			}
-		}
 		// If no conflict or override, add it
 		activeActuations.add(act);
 		actuationQueue.remove(act);
@@ -225,18 +205,20 @@ public class HardwareControlInterface implements Runnable {
 			return true;
 		}
 		// Allocate byte array for the data in the request
-		byte[] data = new byte[activeActuations.size()*4];
+		byte[] data = new byte[activeActuations.size()*3];
 		// Generate data array for request
 		// Each actuator ID is 2 bytes, each output is 2 bytes
 		// Conversion to short is not checked
 		for(int i = 0; i < activeActuations.size(); i++) {
 			Actuation activeActuation = activeActuations.get(i);
-			short actuatorIdShort = (short)activeActuation.actuatorID;
+			byte actuatorIdShort = (byte)activeActuation.actuatorID;
 			short currentOutputShort = (short)activeActuation.currentOutput;
-			data[4*i] = (byte)(actuatorIdShort >>> 8);
-			data[4*i+1] = (byte)(actuatorIdShort);
-			data[4*i+2] = (byte)(currentOutputShort >>> 8);
-			data[4*i+3] = (byte)(currentOutputShort);
+			data[3*i] = actuatorIdShort;
+			data[3*i+1] = (byte)(currentOutputShort >>> 8);
+			data[3*i+2] = (byte)(currentOutputShort);
+			System.out.println(data[0]);
+			System.out.println(data[1]);
+			System.out.println(data[2]);
 			//System.out.println("Setting output: " + currentOutputShort + " actuator ID: " + actuatorIdShort);
 		}
 		activeActuations.clear();
@@ -291,7 +273,7 @@ public class HardwareControlInterface implements Runnable {
 				// Update it with the data
 				boolean different = s.updateRaw(dat);
 				if (different) {
-					sensorUpdateQueue.add(new LabeledSensorData(sens, new SensorData(dat, t))); // TODO: transform to sensor-specific physical units here
+					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 				}
 			}
 		}

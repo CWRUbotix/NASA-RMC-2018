@@ -1,0 +1,17 @@
+/**
+ * @file april_tags.cpp
+ * @brief Example application for April tags library
+ * @author: Michael Kaess
+ *
+ * Opens the first available camera (typically a built in camera in a
+ * laptop) and continuously detects April tags in the incoming
+ * images. Detections are both visualized in the live image and shown
+ * in the text console. Optionally allows selecting of a specific
+ * camera in case multiple ones are present and specifying image
+ * resolution as long as supported by the camera. Also includes the
+ * option to send tag detections via a serial port, for example when
+ * running on a Raspberry Pi that is connected to an Arduino.
+ */
+
+using namespace std;
+

@@ -1,5 +1,5 @@
 #include "consumerthread.h"
-#include <AMQPcpp.h>
+#include <amqpcpp/AMQPcpp.h>
 #include <QDebug>
 #include "messages.pb.h"
 #include <QString>

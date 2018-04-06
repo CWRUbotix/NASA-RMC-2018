@@ -24,14 +24,14 @@ public class Sensor {
 	public boolean update(double val) {
 		long mil = System.currentTimeMillis();
 		if(data.size() == 0 || !lowPass) {
-			data.add(new SensorData(val, mil));
+			data.add(new SensorData(config.ID, val, mil));
 			return true;
 		}
 		double dt = (double)(mil - data.get(data.size()-1).timestamp);
 		double alpha = dt/(RC + dt);
 		double fVal = alpha * val + (1 - alpha)*data.get(data.size()-1).data;
 		boolean different = (fVal != data.get(data.size() - 1).data);
-		data.add(new SensorData(fVal, mil));
+		data.add(new SensorData(config.ID, fVal, mil));
 		return different;
 	}
 	
