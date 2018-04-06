@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 /**
  * Data type that represents a location inside the arena.

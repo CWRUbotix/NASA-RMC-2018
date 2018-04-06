@@ -1,4 +1,4 @@
-package main.java.com.cwrubotix.glennifer.automodule;
+package com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.RpmUpdate;

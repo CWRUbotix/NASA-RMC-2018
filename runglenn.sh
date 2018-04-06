@@ -15,10 +15,11 @@ nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/robot_state-1.0-
 cd ../..
 
 cd glennifer/automodule
-nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoModule
-nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoTransit
-nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDrillModule
-nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDump
+nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoModule
+nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoTransit
+nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDrillModule
+nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDump
+cd ../
 
 sleep 2
 
