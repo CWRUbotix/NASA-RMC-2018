@@ -10,7 +10,6 @@ import com.rabbitmq.client.AMQP;
 
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.LocomotionControlCommandStraight;
-import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.UnixTime;
 
@@ -39,5 +38,9 @@ public class AutoDump extends Module{
         this.channel = connection.createChannel();
 
         // Listen for commands...
+	}
+	public static void main(String[] args) {
+		AutoDump dumpModule = new AutoDump();
+		dumpModule.start();
 	}
 }
