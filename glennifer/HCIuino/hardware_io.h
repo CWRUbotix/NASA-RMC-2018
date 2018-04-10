@@ -102,14 +102,10 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_ST_PWM:
-					SerialUSB.end();
-					SerialUSB.begin(SABERTOOTH_BAUD);
 					digitalWrite( motor->board->selectPin, HIGH);
 					(*(motor->board->ST)).motor(motor->whichMotor, motor->setPt);
 					delayMicroseconds(50);
 					digitalWrite( motor->board->selectPin, LOW);
-					SerialUSB.end();
-					SerialUSB.begin(HCI_BAUD);
 					break;
 
 				case MH_ST_VEL:
@@ -127,13 +123,21 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_BL_BOTH:
-
 					break;
 
+				case MH_RC_VEL:{
+					uint8_t which = motor->whichMotor;
+					uint8_t addr  = motor->board->addr;
+					RoboClaw* rc  = motor->board->roboclaw;
+					if(which == 0){
+						(*rc).SpeedM1(addr,motor->setPt);
+					}else{
+						(*rc).SpeedM2(addr,motor->setPt);
+					}
+					break;}
+
 			}
-
 			motor->lastUpdateTime = millis();
-
 		}
 	}
 

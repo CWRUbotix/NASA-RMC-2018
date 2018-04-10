@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <ODriveArduino.h>
 #include <SabertoothSimplified.h>
+#include <RoboClaw.h>
 #include <math.h>
 #include <HX711.h>
 
@@ -25,7 +26,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
 	Serial.begin(HCI_BAUD);	// Begin communication with computer
-	SerialUSB.begin(9600); 		// Comms with something-or-other
 	setup_sensors();
 	setup_motors();
 	

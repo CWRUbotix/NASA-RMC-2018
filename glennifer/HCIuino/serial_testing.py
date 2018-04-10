@@ -23,8 +23,43 @@ def dispCMDTypes():
 	print("\t1 : Read Sensor \n\t2 : Set Outputs \n\t3 : HCI Test")
 	print('='*79)
 
-# def sendBytes(ser, bytes):
-# 	ser.write(b);
+#===============================================================================
+def readSensors(cmdType):
+	byteArr = [cmdType]
+	byteArr.append(0) 			# placeholder until later
+	bodyLen 	= 0
+	numSens 	= int(input("How many to read :\t"))
+	respLen 	= 2 + 3*numSens
+	bodyLen 	= numSens
+
+	for i in range(0,numSens):
+		ID  = int(input("ID :\t\t\t"))
+		byteArr.append(ID)
+		#bodyLen = bodyLen+3
+
+	byteArr[1] = bodyLen
+	return byteArr
+
+#===============================================================================
+def setOutputs(cmdType):
+	byteArr 	= [cmdType]
+	byteArr.append(0) 			# placeholder until later
+	respLen 	= 2
+	bodyLen 	= 0
+	numMtrs 	= int(input("How many to set :\t"))
+
+	for i in range(0,numMtrs):
+		ID  = int(input("ID :\t"))
+		val = int(input("Value :\t"))
+		tmp = bytearray(val);
+		print(tmp)
+		byteArr.append(ID)
+		byteArr.append(tmp[0])
+		byteArr.append(tmp[1])
+		bodyLen+=3
+
+	byteArr[1] = bodyLen
+	return byteArr
 
 #===============================================================================
 def main():
@@ -58,9 +93,9 @@ def main():
 
 		#--------------------------------------------------------------------
 		while not done:
-
 			cmdType = int(input("CMD Type:\t"))
 			respLen = 0
+			byteArr = []
 
 			if cmdType == CMD_HCI_TEST:
 				byteArr = [cmdType]
@@ -68,49 +103,18 @@ def main():
 				byteArr.append(HCI_TEST_SEND)
 				respLen = 3
 				
-
 			elif cmdType == CMD_SET_OUTPUTS:
-				byteArr 	= [cmdType]
-				byteArr.append(0) 			# placeholder until later
-				respLen 	= 2
-				bodyLen 	= 0
-				numMtrs 	= int(input("How many to set :\t"))
-
-				for i in range(0,numMtrs):
-					ID  = int(input("ID :\t"))
-					val = int(input("Value :\t"))
-					tmp = bytearray(val);
-					print(tmp)
-					byteArr.append(ID)
-					byteArr.append(tmp[0])
-					byteArr.append(tmp[1])
-					bodyLen+=3
+				byteArr = setOutputs(cmdType)
+				respLen = 2 + byteArr[1];
 				
-				respLen += bodyLen
-				byteArr[1] = bodyLen
-
-
 			elif cmdType == CMD_READ_SENSORS:
-				byteArr = [cmdType]
-				byteArr.append(0) 			# placeholder until later
-				bodyLen 	= 0
-				numSens 	= int(input("How many to read :\t"))
-				respLen 	= 2 + 3*numSens
-				bodyLen 	= numSens
-
-				for i in range(0,numSens):
-					ID  = int(input("ID :\t\t\t"))
-					byteArr.append(ID)
-					#bodyLen = bodyLen+3
-
-				byteArr[1] = bodyLen
+				byteArr = readSensors(cmdType)
+				respLen = 2 + byteArr[1]
 				
-
-			elif cmdType == -1:
+			elif cmdType < 0:
 				done = True
 			else:
 				print("Not a recognized command.")
-
 
 
 			if not done and len(byteArr)>2: 
@@ -119,7 +123,6 @@ def main():
 				ser.write(byteArr)
 				resp = ser.read(respLen)
 				print("\nResponse:\t"+str(resp))
-
 		#--------------------------------------------------------------------
 	
 	

@@ -21,28 +21,32 @@ void setup_sensors(){
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
 	// Motor related serial stuff
-	Serial1.begin(ODRIVE_BAUD);	// UART with ODrive: 18 (TX) & 19 (RX)
-	Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 
-	Serial3.begin(ODRIVE_BAUD); // UART with ODrive: 14 (TX) & 15 (RX)
+	// Serial1.begin(ODRIVE_BAUD);	// UART with ODrive: 18 (TX) & 19 (RX)
+	// Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 
+	// Serial3.begin(ODRIVE_BAUD); // UART with ODrive: 14 (TX) & 15 (RX)
+
+	//RoboClaw roboclaw(&serial,10000);
+	// this object is the bus for all roboclaws
+	RoboClaw roboclawSerial(&Serial1, ROBOCLAW_BAUD);
 	
 	// Using Simplified Serial mode for the Sabertooths WITH slave select
 	// We have to use Serial for them bc software serial isn't supported on the Due
-	SerialUSB.begin(SERIAL_BAUD); 			// will be SABERTOOTH_BAUD later
-	SabertoothSimplified ST(Serial); 	// Use Serial as the serial port.
+	Serial2.begin(SABERTOOTH_BAUD);
+	SabertoothSimplified ST(Serial2); 	//
   
 	// MOTOR CONTROLLERS (BOARDS)
 	// ODrive motors were "setup" in values_and_types.h
-	MCInfo odrive_board_0;
-	odrive_board_0.odrive = & odrive0;
-	board_infos[0] = odrive_board_0;
+	// MCInfo odrive_board_0;
+	// odrive_board_0.odrive = & odrive0;
+	// board_infos[0] = odrive_board_0;
 
-	MCInfo odrive_board_1;
-	odrive_board_1.odrive = & odrive1;
-	board_infos[1] = odrive_board_1;
+	// MCInfo odrive_board_1;
+	// odrive_board_1.odrive = & odrive1;
+	// board_infos[1] = odrive_board_1;
 
-	MCInfo odrive_board_2;
-	odrive_board_2.odrive = & odrive2;
-	board_infos[1] = odrive_board_2;
+	// MCInfo odrive_board_2;
+	// odrive_board_2.odrive = & odrive2;
+	// board_infos[1] = odrive_board_2;
 
 	MCInfo board_0;
 	board_0.type 		= MC_BRUSHED;
@@ -59,42 +63,88 @@ void setup_motors(){
 	pinMode(SABERTOOTH_0_SLCT, OUTPUT);
 	pinMode(SABERTOOTH_1_SLCT, OUTPUT);
 
+	MCInfo roboclaw_0;
+	roboclaw_0.type 	= MC_ROBOCLAW;
+	roboclaw_0.addr 	= ROBOCLAW_0_ADDR;
+	roboclaw_0.roboclaw = & roboclawSerial;
+
+	MCInfo roboclaw_1;
+	roboclaw_1.type 	= MC_ROBOCLAW;
+	roboclaw_1.addr 	= ROBOCLAW_1_ADDR;
+	roboclaw_1.roboclaw = & roboclawSerial;
+
+	MCInfo roboclaw_2;
+	roboclaw_2.type 	= MC_ROBOCLAW;
+	roboclaw_2.addr 	= ROBOCLAW_2_ADDR;
+	roboclaw_2.roboclaw = & roboclawSerial;
+
+
 	// MOTORS
-	MotorInfo motor_0;
-	motor_0.whichMotor = 0;
-	motor_0.board = & odrive_board_0;
-	motor_0.hardware = MH_BL_VEL;
-	motor_infos[0] = motor_0;
+	MotorInfo drive_0;
+	drive_0.whichMotor	= 0;
+	drive_0.hardware 	= MH_RC_VEL;
+	drive_0.board 		= & roboclaw_0;
+	drive_0.kp 			= 1.0f;
+	drive_0.ki 			= 0.5f;
+	drive_0.kd 			= 0.25f;
+	drive_0.qpps 		= 44000;
+	// we need to set up the PID values
+	roboclaw_0.roboclaw->SetM1VelocityPID(roboclaw_0.addr,drive_0.kd,drive_0.kp,drive_0.ki,drive_0.qpps);
+	motor_infos[0] 		= drive_0;
 
-	MotorInfo motor_1;
-	motor_1.whichMotor = 1;
-	motor_1.board = & odrive_board_0;
-	motor_1.hardware = MH_BL_VEL;
-	motor_infos[1] = motor_1;
+	MotorInfo drive_1;
+	drive_1.whichMotor 	= 1;
+	drive_1.hardware 	= MH_RC_VEL;
+	drive_1.board 		= & roboclaw_0;
+	motor_infos[1] 		= drive_1;
 
-	MotorInfo motor_2;
-	motor_2.whichMotor = 0;
-	motor_2.board = & odrive_board_1;
-	motor_2.hardware = MH_BL_VEL;
-	motor_infos[2] = motor_2;
+	MotorInfo drive_2;
+	drive_2.whichMotor 	= 0;
+	drive_2.hardware 	= MH_RC_VEL;
+	drive_2.board 		= & roboclaw_2;
+	motor_infos[2] 		= drive_2;
 
-	MotorInfo motor_3;
-	motor_3.whichMotor = 1;
-	motor_3.board = & odrive_board_1;
-	motor_3.hardware = MH_BL_VEL;
-	motor_infos[3] = motor_3;
+	MotorInfo drive_3;
+	drive_3.whichMotor 	= 1;
+	drive_3.hardware 	= MH_RC_VEL;
+	drive_3.board 		= & roboclaw_2;
+	motor_infos[3] 		= drive_3;
 
-	MotorInfo motor_4;
-	motor_4.whichMotor = 0;
-	motor_4.board = & odrive_board_2;
-	motor_4.hardware = MH_BL_POS;
-	motor_infos[4] = motor_4;
+	// MotorInfo motor_0;
+	// motor_0.whichMotor = 0;
+	// motor_0.board = & odrive_board_0;
+	// motor_0.hardware = MH_BL_VEL;
+	// motor_infos[0] = motor_0;
 
-	MotorInfo motor_5;
-	motor_5.whichMotor = 1;
-	motor_5.board = & odrive_board_2;
-	motor_5.hardware = MH_BL_POS;
-	motor_infos[5] = motor_5;
+	// MotorInfo motor_1;
+	// motor_1.whichMotor = 1;
+	// motor_1.board = & odrive_board_0;
+	// motor_1.hardware = MH_BL_VEL;
+	// motor_infos[1] = motor_1;
+
+	// MotorInfo motor_2;
+	// motor_2.whichMotor = 0;
+	// motor_2.board = & odrive_board_1;
+	// motor_2.hardware = MH_BL_VEL;
+	// motor_infos[2] = motor_2;
+
+	// MotorInfo motor_3;
+	// motor_3.whichMotor = 1;
+	// motor_3.board = & odrive_board_1;
+	// motor_3.hardware = MH_BL_VEL;
+	// motor_infos[3] = motor_3;
+
+	// MotorInfo motor_4;
+	// motor_4.whichMotor = 0;
+	// motor_4.board = & odrive_board_2;
+	// motor_4.hardware = MH_BL_POS;
+	// motor_infos[4] = motor_4;
+
+	// MotorInfo motor_5;
+	// motor_5.whichMotor = 1;
+	// motor_5.board = & odrive_board_2;
+	// motor_5.hardware = MH_BL_POS;
+	// motor_infos[5] = motor_5;
 
 	MotorInfo motor_6;
 	motor_6.whichMotor = 0;
