@@ -141,6 +141,7 @@ typedef struct MotorInfo{
 	uint32_t deadband; 		// When hardware = MH_RC_POS
 	uint32_t minpos; 		// When hardware = MH_RC_POS
 	uint32_t maxpos; 		// When hardware = MH_RC_POS
+	uint16_t  maxDuty = 16384; 	// for limiting output duty cycle
 	uint32_t accel;
 	uint16_t feedbackSensorID;
 	float    saturation;

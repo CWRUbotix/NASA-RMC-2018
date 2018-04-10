@@ -126,13 +126,19 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_RC_VEL:{
-					uint8_t which = motor->whichMotor;
-					uint8_t addr  = motor->board->addr;
-					RoboClaw* rc  = motor->board->roboclaw;
+					uint16_t mag 	= (uint16_t)(motor->setPt & (0x7FFF));
+					uint16_t sign 	= (uint16_t)(motor->setPt & (0x8000))
+					mag 			= (mag > motor->maxDuty ? motor->maxDuty : mag);
+					motor->setPt 	= (int16_t) (mag + sign);
+					uint8_t which 	= motor->whichMotor;
+					uint8_t addr  	= motor->board->addr;
+					RoboClaw* rc  	= motor->board->roboclaw;
 					if(which == 0){
-						(*rc).SpeedM1(addr,motor->setPt);
+						//(*rc).SpeedM1(addr,motor->setPt);
+						(*rc).DutyM1(addr,motor->setPt);
 					}else{
-						(*rc).SpeedM2(addr,motor->setPt);
+						//(*rc).SpeedM2(addr,motor->setPt);
+						(*rc).DutyM2(addr,motor->setPt);
 					}
 					break;}
 
