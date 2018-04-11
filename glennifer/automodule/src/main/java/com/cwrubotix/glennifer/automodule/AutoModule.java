@@ -10,6 +10,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import main.java.com.cwrubotix.glennifer.automodule.AutoTransit.LocalizationPositionConsumer;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Timer;
@@ -71,6 +73,9 @@ public class AutoModule extends Module {
 		this.connection = factory.newConnection();
 		this.channel = connection.createChannel();
 
+		String queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "loc.pos");
+		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 		// TODO AutoModule needs to turn around and scan for AprilTags
 
 		// Setup timer for timing tasks
