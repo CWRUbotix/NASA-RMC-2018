@@ -83,13 +83,13 @@ void maintain_motors(byte* cmd, bool success){
 	uint8_t type 	= cmd_type(cmd);
 	
 	if(success && (type == CMD_SET_OUTPUTS) ){	// here we only care if it's set outputs
-		Serial3.print("Command type : ");
-		Serial3.print(type);
-		Serial3.print("  Success Status : ");
-		Serial3.println(success);
-		delay(50);
-		Serial3.println("Time to UPDATE THE MOTORS");
-		delay(50);
+		// Serial3.print("Command type : ");
+		// Serial3.print(type);
+		// Serial3.print("  Success Status : ");
+		// Serial3.println(success);
+		// delay(50);
+		// Serial3.println("Time to UPDATE THE MOTORS");
+		// delay(50);
 		uint8_t num_motors_requested;
 		FAULT_T retfault;
 
@@ -103,12 +103,12 @@ void maintain_motors(byte* cmd, bool success){
 			val += cmd[i+1];
 			val = val << 8;
 			val += cmd[i+2];
-			Serial3.print("Value Received:\t");
-			Serial3.print(val);
-			Serial3.print("  Motor ID:\t");
-			Serial3.println(id);
+			Serial3.print("Motor of ID  ");
+			Serial3.print(id);
+			Serial3.print("\t should be set to ");
+			Serial3.println(val);
 			motor->setPt = val; 	// deref the ptr and set the struct field
-			delay(50);
+			delay(100);
 
 			switch(motor->hardware){
 				case MH_NONE:
@@ -147,11 +147,11 @@ void maintain_motors(byte* cmd, bool success){
 					uint8_t which 	= motor->whichMotor;
 					uint8_t address	= (uint8_t) motor->board->addr;
 					RoboClaw* rc  	= motor->board->roboclaw;
-					Serial3.print(motor->maxDuty);
-					Serial3.println("Write to the ROBOCLAW ");
-					Serial3.println(newSetPt);
-					Serial3.println(address);
-					delay(50);
+					Serial3.print("Write to the ROBOCLAW : ");
+					Serial3.print(newSetPt);
+					Serial3.print("   Duty Cycle : ");
+					Serial3.println((newSetPt * 100)/32767);
+					delay(100);
 					if(which == 0){
 						//(*rc).SpeedM1(addr,motor->setPt);
 						writeSuccess = roboclawSerial.DutyM1(address,newSetPt);

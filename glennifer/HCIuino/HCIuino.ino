@@ -7,7 +7,7 @@
 #include <SabertoothSimplified.h>
 #include <RoboClaw.h>
 #include <math.h>
-//#include <HX711.h>
+
 RoboClaw roboclawSerial(&Serial1, 10000);
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
@@ -25,15 +25,17 @@ RoboClaw roboclawSerial(&Serial1, 10000);
 ////  SETUP
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
-	Serial.begin(HCI_BAUD);	// Begin communication with computer
+	Serial.begin(HCI_BAUD); 	// Begin communication with computer
 	setup_sensors();
-	setup_motors();
-	Serial3.begin(9600);
-	roboclawSerial.begin(ROBOCLAW_BAUD);
+	setup_motors(); 
+	Serial3.begin(9600); 		// For the FTDI-USB converter debugging tool
+	
 	
 	stopped = false;
 	Serial3.println("================================================================================");
 	Serial3.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
+	Serial3.println("================================================================================");
+	delay(50);
 }
 
 
@@ -45,7 +47,6 @@ void loop(){
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false;
-	debugging[0]=0; debugging[1]=0; debugging[2]=0; debugging[3]=0; debugging[4]=0;
 
 	long time = millis() - lastTime;
 	FAULT_T fault_code = NO_FAULT;
@@ -57,15 +58,7 @@ void loop(){
 			Serial3.print("CMD received : ");
 			Serial3.println(cmd_type(cmd));
 			delay(10);
-			// for(int i = 0; i<cmd_body_len(cmd)+CMD_HEADER_SIZE; i++){
-
-			// 	Serial3.print((uint8_t)cmd[i]);
-			// 	Serial3.print(" ");
-			// }
-			// Serial3.println();
 		}
-
-		debugging[0] = fault_code;
 
 		if(fault_code == NO_FAULT){
 			success = true;
@@ -78,7 +71,6 @@ void loop(){
 			//log_fault(fault_code);			// add to log or whatever
 		}
 	}else{
-		//Serial3.println("Client is still not available.");
 		if(time >= 5000){
 			Serial3.println("Client is still not available.");
 			lastTime = millis();
@@ -97,27 +89,8 @@ void loop(){
 		Serial3.println();
 		delay(150);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
-
-		// Serial3.print("\t");
-		// Serial3.println(fault_code);
-		//debugging[3] = fault_code;
 	}
-	// if(debugging[0] != 0){
-	// 	Serial3.print("   ");
-	// 	Serial3.print(debugging[0]);
-	// 	Serial3.print("            ");
-	// 	Serial3.print(debugging[1]);
-	// 	Serial3.print("            ");
-	// 	Serial3.print(debugging[2]);
-	// 	Serial3.print("      ");
-	// 	Serial3.print(debugging[3]);
-	// 	Serial3.print("      ");
-	// 	Serial3.print(debugging[4]);
-	// 	Serial3.println();
-	// }
 }
-
-
 
 
 

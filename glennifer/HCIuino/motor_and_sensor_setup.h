@@ -6,35 +6,20 @@ void setup_sensors(){
 	// SENSORS
 	// For testing
 	SensorInfo sensor_0;
-	sensor_0.hardware 	= SH_PIN_POT;
-	sensor_0.whichPin 	= A0;
-	sensor_0.responsiveness = 1;
-	sensor_0.scale 		= 1;
+	sensor_infos[0].hardware 	= SH_PIN_POT;
+	sensor_infos[0].whichPin 	= A0;
+	sensor_infos[0].responsiveness = 1;
+	sensor_infos[0].scale 		= 1;
 	sensor_infos[0] 	= sensor_0;
 
-	// SensorInfo sensor_1;
-	// HX711 loadBoi(40,41);
-	// sensor_1.loadCell 	= & loadBoi;
-	// sensor_infos[1] 	= sensor_1;
 
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
 	// Motor related serial stuff
-	// Serial1.begin(ODRIVE_BAUD);	// UART with ODrive: 18 (TX) & 19 (RX)
-	// Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 
-	// Serial3.begin(ODRIVE_BAUD); // UART with ODrive: 14 (TX) & 15 (RX)
-
-	//RoboClaw roboclaw(&serial,10000);
-	// this object is the bus for all roboclaws
-	//robotclawSerial = RoboClaw(&Serial1, ROBOCLAW_TIMEOUT);
-	// roboclawSerial.begin(ROBOCLAW_BAUD);
-	
-	// Using Simplified Serial mode for the Sabertooths WITH slave select
-	// We have to use Serial for them bc software serial isn't supported on the Due
 	Serial2.begin(SABERTOOTH_BAUD);
 	SabertoothSimplified ST(Serial2); 	//
-  
+	roboclawSerial.begin(ROBOCLAW_BAUD);
 
 	board_infos[0].type 	= MC_ROBOCLAW;
 	board_infos[0].addr 	= ROBOCLAW_0_ADDR;
