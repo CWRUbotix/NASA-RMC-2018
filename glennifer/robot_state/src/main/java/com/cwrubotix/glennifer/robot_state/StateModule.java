@@ -336,6 +336,7 @@ public class StateModule {
                 } else {
                     System.out.println("Bad sensor string in routing key");
                 }
+            //I have no idea what is supposed to go here
             } else if()typeOfSensor.equals("autonomy")){
             	String sensorString = keys[2];
             	
@@ -599,7 +600,7 @@ public class StateModule {
     	Position pos = message.getPosition();
     	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
     	try {
-    		autonomyState.updatePositionUpdate(pos, time);
+    		autonomyState.updatePosition(pos, time);
     	} catch (RobotFaultException e) {
     		sendFault(e.getFaultCode(), time);
     	}
@@ -607,7 +608,13 @@ public class StateModule {
     
     private void handleObstacleUpdate(byte[] body) throws IOException {
     	ObstacleUpdate message ObstacleUpdate.parseFrom(body);
-    	
+    	Coordinate obstacle = message.getObstacle();
+    	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
+    	try {
+    		autonomyState.updateObstacle(obstacle, time);
+    	} catch (RobotFaultException e) {
+    		sendFault(e.getFaultCode(), time);
+    	}
     }
     
     /*Hash Table for SubscriptionThreads*/
