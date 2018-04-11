@@ -25,11 +25,11 @@ void setup_motors(){
 	Serial2.begin(ODRIVE_BAUD);	// UART with ODrive: 16 (TX) & 17 (RX) 
 	Serial3.begin(ODRIVE_BAUD); // UART with ODrive: 14 (TX) & 15 (RX)
 	
-	// Using Simplified SerialUSB mode for the Sabertooths WITH slave select
-	// We have to use SerialUSB for them bc software serial isn't supported on the Due
+	// Using Simplified Serial mode for the Sabertooths WITH slave select
+	// We have to use Serial for them bc software serial isn't supported on the Due
 	SerialUSB.begin(SERIAL_BAUD); 			// will be SABERTOOTH_BAUD later
-	SabertoothSimplified ST(SerialUSB); 	// Use SerialUSB as the serial port.
-
+	SabertoothSimplified ST(Serial); 	// Use Serial as the serial port.
+  
 	// MOTOR CONTROLLERS (BOARDS)
 	// ODrive motors were "setup" in values_and_types.h
 	MCInfo odrive_board_0;

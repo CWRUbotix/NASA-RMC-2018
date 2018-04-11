@@ -388,11 +388,11 @@ public class ModuleMain {
 
     private static void generateDummyMessage() throws InvalidProtocolBufferException, IOException{
         Messages.SpeedControlCommand msg = Messages.SpeedControlCommand.newBuilder()
-                            .setRpm(1000f)
+                            .setRpm(100f)
                             .setTimeout(1000f)
                             .build();
         channel.basicPublish("amq.topic", "motorcontrol.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
-        System.out.println("sent wheel rpm message");
+        System.out.println("sent dummy wheel rpm message");
     }
 
     private static void routeLocomotionMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
@@ -427,9 +427,10 @@ public class ModuleMain {
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
         if (id % 2 == 0) { //Left wheels need reversed directions
-            targetValue = -scc.getRpm();
+
+            targetValue = -(scc.getRpm() / 100.0F) * 32767) / 2;
         } else {
-            targetValue = scc.getRpm();
+            targetValue = (scc.getRpm() / 100.0F) * 32767) / 2;
         }
         queueActuation(id, targetValue);
     }

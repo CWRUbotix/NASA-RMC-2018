@@ -235,4 +235,9 @@ public class AutoTransit extends Module {
 		}
     }
 
+    public static void main(String[] args) {
+		AutoTransit transitModule = new AutoTransit();
+	    transitModule.start();
+	}
+
 }

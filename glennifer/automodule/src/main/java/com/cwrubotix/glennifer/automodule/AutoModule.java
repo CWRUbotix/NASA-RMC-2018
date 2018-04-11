@@ -72,4 +72,9 @@ public class AutoModule extends Module {
 			}
 		}, 1800000);
 	}
+
+    public static void main(String[] args) {
+		AutoModule autoModule = new AutoModule();
+		autoModule.start();
+    }
 }
