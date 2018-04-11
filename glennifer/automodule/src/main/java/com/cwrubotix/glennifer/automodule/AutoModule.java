@@ -11,6 +11,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
@@ -89,6 +90,7 @@ public class AutoModule extends Module {
 				.setDestXPos(0.0F)
 				.setDestYPos(3.25F)
 				.setTimeAlloc(180)
+				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
