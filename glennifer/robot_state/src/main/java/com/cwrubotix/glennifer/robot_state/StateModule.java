@@ -594,6 +594,22 @@ public class StateModule {
         }
     }
     
+    private void handlePositionUpdate(byte[] body) throws IOException {
+    	PositionUpdate message PositionUpdate.parseFrom(body);
+    	Position pos = message.getPosition();
+    	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
+    	try {
+    		autonomyState.updatePositionUpdate(pos, time);
+    	} catch (RobotFaultException e) {
+    		sendFault(e.getFaultCode(), time);
+    	}
+    }
+    
+    private void handleObstacleUpdate(byte[] body) throws IOException {
+    	ObstacleUpdate message ObstacleUpdate.parseFrom(body);
+    	
+    }
+    
     /*Hash Table for SubscriptionThreads*/
     private class SubscriptionThreads{
 
@@ -668,19 +684,21 @@ public class StateModule {
     private LocomotionState locomotionState;
     private ExcavationState excavationState;
     private DepositionState depositionState;
+    private AutonomyState autonomyState;
     private String exchangeName;
     private Connection connection;
     private Channel channel;
     private SubscriptionThreads subscriptionThreads = new SubscriptionThreads();
     
-    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState) {
-        this(locState, excState, depState, "amq.topic");
+    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, AutonomyState autoState) {
+        this(locState, excState, depState, autoState, "amq.topic");
     }
 
-    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, String exchangeName) {
+    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, AutonomyState autoState, String exchangeName) {
         this.locomotionState = locState;
         this.excavationState = excState;
         this.depositionState = depState;
+        this.autonomyState = autoState;
         this.exchangeName = exchangeName;
     }
     
@@ -749,7 +767,8 @@ public class StateModule {
         LocomotionState locState = new LocomotionState();
         ExcavationState excState = new ExcavationState();
         DepositionState depState = new DepositionState();
-        StateModule module = new StateModule(locState, excState, depState);
+        AutonomyState autoState = new AutonomyState();
+        StateModule module = new StateModule(locState, excState, depState, autoState);
         module.start();
     }
 }
