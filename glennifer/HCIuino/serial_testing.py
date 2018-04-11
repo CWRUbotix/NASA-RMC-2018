@@ -46,16 +46,16 @@ def setOutputs(cmdType):
 	byteArr.append(0) 			# placeholder until later
 	respLen 	= 2
 	bodyLen 	= 0
-	numMtrs 	= int(input("How many to set :\t"))
+	numMtrs 	= int(input("How many to set \t: "))
 
 	for i in range(0,numMtrs):
-		ID  = int(input("ID :\t"))
-		val = int(input("Value :\t"))
-		tmp = bytearray(val);
-		print(tmp)
+		ID  = int(input("ID             \t: "))
+		val =     input("Value (in hex) \t: ")
+		tmp = bytearray.fromhex(val)
 		byteArr.append(ID)
 		byteArr.append(tmp[0])
 		byteArr.append(tmp[1])
+		# byteArr.append(tmp[1])
 		bodyLen+=3
 
 	byteArr[1] = bodyLen
@@ -88,8 +88,8 @@ def main():
 		dispCMDTypes()
 
 		done = False
-		byteArr = bytearray();
-		ser.timeout = 1
+		byteArr = bytearray()
+		ser.timeout = 3
 
 		#--------------------------------------------------------------------
 		while not done:

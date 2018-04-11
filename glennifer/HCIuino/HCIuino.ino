@@ -7,8 +7,8 @@
 #include <SabertoothSimplified.h>
 #include <RoboClaw.h>
 #include <math.h>
-#include <HX711.h>
-
+//#include <HX711.h>
+RoboClaw roboclawSerial(&Serial1, 10000);
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
 #include "hciRead.h"
@@ -28,10 +28,12 @@ void setup(){
 	Serial.begin(HCI_BAUD);	// Begin communication with computer
 	setup_sensors();
 	setup_motors();
+	Serial3.begin(9600);
+	roboclawSerial.begin(ROBOCLAW_BAUD);
 	
 	stopped = false;
-	SerialUSB.println("================================================================================");
-	SerialUSB.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
+	Serial3.println("================================================================================");
+	Serial3.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
 }
 
 
@@ -52,11 +54,15 @@ void loop(){
 		fault_code = hciRead(cmd);	// verify the command
 
 		if(cmd_type(cmd) > 0){
-			for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
-				SerialUSB.print((uint8_t)cmd[i]);
-				SerialUSB.print(" ");
-			}
-			SerialUSB.println();
+			Serial3.print("CMD received : ");
+			Serial3.println(cmd_type(cmd));
+			delay(10);
+			// for(int i = 0; i<cmd_body_len(cmd)+CMD_HEADER_SIZE; i++){
+
+			// 	Serial3.print((uint8_t)cmd[i]);
+			// 	Serial3.print(" ");
+			// }
+			// Serial3.println();
 		}
 
 		debugging[0] = fault_code;
@@ -65,16 +71,16 @@ void loop(){
 			success = true;
 		}else{ // there was an issue with the command
 			success = false;
-			SerialUSB.print("READ ERROR:\t");
-			SerialUSB.print(fault_code);
-			SerialUSB.print("\t");
-			SerialUSB.println(cmd_type(cmd));
+			Serial3.print("READ ERROR:\t");
+			Serial3.print(fault_code);
+			Serial3.print("\t");
+			Serial3.println(cmd_type(cmd));
 			//log_fault(fault_code);			// add to log or whatever
 		}
 	}else{
-		//SerialUSB.println("Client is still not available.");
+		//Serial3.println("Client is still not available.");
 		if(time >= 5000){
-			SerialUSB.println("Client is still not available.");
+			Serial3.println("Client is still not available.");
 			lastTime = millis();
 		}
 		
@@ -83,30 +89,31 @@ void loop(){
 											// we may not need the cmd argument
 
 	if(success){
-		SerialUSB.print("SUCCESS! CMD received:\t");
+		Serial3.print("SUCCESS! CMD received:\t");
 		for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
-			SerialUSB.print((uint8_t)cmd[i]);
-			SerialUSB.print(" ");
+			Serial3.print((uint8_t)cmd[i]);
+			Serial3.print(" ");
 		}
-		SerialUSB.println();
+		Serial3.println();
+		delay(150);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
 
-		// SerialUSB.print("\t");
-		// SerialUSB.println(fault_code);
-		debugging[3] = fault_code;
+		// Serial3.print("\t");
+		// Serial3.println(fault_code);
+		//debugging[3] = fault_code;
 	}
 	// if(debugging[0] != 0){
-	// 	SerialUSB.print("   ");
-	// 	SerialUSB.print(debugging[0]);
-	// 	SerialUSB.print("            ");
-	// 	SerialUSB.print(debugging[1]);
-	// 	SerialUSB.print("            ");
-	// 	SerialUSB.print(debugging[2]);
-	// 	SerialUSB.print("      ");
-	// 	SerialUSB.print(debugging[3]);
-	// 	SerialUSB.print("      ");
-	// 	SerialUSB.print(debugging[4]);
-	// 	SerialUSB.println();
+	// 	Serial3.print("   ");
+	// 	Serial3.print(debugging[0]);
+	// 	Serial3.print("            ");
+	// 	Serial3.print(debugging[1]);
+	// 	Serial3.print("            ");
+	// 	Serial3.print(debugging[2]);
+	// 	Serial3.print("      ");
+	// 	Serial3.print(debugging[3]);
+	// 	Serial3.print("      ");
+	// 	Serial3.print(debugging[4]);
+	// 	Serial3.println();
 	// }
 }
 

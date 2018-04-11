@@ -21,6 +21,7 @@
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
 #define ROBOCLAW_BAUD 			(38400)
+#define ROBOCLAW_TIMEOUT 		(10000)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -56,7 +57,7 @@
 #define SABERTOOTH_0_SLCT 		(22)
 #define SABERTOOTH_1_SLCT 		(23)
 #define ROBOCLAW_0_ADDR 		(0x80)
-#define ROBOCLAW_1_ADDR 		(0x81)
+#define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
 
 
@@ -92,7 +93,7 @@ typedef struct SensorInfo{
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
-	HX711*   loadCell; 			// if this happens to be a load cell
+	//HX711*   loadCell; 			// if this happens to be a load cell
 }SensorInfo;
 
 //MOTOR STUFF
@@ -123,14 +124,14 @@ typedef struct MCInfo {
 	uint8_t selectPin; 			// slave select pin
 	ODriveArduino* odrive; 		// if MC_ODRIVE
 	RoboClaw* roboclaw;
-	uint8_t addr = 0; 			// used if MC_ROBOCLAW
+	uint8_t addr; 				// used if MC_ROBOCLAW
 }MCInfo;
 
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 		// motor controller board info
-	uint8_t  addr; 			// 
+	//uint8_t  addr; 			// 
 	uint8_t  whichMotor; 	// motor 0 or 1 on the board?
 	uint16_t scale = 1; 	// 1 unless needed
 	int16_t  setPt = 0;		// set point for motor (rather that use an array)
@@ -141,7 +142,7 @@ typedef struct MotorInfo{
 	uint32_t deadband; 		// When hardware = MH_RC_POS
 	uint32_t minpos; 		// When hardware = MH_RC_POS
 	uint32_t maxpos; 		// When hardware = MH_RC_POS
-	uint16_t  maxDuty = 16384; 	// for limiting output duty cycle
+	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
 	uint32_t accel;
 	uint16_t feedbackSensorID;
 	float    saturation;

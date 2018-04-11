@@ -27,7 +27,8 @@ void setup_motors(){
 
 	//RoboClaw roboclaw(&serial,10000);
 	// this object is the bus for all roboclaws
-	RoboClaw roboclawSerial(&Serial1, ROBOCLAW_BAUD);
+	//robotclawSerial = RoboClaw(&Serial1, ROBOCLAW_TIMEOUT);
+	// roboclawSerial.begin(ROBOCLAW_BAUD);
 	
 	// Using Simplified Serial mode for the Sabertooths WITH slave select
 	// We have to use Serial for them bc software serial isn't supported on the Due
@@ -63,51 +64,54 @@ void setup_motors(){
 	pinMode(SABERTOOTH_0_SLCT, OUTPUT);
 	pinMode(SABERTOOTH_1_SLCT, OUTPUT);
 
-	MCInfo roboclaw_0;
-	roboclaw_0.type 	= MC_ROBOCLAW;
-	roboclaw_0.addr 	= ROBOCLAW_0_ADDR;
-	roboclaw_0.roboclaw = & roboclawSerial;
+	//MCInfo roboclaw_0;
+	board_infos[0].type 	= MC_ROBOCLAW;
+	board_infos[0].addr 	= ROBOCLAW_0_ADDR;
+	board_infos[0].roboclaw = & roboclawSerial;
+	//board_infos[0] 		= roboclaw_0;
 
-	MCInfo roboclaw_1;
-	roboclaw_1.type 	= MC_ROBOCLAW;
-	roboclaw_1.addr 	= ROBOCLAW_1_ADDR;
-	roboclaw_1.roboclaw = & roboclawSerial;
+	//MCInfo roboclaw_1;
+	board_infos[1].type 	= MC_ROBOCLAW;
+	board_infos[1].addr 	= ROBOCLAW_1_ADDR;
+	board_infos[1].roboclaw = & roboclawSerial;
+	//board_infos[1] 		= roboclaw_1;
 
-	MCInfo roboclaw_2;
-	roboclaw_2.type 	= MC_ROBOCLAW;
-	roboclaw_2.addr 	= ROBOCLAW_2_ADDR;
-	roboclaw_2.roboclaw = & roboclawSerial;
+	//MCInfo roboclaw_2;
+	board_infos[2].type 	= MC_ROBOCLAW;
+	board_infos[2].addr 	= ROBOCLAW_2_ADDR;
+	board_infos[2].roboclaw = & roboclawSerial;
+	//board_infos[2]  	= roboclaw_2;
 
 
 	// MOTORS
 	MotorInfo drive_0;
 	drive_0.whichMotor	= 0;
 	drive_0.hardware 	= MH_RC_VEL;
-	drive_0.board 		= & roboclaw_0;
-	drive_0.kp 			= 1.0f;
-	drive_0.ki 			= 0.5f;
-	drive_0.kd 			= 0.25f;
-	drive_0.qpps 		= 44000;
+	drive_0.board 		= & (board_infos[0]);
+	// drive_0.kp 			= 1.0f;
+	// drive_0.ki 			= 0.5f;
+	// drive_0.kd 			= 0.25f;
+	// drive_0.qpps 		= 44000;
 	// we need to set up the PID values
-	roboclaw_0.roboclaw->SetM1VelocityPID(roboclaw_0.addr,drive_0.kd,drive_0.kp,drive_0.ki,drive_0.qpps);
+	// roboclaw_0.roboclaw->SetM1VelocityPID(roboclaw_0.addr,drive_0.kd,drive_0.kp,drive_0.ki,drive_0.qpps);
 	motor_infos[0] 		= drive_0;
 
 	MotorInfo drive_1;
 	drive_1.whichMotor 	= 1;
 	drive_1.hardware 	= MH_RC_VEL;
-	drive_1.board 		= & roboclaw_0;
+	drive_1.board 		= & (board_infos[0]);
 	motor_infos[1] 		= drive_1;
 
 	MotorInfo drive_2;
 	drive_2.whichMotor 	= 0;
 	drive_2.hardware 	= MH_RC_VEL;
-	drive_2.board 		= & roboclaw_2;
+	drive_2.board 		= & (board_infos[2]);
 	motor_infos[2] 		= drive_2;
 
 	MotorInfo drive_3;
 	drive_3.whichMotor 	= 1;
 	drive_3.hardware 	= MH_RC_VEL;
-	drive_3.board 		= & roboclaw_2;
+	drive_3.board 		= & (board_infos[2]);
 	motor_infos[3] 		= drive_3;
 
 	// MotorInfo motor_0;

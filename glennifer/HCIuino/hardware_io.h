@@ -57,15 +57,15 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 	return NO_FAULT;
 }
 
-uint16_t PID(uint16_t status, MotorInfo* mtr){
-	uint32_t now 	= millis();
-	uint32_t dT  	= now - (mtr->lastUpdateTime);
-	uint16_t error 	= mtr->setPt - status;
-	float integral 	= mtr->integral + error*dT;
-	float deriv 	= 1.0*(error - mtr->lastError)/dT;
+// uint16_t PID(uint16_t status, MotorInfo* mtr){
+// 	uint32_t now 	= millis();
+// 	uint32_t dT  	= now - (mtr->lastUpdateTime);
+// 	uint16_t error 	= mtr->setPt - status;
+// 	float integral 	= mtr->integral + error*dT;
+// 	float deriv 	= 1.0*(error - mtr->lastError)/dT;
 
-	float retval 	= error*( (mtr->kp) + (mtr->ki)*(integral) + (mtr->kd)*(deriv) ); 
-}
+// 	float retval 	= error*( (mtr->kp) + (mtr->ki)*(integral) + (mtr->kd)*(deriv) ); 
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 //	maintain_motors(byte* cmd)
@@ -79,13 +79,23 @@ void maintain_motors(byte* cmd, bool success){
 	// if(stopped){
 	// 	continue;
 	// }
-	uint8_t type 	= cmd_type(cmd);
 
+	uint8_t type 	= cmd_type(cmd);
+	
 	if(success && (type == CMD_SET_OUTPUTS) ){	// here we only care if it's set outputs
+		Serial3.print("Command type : ");
+		Serial3.print(type);
+		Serial3.print("  Success Status : ");
+		Serial3.println(success);
+		delay(50);
+		Serial3.println("Time to UPDATE THE MOTORS");
+		delay(50);
 		uint8_t num_motors_requested;
 		FAULT_T retfault;
 
-		for(int i = CMD_HEADER_SIZE; i< CMD_HEADER_SIZE+cmd_body_len(cmd) ; i+=3 ){
+		int body_len = cmd_body_len(cmd);
+
+		for(int i = CMD_HEADER_SIZE; i< CMD_HEADER_SIZE+body_len ; i+=3 ){
 			uint8_t id 		= cmd[i];
 			uint16_t val 	= 0;
 			MotorInfo* motor = &(motor_infos[id]); 	// get a pointer to the struct
@@ -93,9 +103,12 @@ void maintain_motors(byte* cmd, bool success){
 			val += cmd[i+1];
 			val = val << 8;
 			val += cmd[i+2];
-			SerialUSB.print("Value Received:\t");
-			SerialUSB.println(val);
+			Serial3.print("Value Received:\t");
+			Serial3.print(val);
+			Serial3.print("  Motor ID:\t");
+			Serial3.println(id);
 			motor->setPt = val; 	// deref the ptr and set the struct field
+			delay(50);
 
 			switch(motor->hardware){
 				case MH_NONE:
@@ -126,19 +139,25 @@ void maintain_motors(byte* cmd, bool success){
 					break;
 
 				case MH_RC_VEL:{
+					bool writeSuccess = false;
 					uint16_t mag 	= (uint16_t)(motor->setPt & (0x7FFF));
-					uint16_t sign 	= (uint16_t)(motor->setPt & (0x8000))
+					uint16_t sign 	= (uint16_t)(motor->setPt & (0x8000));
 					mag 			= (mag > motor->maxDuty ? motor->maxDuty : mag);
-					motor->setPt 	= (int16_t) (mag + sign);
+					uint16_t newSetPt 	= (int16_t) (mag + sign);
 					uint8_t which 	= motor->whichMotor;
-					uint8_t addr  	= motor->board->addr;
+					uint8_t address	= (uint8_t) motor->board->addr;
 					RoboClaw* rc  	= motor->board->roboclaw;
+					Serial3.print(motor->maxDuty);
+					Serial3.println("Write to the ROBOCLAW ");
+					Serial3.println(newSetPt);
+					Serial3.println(address);
+					delay(50);
 					if(which == 0){
 						//(*rc).SpeedM1(addr,motor->setPt);
-						(*rc).DutyM1(addr,motor->setPt);
+						writeSuccess = roboclawSerial.DutyM1(address,newSetPt);
 					}else{
 						//(*rc).SpeedM2(addr,motor->setPt);
-						(*rc).DutyM2(addr,motor->setPt);
+						writeSuccess = roboclawSerial.DutyM2(address,newSetPt);
 					}
 					break;}
 
@@ -159,14 +178,14 @@ void maintain_motors(byte* cmd, bool success){
 	// 			break;
 
 	// 		case MH_ST_PWM:
-	// 			SerialUSB.end();
-	// 			SerialUSB.begin(SABERTOOTH_BAUD);
+	// 			Serial3.end();
+	// 			Serial3.begin(SABERTOOTH_BAUD);
 	// 			digitalWrite( motor->board->selectPin, HIGH);
 	// 			(*(motor->board->ST)).motor(motor->whichMotor, motor->setPt);
 	// 			delayMicroseconds(50);
 	// 			digitalWrite( motor->board->selectPin, LOW);
-	// 			SerialUSB.end();
-	// 			SerialUSB.begin(HCI_BAUD);
+	// 			Serial3.end();
+	// 			Serial3.begin(HCI_BAUD);
 	// 			break;
 
 	// 		case MH_ST_VEL:
