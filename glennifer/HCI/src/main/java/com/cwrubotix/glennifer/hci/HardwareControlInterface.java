@@ -226,8 +226,15 @@ public class HardwareControlInterface implements Runnable {
 		// Get the response
 		SerialPacket response = readMessage();
 		if(response.command != COMMAND_SET_OUTPUTS) {
-			System.out.println("Failed to set outputs");
+			System.out.println("Invalid set outputs response - likely failed to set outputs");
 			return false;
+		}
+		else {
+			System.out.print("Set outputs response: ");
+			for dataByte : response.data {
+				System.out.print(dataByte);
+				System.out.print(" ");
+			}
 		}
 		return true;
 	}
@@ -244,7 +251,7 @@ public class HardwareControlInterface implements Runnable {
 		// Each sensor ID is 2 bytes
 		for(int i = 0; i < ids.length; i++) {
 			data[2*i] = (byte)(ids[i].intValue()>>8);
-			data[2*i+1] = (byte)ids[i].intValue();
+			dataSerialPacket[2*i+1] = (byte)ids[i].intValue();
 		}
 		// Send message, prepares it as per the interface
 		sendMessage(new SerialPacket(COMMAND_READ_SENSORS,data));
@@ -252,7 +259,7 @@ public class HardwareControlInterface implements Runnable {
 		SerialPacket response = readMessage();
 		long t = System.currentTimeMillis();
 		if(response.command != COMMAND_READ_SENSORS) {
-			System.out.println("Failed to read sensors");
+			System.out.println("Invalid read sensors response - lifely failed to read sensors");
 			return false;
 		}
 		// Parse the response
