@@ -231,7 +231,7 @@ public class HardwareControlInterface implements Runnable {
 		}
 		else {
 			System.out.print("Set outputs response: ");
-			for dataByte : response.data {
+			for (byte dataByte : response.data) {
 				System.out.print(dataByte);
 				System.out.print(" ");
 			}
@@ -251,7 +251,7 @@ public class HardwareControlInterface implements Runnable {
 		// Each sensor ID is 2 bytes
 		for(int i = 0; i < ids.length; i++) {
 			data[2*i] = (byte)(ids[i].intValue()>>8);
-			dataSerialPacket[2*i+1] = (byte)ids[i].intValue();
+			data[2*i+1] = (byte)ids[i].intValue();
 		}
 		// Send message, prepares it as per the interface
 		sendMessage(new SerialPacket(COMMAND_READ_SENSORS,data));

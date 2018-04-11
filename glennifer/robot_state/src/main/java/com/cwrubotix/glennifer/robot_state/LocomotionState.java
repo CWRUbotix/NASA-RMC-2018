@@ -93,7 +93,7 @@ public class LocomotionState {
     public void updateWheelCounts(Wheel wheel, float counts, Instant time) throws RobotFaultException {
     	//Note: wheel count is the output from the encoder, may need processing to be a valid unit
     	
-    	wheelCount.put(wheel, Optional.of(coutns))
+    	wheelCount.put(wheel, Optional.of(counts));
     }
     
     	
