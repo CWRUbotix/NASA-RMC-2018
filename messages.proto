@@ -261,6 +261,7 @@ message DepositionStateDetailed {
 message	LocalizationPosition {
 	required float x_position = 1;
 	required float y_position = 2;
+	required float bearing_angle = 3;
 }
 
 //obstacle detection
