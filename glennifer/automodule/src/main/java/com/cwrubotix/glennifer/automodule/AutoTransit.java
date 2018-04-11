@@ -62,7 +62,7 @@ public class AutoTransit extends Module {
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
 					0f);
-
+			AutoTransit.currentPos = currentPos;
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
 			currentPath = pathFinder.getPath();
 
