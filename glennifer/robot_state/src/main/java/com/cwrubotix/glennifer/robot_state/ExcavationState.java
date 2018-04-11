@@ -16,15 +16,15 @@ import java.util.EnumMap;
 public class ExcavationState {
 
     public enum Side {
-        LEFT,
-        RIGHT
+        LEFT,  //port
+        RIGHT  //starboard
     }
 
     /* Data members */
 	private float conveyorRpm;
 	private float translationDisplacement;
 	private float armPos;
-    private float conveyorMotorCurrent;
+    private float conveyorMotorCurrent; 
     private EnumMap <Side, Boolean> armSideRetracted;
     private EnumMap <Side, Boolean> armSideExtended;
     private EnumMap <Side, Boolean> translationSideRetracted;

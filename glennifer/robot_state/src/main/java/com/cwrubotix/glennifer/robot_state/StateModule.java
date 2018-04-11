@@ -147,6 +147,13 @@ public class StateModule {
                             .build();
                     stateMsgBuilder.setDepDetailed(msg);
                 }
+                if(auto_summary) {
+                	Messages.AutonomyStateSummary msg = Messages.AutonomyStateSummary.newBuilder()
+                			.setPos(autonomyState.getPosition())
+                			.setObst(autonomyState.getObstacles())
+                			.build();
+                	stateMsgBuilder.setAutoSummary(msg);
+                }
                 try {
                     //Not sure how to do this bit properly
                     StateModule.this.channel.basicPublish(exchangeName, returnKey, null, stateMsgBuilder.build().toByteArray());
@@ -329,6 +336,9 @@ public class StateModule {
                 } else {
                     System.out.println("Bad sensor string in routing key");
                 }
+            } else if()typeOfSensor.equals("autonomy")){
+            	String sensorString = keys[2];
+            	
             } else { //oops
                 System.out.println("Bad subsystem string in routing key");
                 return;
