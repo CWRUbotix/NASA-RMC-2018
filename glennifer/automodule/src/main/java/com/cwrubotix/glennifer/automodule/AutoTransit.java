@@ -21,6 +21,7 @@ public class AutoTransit extends Module {
 	private static Position currentPos;
 	private PathFinder pathFinder;
 	private Path currentPath;
+	private boolean launched = false;
 
 	// Messaging stuff
 	private String exchangeName;
@@ -51,7 +52,8 @@ public class AutoTransit extends Module {
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
+			
+		    Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
 			Position currentPos = new Position(
 					cmd.getCurXPos(),
@@ -63,6 +65,9 @@ public class AutoTransit extends Module {
 					cmd.getDestYPos(),
 					0f);
 			AutoTransit.currentPos = currentPos;
+			if(!launched){
+			    launched = true;
+			}
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
 			currentPath = pathFinder.getPath();
 
@@ -129,6 +134,7 @@ public class AutoTransit extends Module {
 		//parse message
 		Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
 		
+
 		// Updates current position
 		currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 		System.out.println("current pos:" + currentPos);
@@ -250,8 +256,15 @@ public class AutoTransit extends Module {
 		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 
 		// TODO Maybe don't use a while loop?
-        while (currentPath.getPath().size() > 1) { // While we still have a position to go to
-        	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
+		while(!launched){
+		    try{
+			Thread.sleep(100L);
+		    }catch(InterruptedException e){
+			e.printStackTrace();
+		    }
+		}
+		while (currentPath.getPath().size() > 1) { // While we still have a position to go to
+		    moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
 		}
     }
 
