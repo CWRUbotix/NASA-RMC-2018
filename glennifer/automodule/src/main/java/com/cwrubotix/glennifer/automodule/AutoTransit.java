@@ -66,6 +66,7 @@ public class AutoTransit extends Module {
 					0f);
 			AutoTransit.currentPos = currentPos;
 			if(!launched){
+			    System.out.println("Launch message received.");
 			    launched = true;
 			}
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
@@ -252,7 +253,7 @@ public class AutoTransit extends Module {
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 		
 		queueName = channel.queueDeclare().getQueue();
-		this.channel.queueBind(queueName, exchangeName, "localization vector");
+		this.channel.queueBind(queueName, exchangeName, "loc.pos");
 		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 
 		// TODO Maybe don't use a while loop?
@@ -262,7 +263,7 @@ public class AutoTransit extends Module {
 		    }catch(InterruptedException e){
 			e.printStackTrace();
 		    }
-		}
+		}System.out.println("AutoTransit successfully launched.");
 		while (currentPath.getPath().size() > 1) { // While we still have a position to go to
 		    moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
 		}
