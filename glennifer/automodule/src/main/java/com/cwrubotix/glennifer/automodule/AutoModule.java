@@ -10,8 +10,6 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
-import main.java.com.cwrubotix.glennifer.automodule.AutoTransit.LocalizationPositionConsumer;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Timer;
@@ -38,6 +36,14 @@ public class AutoModule extends Module {
 	private Channel channel;
 	private Position startPos;
 	private boolean tagFound = false;
+	
+	public AutoModule() {
+		this("amq.topic");
+	}
+
+	public AutoModule(String exchangeName) {
+		this.exchangeName = exchangeName;
+	}
 	
 	public class LocalizationPositionConsumer extends DefaultConsumer {
 	    public LocalizationPositionConsumer(Channel channel){
