@@ -57,15 +57,24 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 	return NO_FAULT;
 }
 
-// uint16_t PID(uint16_t status, MotorInfo* mtr){
-// 	uint32_t now 	= millis();
-// 	uint32_t dT  	= now - (mtr->lastUpdateTime);
-// 	uint16_t error 	= mtr->setPt - status;
-// 	float integral 	= mtr->integral + error*dT;
-// 	float deriv 	= 1.0*(error - mtr->lastError)/dT;
+int16_t contstrainMag(int16_t og, uint16_t max){
+	uint16_t mag 	= abs(og);
+	int16_t sign 	= og/mag; // -1 in two's comp := 1111 1111 1111 1111
+	int16_t tmp 	= (mag > max ? max : mag); 	// constrain the magnitude
+	int16_t retval 	= (int16_t) tmp*sign; 		// correct the sign
+	return retval;
+}
 
-// 	float retval 	= error*( (mtr->kp) + (mtr->ki)*(integral) + (mtr->kd)*(deriv) ); 
-// }
+int16_t ramp(MotorInfo* motor, int16_t newSetPt){
+	int16_t delta 	= newSetPt - motor->lastSet;// / delta_t;
+	int16_t retval 	= motor->lastSet;
+	if(delta > motor->max_delta){
+		retval += max_delta;
+	}else{
+		retval = newSetPt;
+	}
+	return retval;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //	maintain_motors(byte* cmd)
@@ -138,12 +147,14 @@ void maintain_motors(byte* cmd, bool success){
 				case MH_BL_BOTH:
 					break;
 
-				case MH_RC_VEL:{
-					bool writeSuccess = false;
-					uint16_t mag 	= (uint16_t)(motor->setPt & (0x7FFF));
-					uint16_t sign 	= (uint16_t)(motor->setPt & (0x8000));
-					mag 			= (mag > motor->maxDuty ? motor->maxDuty : mag);
-					uint16_t newSetPt 	= (int16_t) (mag + sign);
+				case MH_RC_VEL: {
+					bool writeSuccess 	= false;
+					int16_t newSetPt 	= contstrainMag(motor->setPt, motor->maxDuty);
+					if(motor->is_reversed){
+						newSetPt = newSetPt * (-1);
+					}
+					motor->setPt 	= newSetPt;
+					newSetPt 		= ramp(motor, newSetPt);
 					uint8_t which 	= motor->whichMotor;
 					uint8_t address	= (uint8_t) motor->board->addr;
 					RoboClaw* rc  	= motor->board->roboclaw;
@@ -154,29 +165,40 @@ void maintain_motors(byte* cmd, bool success){
 					delay(100);
 					if(which == 0){
 						//(*rc).SpeedM1(addr,motor->setPt);
-						writeSuccess = roboclawSerial.DutyM1(address,newSetPt);
+						writeSuccess = roboclawSerial.DutyM1(address,(uint16_t) newSetPt);
 					}else{
 						//(*rc).SpeedM2(addr,motor->setPt);
-						writeSuccess = roboclawSerial.DutyM2(address,newSetPt);
+						writeSuccess = roboclawSerial.DutyM2(address,(uint16_t) newSetPt);
 					}
-					break;}
+					motor->lastSet = newSetPt;
+					break; }
 
 			}
 			motor->lastUpdateTime = millis();
 		}
 	}
 
-	// update motor outputs, if needed
-	// uint8_t i 		= 0;
-	//MotorInfo motor;// = NULL;
 
-	// for(i=0; i<NUM_MOTORS; i++){
-	// 	MotorInfo* motor = &(motor_infos[i]); 	// get a pointer to the struct
+	for(i=0; i<NUM_MOTORS; i++){
+		MotorInfo* motor 	= &(motor_infos[i]); 	// get a pointer to the struct
+		bool writeSuccess 	= false;
 
-	// 	switch(motor->hardware){
-	// 		case MH_NONE:
-	// 			break;
-
+		switch(motor->hardware){
+			case MH_NONE:
+				break;
+			case MH_RC_VEL: {
+				int16_t newSetPt 	= motor->lastSet;
+				if(motor->setPt != newSetPt){
+					newSetPt = ramp(motor, motor->setPt);
+					if(motor->which == 0){
+						writeSuccess = roboclawSerial.DutyM1(motor->addr,(uint16_t) newSetPt);
+					}else{
+						writeSuccess = roboclawSerial.DutyM2(motor->addr,(uint16_t) newSetPt);
+					}
+					motor->lastSet = newSetPt;
+					motor->lastUpdateTime = millis();
+				}
+				break; }
 	// 		case MH_ST_PWM:
 	// 			Serial3.end();
 	// 			Serial3.begin(SABERTOOTH_BAUD);
@@ -205,10 +227,12 @@ void maintain_motors(byte* cmd, bool success){
 	// 		case MH_BL_BOTH:
 	// 			break;
 
-	// 	}
+		}
 
-	// 	motor->lastUpdateTime = millis();
-	// }
+		if(writeSuccess){
+			motor->lastUpdateTime = millis();
+		}
+	}
 }
 
 

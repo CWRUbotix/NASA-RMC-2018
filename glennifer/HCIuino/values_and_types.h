@@ -17,6 +17,7 @@
 // Sizes & Number of things
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
+#define NUM_MOTORS 				(9)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
@@ -30,8 +31,6 @@
 #define SENSOR_DATA_SIZE 		(1)
 #define MOTOR_ID_SIZE 			(1)
 #define MOTOR_INSTRUC_SIZE 		(2)
-#define NUM_MOTORS 				(9)
-#define NUM_SENSORS 			(100)
 #define ANLG_READ_RES 			(12)
 #define ANLG_WRITE_RES 			(12)
 
@@ -130,25 +129,26 @@ typedef struct MCInfo {
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
-	MCInfo*  board; 		// motor controller board info
-	//uint8_t  addr; 			// 
-	uint8_t  whichMotor; 	// motor 0 or 1 on the board?
-	uint16_t scale = 1; 	// 1 unless needed
-	int16_t  setPt = 0;		// set point for motor (rather that use an array)
-	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	float    ki; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	float    kd; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	uint32_t qpps; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	uint32_t deadband; 		// When hardware = MH_RC_POS
-	uint32_t minpos; 		// When hardware = MH_RC_POS
-	uint32_t maxpos; 		// When hardware = MH_RC_POS
+	MCInfo*  board; 			// motor controller board info
+	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
+	bool is_reversed = false;
+	uint16_t scale = 1; 		// 1 unless needed
+	int16_t  setPt = 0;			// set point for motor (rather that use an array)
+	int16_t  lastSet = 0; 		//
+	float    kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	float    ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	float    kd; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	uint32_t qpps; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	uint32_t deadband; 			// When hardware = MH_RC_POS
+	uint32_t minpos; 			// When hardware = MH_RC_POS
+	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
-	uint32_t accel;
-	uint16_t feedbackSensorID;
-	float    saturation;
-	uint32_t lastUpdateTime;// replaces the motor_lastUpdateTime array
-	uint16_t lastError; 	// for tracking the derivative
-	float    integral; 		// replaces the motor_integrals array
+	int16_t  max_delta;			// for ramp-up function
+	uint8_t  feedbackSensorID;	//
+	float    saturation; 		//
+	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
+	uint16_t lastError; 		// for tracking the derivative
+	float    integral; 			// replaces the motor_integrals array
 }MotorInfo;
 
 

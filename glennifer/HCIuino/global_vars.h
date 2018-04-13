@@ -18,5 +18,6 @@ int16_t sensor_storedVals[DEFAULT_BUF_LEN] 		= {}; 	// All initialized to 0
 float motor_integrals[DEFAULT_BUF_LEN] 			= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 bool stopped 									= true;	// default status is stopped
+uint32_t loops 									= 0;
 
 #endif

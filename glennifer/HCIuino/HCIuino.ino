@@ -30,6 +30,8 @@ void setup(){
 	setup_motors(); 
 	Serial3.begin(9600); 		// For the FTDI-USB converter debugging tool
 	
+	analogWriteResolution(ANLG_WRITE_RES);
+	analogReadResolution(ANLG_READ_RES);
 	
 	stopped = false;
 	Serial3.println("================================================================================");
@@ -43,7 +45,6 @@ void setup(){
 ////  MAIN LOOP
 ////////////////////////////////////////////////////////////////////////////////
 void loop(){
-	analogWriteResolution(12);
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false;
@@ -55,7 +56,7 @@ void loop(){
 		fault_code = hciRead(cmd);	// verify the command
 
 		if(cmd_type(cmd) > 0){
-			Serial3.print("CMD received : ");
+			Serial3.print("CMD type:\t");
 			Serial3.println(cmd_type(cmd));
 			delay(10);
 		}
@@ -68,28 +69,29 @@ void loop(){
 			Serial3.print(fault_code);
 			Serial3.print("\t");
 			Serial3.println(cmd_type(cmd));
-			//log_fault(fault_code);			// add to log or whatever
 		}
 	}else{
 		if(time >= 5000){
-			Serial3.println("Client is still not available.");
-			lastTime = millis();
+			uint32_t avg 	= time / loops;
+			lastTime 		= millis();
+			loops 			= 0;
+			Serial3.println(avg);
 		}
 		
 	}
 	maintain_motors(cmd, success);			// keep robot in a stable state
-											// we may not need the cmd argument
 
 	if(success){
-		Serial3.print("SUCCESS! CMD received:\t");
+		Serial3.print("CMD:\t");
 		for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
 			Serial3.print((uint8_t)cmd[i]);
 			Serial3.print(" ");
 		}
 		Serial3.println();
-		delay(150);
+		delay(100);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
 	}
+	loops++;
 }
 
 
@@ -128,21 +130,3 @@ FAULT_T popLastFault(){
 	return retVal;
 
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// analagous to "execute(cmd)"
-// not sure this is necessary
-////////////////////////////////////////////////////////////////////////////////
-FAULT_T update_motor_infos(byte* cmd){
-	return NO_FAULT;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// update sensor data requested by client
-// not sure this is necessary
-////////////////////////////////////////////////////////////////////////////////
-FAULT_T update_sensor_infos(byte* cmd){
-	return NO_FAULT;
-}
-
