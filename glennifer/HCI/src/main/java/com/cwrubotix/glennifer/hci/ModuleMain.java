@@ -87,7 +87,7 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
-        generateDummyMessage();
+        //generateDummyMessage();
         try {
             while (true) {
                 System.out.println("Looping in main");
@@ -413,23 +413,25 @@ public class ModuleMain {
     private static void routeWheelRPMMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         int id = -1;
         if (keys[2].equals("front_left")) {
-            id = 0;
+            id = 3;
         } else if (keys[2].equals("front_right")) {
             id = 1;
         } else if (keys[2].equals("back_left")) {
             id = 2;
         } else if (keys[2].equals("back_right")) {
-            id = 3;
+            id = 0;
         } else {
             System.out.println("Locomotion motor control routing key has invalid wheel");
             return;
         }
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-        if (id % 2 == 0) { //Left wheels need reversed directions
-            targetValue = -(((scc.getRpm() / 100.0F) * 32767) / 2);
-        } else {
-            targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+        targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+        if(id == 3){
+            targetValue *= -1.45;
+        }
+        if(id == 2){
+            targetValue *= 1.15;
         }
         queueActuation(id, targetValue);
     }

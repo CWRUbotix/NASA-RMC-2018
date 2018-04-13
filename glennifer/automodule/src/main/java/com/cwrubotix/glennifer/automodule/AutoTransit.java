@@ -253,7 +253,7 @@ public class AutoTransit extends Module {
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 		
 		queueName = channel.queueDeclare().getQueue();
-		this.channel.queueBind(queueName, exchangeName, "loc.pos");
+		this.channel.queueBind(queueName, exchangeName, "loc.post");
 		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 
 		// TODO Maybe don't use a while loop?

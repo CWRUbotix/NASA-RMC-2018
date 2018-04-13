@@ -230,11 +230,11 @@ public class HardwareControlInterface implements Runnable {
 			return false;
 		}
 		else {
-			System.out.print("Set outputs response: ");
+			/*System.out.print("Set outputs response: ");
 			for (byte dataByte : response.data) {
 				System.out.print(dataByte);
 				System.out.print(" ");
-			}
+			}*/
 		}
 		return true;
 	}
