@@ -299,7 +299,7 @@ public class StateModule {
                     System.out.println("Bad sensor string in routing key");
                 }
             //I have no idea what is supposed to go here
-            } else if()typeOfSensor.equals("autonomy")){
+            } else if(typeOfSensor.equals("autonomy")){
             	String sensorString = keys[2];
             	
             } else { //oops
