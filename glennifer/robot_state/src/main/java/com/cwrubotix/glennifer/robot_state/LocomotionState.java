@@ -38,7 +38,7 @@ public class LocomotionState {
     // or for each sensor. If you want to handle out of order updates, you'll
     // need to do it for each sensor I think.
 
-    //Floats for containing time since updates
+    //Instants for containing time since updates
     private Instant timeSinceWheelRPM;
     private Instant timeSystem;    
     

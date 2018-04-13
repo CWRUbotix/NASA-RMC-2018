@@ -88,8 +88,8 @@ public class StateModule {
                             .setRpm(excavationState.getConveyorRpm())
                             .setArmPos(excavationState.getArmPos())
                             .setDisplacement(excavationState.getTranslationDisplacement())
+                            .setCurrent(excavationState.getConveyorCurrent())
                             .setArmExtended(excavationState.getArmExtended())
-                            .setArmRetracted(excavationState.getArmRetracted())
                             .setTranslationExtended(excavationState.getTranslationExtended())
                             .setTranslationRetracted(excavationState.getTranslationRetracted())
                             .build();
@@ -100,15 +100,13 @@ public class StateModule {
                             .setRpm(excavationState.getConveyorRpm())
                             .setArmPos(excavationState.getArmPos())
                             .setDisplacement(excavationState.getTranslationDisplacement())
+                            .setCurrent(excavationState.getConveyorCurrent())
                             .setArmLeftExtended(excavationState.getArmExtended(ExcavationState.Side.LEFT))
                             .setArmRightExtended(excavationState.getArmExtended(ExcavationState.Side.RIGHT))
-                            .setArmLeftRetracted(excavationState.getArmRetracted(ExcavationState.Side.LEFT))
-                            .setArmRightRetracted(excavationState.getArmRetracted(ExcavationState.Side.RIGHT))
                             .setTranslationLeftExtended(excavationState.getTranslationExtended(ExcavationState.Side.LEFT))
                             .setTranslationRightExtended(excavationState.getTranslationExtended(ExcavationState.Side.RIGHT))
                             .setTranslationLeftRetracted(excavationState.getTranslationRetracted(ExcavationState.Side.LEFT))
                             .setTranslationRightRetracted(excavationState.getTranslationRetracted(ExcavationState.Side.RIGHT))
-                            .setConveyorMotorCurrent(excavationState.getConveyorMotorCurrent())
                             .build();
                     stateMsgBuilder.setExcDetailed(msg);
                 }
@@ -212,7 +210,9 @@ public class StateModule {
                 }  else if (sensorString.equals("arm_pos_a")) {
                     handleArmPosUpdate(body);
                 }  else if (sensorString.equals("arm_pos_b")) {
-                    // do nothing for now
+                    handleArmPosUpdate(body);
+                } else if (sensorString.equals("conveyor_current")){
+                    handleConveyorCurrentUpdate(body);
                 } else if (sensorString.equals("arm_limit_extended")) {
                     String sideString = keys[3];
                     ExcavationState.Side side;
@@ -225,18 +225,6 @@ public class StateModule {
                         return;
                     }
                     handleArmLimitExtendedUpdate(side, body);
-                } else if (sensorString.equals("arm_limit_retracted")) {
-                    String sideString = keys[3];
-                    ExcavationState.Side side;
-                    if (sideString.equals("left")) {
-                        side = ExcavationState.Side.LEFT;
-                    } else if (sideString.equals("right")) {
-                        side = ExcavationState.Side.RIGHT;
-                    } else {
-                        System.out.println("Bad side string in routing key");
-                        return;
-                    }
-                    handleArmLimitRetractedUpdate(side, body);
                 } else if (sensorString.equals("conveyor_translation_limit_extended")) {
                     String sideString = keys[3];
                     ExcavationState.Side side;
@@ -261,10 +249,6 @@ public class StateModule {
                         return;
                     }
                     handleConveyorTranslationLimitRetractedUpdate(side, body);
-                } else if (sensorString.equals("arm_pos_a")) { // TODO: both sides
-                    handleConveyorTranslationPosUpdate(body);
-                } else if (sensorString.equals("conveyor_current")){
-                    handleConveyorMotorCurrentUpdate(body);
                 } else {
                     System.out.println("Bad sensor string in routing key: " + sensorString);
                     return;

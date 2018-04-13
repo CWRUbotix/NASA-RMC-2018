@@ -24,8 +24,7 @@ public class ExcavationState {
 	private float conveyorRpm;
 	private float translationDisplacement;
 	private float armPos;
-    private float conveyorMotorCurrent; 
-    private EnumMap <Side, Boolean> armSideRetracted;
+    private float conveyorCurrent; 
     private EnumMap <Side, Boolean> armSideExtended;
     private EnumMap <Side, Boolean> translationSideRetracted;
     private EnumMap <Side, Boolean> translationSideExtended;
@@ -48,11 +47,7 @@ public class ExcavationState {
         conveyorRpm = 0;
         translationDisplacement = 0;
 		armPos = 0;
-        conveyorMotorCurrent = 0;
-
-        armSideRetracted = new EnumMap<>(Side.class);
-        armSideRetracted.put(Side.LEFT, false);
-        armSideRetracted.put(Side.RIGHT, false);
+        conveyorCurrent = 0;
 
         armSideExtended = new EnumMap<>(Side.class);
         armSideExtended.put(Side.LEFT, false);
@@ -91,18 +86,13 @@ public class ExcavationState {
         translationDisplacement = displacement;
     }
 
-    public void updateConveyorMotorCurrent(float current, Instant time) throws RobotFaultException{
-        conveyorMotorCurrent = current;
+    public void updateConveyorCurrent(float current, Instant time) throws RobotFaultException{
+        conveyorCurrent = current;
     }
     
     public void updateArmLimitExtended (Side side, boolean pressed, Instant time) throws RobotFaultException {
         // TODO: use limit switches
         armSideExtended.put(side, pressed);
-    }
-    
-    public void updateArmLimitRetracted (Side side, boolean pressed, Instant time) throws RobotFaultException {
-        // TODO: use limit switches
-        armSideRetracted.put(side, pressed);
     }
 	
 	public void updateTranslationLimitExtended(Side side, boolean pressed, Instant time) throws RobotFaultException {
@@ -140,23 +130,31 @@ public class ExcavationState {
         return armPos;
     }
 
-    public float getConveyorMotorCurrent(){
-        return conveyorMotorCurrent;
+    public float getConveyorCurrent(){
+        return conveyorCurrent;
     }
 
-    public boolean getArmRetracted(Side side) { return armSideRetracted.get(side); }
+    public boolean getArmExtended(Side side) { 
+        return armSideExtended.get(side);
+    }
 
-    public boolean getArmExtended(Side side) { return armSideExtended.get(side); }
+    public boolean getTranslationRetracted(Side side) { 
+        return translationSideRetracted.get(side); 
+    }
 
-    public boolean getTranslationRetracted(Side side) { return translationSideRetracted.get(side); }
+    public boolean getTranslationExtended(Side side) { 
+        return translationSideExtended.get(side); 
+    }
 
-    public boolean getTranslationExtended(Side side) { return translationSideExtended.get(side); }
+    public boolean getArmExtended() { 
+        return armSideExtended.get(Side.LEFT) || armSideExtended.get(Side.RIGHT); 
+    }
 
-    public boolean getArmRetracted() { return armSideRetracted.get(Side.LEFT) || armSideRetracted.get(Side.RIGHT); }
+    public boolean getTranslationRetracted() { 
+        return translationSideRetracted.get(Side.LEFT) || translationSideRetracted.get(Side.RIGHT); 
+    }
 
-    public boolean getArmExtended() { return armSideExtended.get(Side.LEFT) || armSideExtended.get(Side.RIGHT); }
-
-    public boolean getTranslationRetracted() { return translationSideRetracted.get(Side.LEFT) || translationSideRetracted.get(Side.RIGHT); }
-
-    public boolean getTranslationExtended() { return translationSideExtended.get(Side.LEFT) || translationSideExtended.get(Side.RIGHT); }
+    public boolean getTranslationExtended() { 
+        return translationSideExtended.get(Side.LEFT) || translationSideExtended.get(Side.RIGHT); 
+    }
 }	
