@@ -256,25 +256,22 @@ public class StateModule {
             }
             else if(typeOfSensor.equals("deposition")){ //deposition message
                 String sensorString = keys[2];
-                if (sensorString.equals("dump_load")) {
-                    String loadCellString = keys[3];
-                    DepositionState.LoadCell loadcell;
-                    if(loadCellString.equals("front_left")){
-                        loadcell = DepositionState.LoadCell.FRONT_LEFT;
-                    } else if (loadCellString.equals("front_right")){
-                        loadcell = DepositionState.LoadCell.FRONT_RIGHT;
-                    } else if (loadCellString.equals("back_left")){
-                        loadcell = DepositionState.LoadCell.BACK_LEFT;
-                    } else if (loadCellString.equals("back_right")) {
-                        loadcell = DepositionState.LoadCell.BACK_RIGHT;
+                
+                if (sensorString.equals("dump_pos")) {
+                    handleDumpPosUpdate(body);
+                } else if (sensorString.equals("load")) {
+                    String sideString = keys[4];
+                    DepositionState.Side side;
+                    if (sideString.equals("left")) {
+                        side = DepositionState.Side.LEFT;
+                    } else if (sideString.equals("right")) {
+                        side = DepositionState.Side.RIGHT;
                     } else {
-                        System.out.println("Bad load cell string in routing key");
+                        System.out.println("Bad side string in routing key");
                         return;
                     }
-                    handleDumpLoadUpdate(loadcell, body);
-                } else if (sensorString.equals("arm_pos")) {
-                    handleDumpPosUpdate(body);
-                } else if (sensorString.equals("dump_limit_extended")) {
+                    handleDumpLoadUpdate(side, body);
+                }else if (sensorString.equals("dump_limit_extended")) {
                     String sideString = keys[3];
                     DepositionState.Side side;
                     if (sideString.equals("left")) {
@@ -445,17 +442,6 @@ public class StateModule {
         Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
         try {
             excavationState.updateArmLimitExtended(side, pressed, time);
-        } catch (RobotFaultException e) {
-            sendFault(e.getFaultCode(), time);
-        }
-    }
-
-    private void handleArmLimitRetractedUpdate(ExcavationState.Side side, byte[] body) throws IOException {
-        LimitUpdate message = LimitUpdate.parseFrom(body);
-        boolean pressed = message.getPressed();
-        Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
-        try {
-            excavationState.updateArmLimitRetracted(side, pressed, time);
         } catch (RobotFaultException e) {
             sendFault(e.getFaultCode(), time);
         }

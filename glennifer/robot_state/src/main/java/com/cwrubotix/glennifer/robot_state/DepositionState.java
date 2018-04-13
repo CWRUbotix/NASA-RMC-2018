@@ -33,8 +33,8 @@ public class DepositionState {
 // Unneccesary since there are only two load cells??
     
     /* Data members */
-    private EnumMap <LoadCell, Float> loadCellValue;
     private float dumpPos;
+    private EnumMap <LoadCell, Float> loadCellValue;
     private EnumMap <Side, Boolean> dumpSideRetracted;
     private EnumMap <Side, Boolean> dumpSideExtended;
 

@@ -71,10 +71,8 @@ message ImuUpdate {
 	required UnixTime timestamp = 2;
 }
 
-// sensor.deposition.load.front_left
-// sensor.deposition.load.front_right
-// sensor.deposition.load.back_left
-// sensor.deposition.load.back_right
+// sensor.deposition.load.left
+// sensor.deposition.load.right
 message LoadUpdate {
 	required float load = 1;
 	required UnixTime timestamp = 2;
