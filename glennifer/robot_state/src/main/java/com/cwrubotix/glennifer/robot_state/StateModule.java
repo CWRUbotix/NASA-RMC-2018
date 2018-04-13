@@ -66,8 +66,7 @@ public class StateModule {
                 stateMsgBuilder.setTimestamp(instantToUnixTime(now));
                 if (loc_summary) {
                     Messages.LocomotionStateSummary msg = Messages.LocomotionStateSummary.newBuilder()
-                            .setConfig(Messages.LocomotionStateSummary.Configuration.valueOf(StateModule.this.locomotionState.getConfiguration().ordinal()))
-                            .setSpeed(StateModule.this.locomotionState.getStraightSpeed())
+                            .setSpeed(locomotionState.getSpeed())
                             .build();
                     stateMsgBuilder.setLocSummary(msg);
                 }
@@ -81,18 +80,6 @@ public class StateModule {
                             .setFrontRightCount(locomotionState.getWheelCount(LocomotionState.Wheel.FRONT_RIGHT))
                             .setBackLeftCount(locomotionState.getWheelCount(LocomotionState.Wheel.BACK_LEFT))
                             .setBackRightCount(locomotionState.getWheelCount(LocomotionState.Wheel.BACK_RIGHT))
-//                            .setFrontLeftPos(locomotionState.getWheelPodPos(LocomotionState.Wheel.FRONT_LEFT))
-//                            .setFrontRightPos(locomotionState.getWheelPodPos(LocomotionState.Wheel.FRONT_RIGHT))
-//                            .setBackLeftPos(locomotionState.getWheelPodPos(LocomotionState.Wheel.BACK_LEFT))
-//                            .setBackRightPos(locomotionState.getWheelPodPos(LocomotionState.Wheel.BACK_RIGHT))
-//                            .setFrontLeftExtended(locomotionState.getWheelPodLimitExtended(LocomotionState.Wheel.FRONT_LEFT))
-//                            .setFrontRightExtended(locomotionState.getWheelPodLimitExtended(LocomotionState.Wheel.FRONT_RIGHT))
-//                            .setBackLeftExtended(locomotionState.getWheelPodLimitExtended(LocomotionState.Wheel.BACK_LEFT))
-//                            .setBackRightExtended(locomotionState.getWheelPodLimitExtended(LocomotionState.Wheel.BACK_RIGHT))
-//                            .setFrontLeftRetracted(locomotionState.getWheelPodLimitRetracted(LocomotionState.Wheel.FRONT_LEFT))
-//                            .setFrontRightRetracted(locomotionState.getWheelPodLimitRetracted(LocomotionState.Wheel.FRONT_RIGHT))
-//                            .setBackLeftRetracted(locomotionState.getWheelPodLimitRetracted(LocomotionState.Wheel.BACK_LEFT))
-//                            .setBackRightRetracted(locomotionState.getWheelPodLimitRetracted(LocomotionState.Wheel.BACK_RIGHT))
                             .build();
                     stateMsgBuilder.setLocDetailed(msg);
                 }
@@ -206,12 +193,6 @@ public class StateModule {
                 }
                 if (sensorString.equals("wheel_rpm")) {
                     handleWheelRpmUpdate(wheel, body);
-                } else if (sensorString.equals("wheel_pod_pos")) {
-                    handleWheelPodPositionUpdate(wheel, body);
-                } else if (sensorString.equals("wheel_pod_limit_extended")) {
-                    handleWheelPodLimitExtendedUpdate(wheel, body);
-                } else if (sensorString.equals("wheel_pod_limit_retracted")) {
-                    handleWheelPodLimitRetractedUpdate(wheel, body);
                 } else {
                     System.out.println("Bad sensor string in routing key");
                     return;
@@ -421,7 +402,7 @@ public class StateModule {
     
     private void handleWheelCountUpdate(LocomotionState.Wheel wheel, byte[] body) throws IOException {
     	CountUpdate message = CountUpdate.parseFrom(body);
-    	float count = message.getCount();
+    	int count = message.getCount();
     	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac()*1000000000L));
     	try {
     		locomotionState.updateWheelCount(wheel, count, time);
@@ -429,40 +410,7 @@ public class StateModule {
     		sendFault(e.getFaultCode(), time);
     	}
     }
-    
-//    private void handleWheelPodPositionUpdate(LocomotionState.Wheel wheel, byte[] body) throws IOException {
-//        PositionUpdate message = PositionUpdate.parseFrom(body);
-//        float pos = message.getPosition();
-//        Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
-//        try {
-//            locomotionState.updateWheelPodPos(wheel, pos, time);
-//        } catch (RobotFaultException e) {
-//            sendFault(e.getFaultCode(), time);
-//        }
-//    }
-        
-//    private void handleWheelPodLimitExtendedUpdate(LocomotionState.Wheel wheel, byte[] body) throws IOException {
-//        LimitUpdate message = LimitUpdate.parseFrom(body);
-//        boolean pressed = message.getPressed();
-//        Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
-//        try {
-//            locomotionState.updateWheelPodLimitExtended(wheel, pressed, time);
-//        } catch (RobotFaultException e) {
-//            sendFault(e.getFaultCode(), time);
-//        }
-//    }
-            
-//    private void handleWheelPodLimitRetractedUpdate(LocomotionState.Wheel wheel, byte[] body) throws IOException {
-//        LimitUpdate message = LimitUpdate.parseFrom(body);
-//        boolean pressed = message.getPressed();
-//        Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
-//        try {
-//            locomotionState.updateWheelPodLimitRetracted(wheel, pressed, time);
-//        } catch (RobotFaultException e) {
-//            sendFault(e.getFaultCode(), time);
-//        }
-//    }
-
+  
     private void handleConveyorRpmUpdate(byte[] body) throws IOException {
         RpmUpdate message = RpmUpdate.parseFrom(body);
         float rpm = message.getRpm();

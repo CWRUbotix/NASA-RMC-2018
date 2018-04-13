@@ -32,7 +32,7 @@ public class LocomotionState {
 
     /* Data members */
     private EnumMap<Wheel, Optional<Float>> wheelRpm;
-    private EnumMap<Wheel, Optional<Float>> wheelCount;
+    private EnumMap<Wheel, Optional<Int>> wheelCount;
 
     // TODO: Store the time most recently updated, either for the whole system
     // or for each sensor. If you want to handle out of order updates, you'll
@@ -40,7 +40,6 @@ public class LocomotionState {
 
     //Floats for containing time since updates
     private Instant timeSinceWheelRPM;
-//    private Instant timeSincePodPos;
     private Instant timeSystem;    
     
     /* Constructor */
@@ -86,31 +85,25 @@ public class LocomotionState {
                 //throw something?
             }
         }
-
         //else update PodPos time
         timeSinceWheelRPM = Instant.now();
     }
-    public void updateWheelCounts(Wheel wheel, float counts, Instant time) throws RobotFaultException {
+    public void updateWheelCounts(Wheel wheel, int counts, Instant time) throws RobotFaultException {
     	//Note: wheel count is the output from the encoder, may need processing to be a valid unit
     	
-    	wheelCount.put(wheel, Optional.of(coutns))
+    	wheelCount.put(wheel, Optional.of(counts));
     }
-    
-    	
-    
-
     
     /* State getter methods */
    
-    public float getStraightSpeed() {
+    public float getSpeed() {
         // TODO: use physical constants, real or made up, to get speed
 
         //number of wheels reporting values
         int divNum = 0;
         //total RPM for forward speed
         Float rpmTot = (float) 0;
-        /// For TURN: Left wheels are positive, right wheels are negative
-        /// For STRAFE: FL and BR are positive, FR and BL are negative
+        
         Optional<Float> rpmWL = wheelRpm.get(Wheel.FRONT_LEFT);
         if (rpmWL.isPresent()) {
             divNum++;
@@ -134,39 +127,7 @@ public class LocomotionState {
         //speed is the averaged RPM for reporting wheels
         return rpmTot / divNum;
     }
-    
-    public float getTurnSpeed() {
-        // TODO: use physical constants, real or made up, to get speed
 
-        //number of wheels reporting values
-        int divNum = 0;
-        Float rpmTurn = (float) 0;
-        /// For TURN: Left wheels are positive, right wheels are negative
-        /// For STRAFE: FL and BR are positive, FR and BL are negative
-        Optional<Float> rpmWL = wheelRpm.get(Wheel.FRONT_LEFT);
-        if (rpmWL.isPresent()) {
-            divNum++;
-            rpmTurn += rpmWL.get();
-        }
-        rpmWL = wheelRpm.get(Wheel.FRONT_RIGHT);
-        if (rpmWL.isPresent()) {
-            divNum++;
-            rpmTurn -= rpmWL.get();
-        }
-        rpmWL = wheelRpm.get(Wheel.BACK_LEFT);
-        if (rpmWL.isPresent()) {
-            divNum++;
-            rpmTurn += rpmWL.get();
-        }
-        rpmWL = wheelRpm.get(Wheel.BACK_RIGHT);
-        if (rpmWL.isPresent()) {
-            divNum++;
-            rpmTurn -= rpmWL.get();
-        }
-        //speed is the averaged RPM for reporting wheels
-        return rpmTurn / divNum;
-    }
-    
     //
     public float getWheelRpm(Wheel wheel) {
         return wheelRpm.get(wheel).get();

@@ -80,6 +80,11 @@ message LoadUpdate {
 	required UnixTime timestamp = 2;
 }
 
+message CountUpdate {
+	required int count = 1;
+	required UnixTime timestamp = 2;
+}
+
 message Fault {
 	required uint32 fault_code = 1;
 	required UnixTime timestamp = 2;
@@ -129,30 +134,6 @@ message LocomotionControlCommandStraight {
 	required float timeout = 2;
 }
 
-// subsyscommand.locomotion.strafe
-message LocomotionControlCommandStrafe {
-	required float speed = 1;
-	required float timeout = 2;
-}
-
-// subsyscommand.locomotion.turn
-message LocomotionControlCommandTurn {
-	required float speed = 1;
-	required float timeout = 2;
-}
-
-// subsyscommand.locomotion.configure
-message LocomotionControlCommandConfigure {
-	enum Configuration {
-		STRAIGHT_CONFIG = 1;
-		STRAFE_CONFIG = 2;
-		TURN_CONFIG = 3;
-	}
-	required Configuration target = 1;
-	required float power = 2;
-	required float timeout = 3;
-}
-
 // subsyscommand.excavation.dig_deep
 message ExcavationControlCommandDigDeep {
 	required float depth = 1;
@@ -197,34 +178,19 @@ message State{
 
 //summary of locomotion state
 message LocomotionStateSummary {
-	enum Configuration {
-		INTERMEDIATE_CONFIG = 0;
-		STRAIGHT_CONFIG = 1;
-		STRAFE_CONFIG = 2;
-		TURN_CONFIG = 3;
-	}
-	required Configuration config = 1;
-	required float speed = 2;
+	required float speed = 1;
 }
 
 //details of locomotion state. ALL THE VALUES
 message LocomotionStateDetailed {
-	required float front_left_rpm = 3;
-	required float front_right_rpm = 4;
-	required float back_left_rpm = 5;
-	required float back_right_rpm = 6;
-	required float front_left_pos = 7;
-	required float front_right_pos = 8;
-	required float back_left_pos = 9;
-	required float back_right_pos = 10;
-	required bool front_left_extended = 11;
-	required bool front_right_extended = 12;
-	required bool back_left_extended = 13;
-	required bool back_right_extended = 14;
-	required bool front_left_retracted = 15;
-	required bool front_right_retracted = 16;
-	required bool back_left_retracted = 17;
-	required bool back_right_retracted = 18;
+	required float front_left_rpm = 1;
+	required float front_right_rpm = 2;
+	required float back_left_rpm = 3;
+	required float back_right_rpm = 4;
+	required int front_left_count = 5;
+	required int front_right_count = 6;
+	required int back_left_count = 7;
+	required int back_right_count = 8;
 }
 
 //summary of excavation state
