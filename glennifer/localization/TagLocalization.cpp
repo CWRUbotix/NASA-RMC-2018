@@ -324,7 +324,6 @@ public:
   }
 
   void setupVideo() {
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
 
 #ifdef EXPOSURE_CONTROL
     // manually setting camera exposure settings; OpenCV/v4l1 doesn't
@@ -532,8 +531,6 @@ public:
     v4l2_close(device);
 #endif
 
-=======
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     // find and open a USB camera (built in laptop camera, web cam etc)
     m_cap = cv::VideoCapture(m_deviceId);
         if(!m_cap.isOpened()) {
@@ -551,12 +548,7 @@ public:
 
   void print_detection(AprilTags::TagDetection& detection) const {
     cout << "  Id: " << detection.id
-<<<<<<< HEAD
          << " (Hamming: " << detection.hammingDistance << ")";
-=======
-         //<< " (Hamming: " << detection.hammingDistance << ")";
-    		;
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
 
     // recovering the relative pose of a tag:
 
@@ -566,14 +558,10 @@ public:
 
     Eigen::Vector3d translation;
     Eigen::Matrix3d rotation;
-<<<<<<< HEAD
     Eigen::Vector4d fcol;
     detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
                                              translation, rotation, fcol);
-=======
-    detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                             translation, rotation);
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
+
 
     Eigen::Matrix3d F;
     F <<
@@ -585,30 +573,18 @@ public:
     wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
 
-<<<<<<< HEAD
-
    AMQPExchange * ex = amqp.createExchange("amq.topic");
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     com::cwrubotix::glennifer::LocalizationPosition msg;
-    msg.set_x_position((float)(translation.norm() * (sin (pitch*PI/180))));
-    msg.set_y_position((float)(translation.norm() * (cos (pitch*PI/180))));
+    msg.set_x_position((float)fcol(0));
+    msg.set_y_position((float)fcol(2));
     msg.set_bearing_angle((float) ((-1 * pitch) + PI));
-=======
-   double bearingAngle = (pitch);
-   AMQPExchange * ex = amqp.createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    com::cwrubotix::glennifer::LocalizationPosition msg;
-    //msg.set_x_position((float)(translation.norm() * (sin (bearingAngle))));
-    msg.set_x_position((float)(translation.norm()));
-    msg.set_y_position((float)(translation.norm() * (cos (bearingAngle))));
-    msg.set_bearing_angle((float) ((pitch)));
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
+
     //msg.set_distance_vector((float) ((1) * (translation.norm())));
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
     msg.SerializeToArray(msg_buff, msg_size);
 
-<<<<<<< HEAD
     ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
     cout << "  distance=" << translation.norm()
@@ -616,19 +592,10 @@ public:
             << ", y=" << fcol(2)//(translation.norm() * (cos (pitch)))
              //<< ", z=" << fcol(2)//translation(2)
              //<< ", w=" << fcol(1) //yaw
-             << ", Bering=" << (pitch * 180/PI)
+             << ", Bearing=" << (pitch * 180/PI)
              //<< ", roll=" << roll
              << endl;
-=======
-    //ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
-    cout //<< "  distance=" << translation.norm()
-         //    << "m, x =" << ((translation.norm() * (sin (pitch))))// * (sin (pitch)))
-         //   << "m, y =" << ((translation.norm() * (cos (pitch))))// * (cos (pitch)))
-             << " pitch=" << ((bearingAngle * 180)/PI)
-             ;
-
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     // Also note that for SLAM/multi-view application it is better to
     // use reprojection error of corner points, because the noise in
     // this relative pose is very non-Gaussian; see iSAM source code
@@ -675,7 +642,7 @@ public:
         // only the first detected tag is sent out for now
         Eigen::Vector3d translation;
         Eigen::Matrix3d rotation;
-<<<<<<< HEAD
+
         Eigen::Vector4d fcol;
         detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
                                                      translation, rotation, fcol);
@@ -686,17 +653,7 @@ public:
         m_serial.print(translation(1));
         m_serial.print(",");
         m_serial.print(translation(2));
-=======
-        detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                                     translation, rotation);
-        m_serial.print(detections[0].id);
-        m_serial.print(",");
-        //m_serial.print(translation(0));
-        m_serial.print(",");
-        //m_serial.print(translation(1));
-        m_serial.print(",");
-        //m_serial.print(translation(2));
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
+
         m_serial.print("\n");
       } else {
         // no tag detected: tag ID = -1
@@ -748,11 +705,8 @@ public:
 
       // exit if any key is pressed
       if (cv::waitKey(1) >= 0) break;
-<<<<<<< HEAD
       //sleep(1.5);
-=======
-      sleep(2);
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
+
     }
   }
 
@@ -770,7 +724,6 @@ int main(int argc, char* argv[]) {
 
   if (demo.isVideo()) {
     cout << "Processing video" << endl;
-<<<<<<< HEAD
 
     // setup image source, window for drawing, serial port...
     demo.setupVideo();
@@ -783,22 +736,6 @@ int main(int argc, char* argv[]) {
 
     // process single image
     demo.loadImages();
-
-=======
-
-    // setup image source, window for drawing, serial port...
-    demo.setupVideo();
-
-    // the actual processing loop where tags are detected and visualized
-    demo.loop();
-
-  } else {
-    cout << "Processing image" << endl;
-
-    // process single image
-    demo.loadImages();
-
->>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
   }
 
   return 0;
