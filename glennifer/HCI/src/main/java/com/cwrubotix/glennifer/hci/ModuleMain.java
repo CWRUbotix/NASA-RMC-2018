@@ -279,6 +279,7 @@ public class ModuleMain {
             try {
                 // Open the port
                 sp.openPort();
+                Thread.sleep(1000);
                 sp.setParams(baud, 8, 1, 0);
                 sp.setDTR(false);
                 // Create test packet
@@ -387,11 +388,11 @@ public class ModuleMain {
 
     private static void generateDummyMessage() throws InvalidProtocolBufferException, IOException{
         Messages.SpeedControlCommand msg = Messages.SpeedControlCommand.newBuilder()
-                            .setRpm(1000f)
+                            .setRpm(-2.0f)
                             .setTimeout(1000f)
                             .build();
         channel.basicPublish("amq.topic", "motorcontrol.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
-        System.out.println("sent wheel rpm message");
+        System.out.println("sent dummy wheel rpm message");
     }
 
     private static void routeLocomotionMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
@@ -403,9 +404,6 @@ public class ModuleMain {
         if (keys[3].equals("wheel_rpm")) {
             routeWheelRPMMessage(keys, body);
 
-        } else if (keys[3].equals("wheel_pod_pos")) {
-            routeWheelPodPosMessage(keys, body);
-
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -415,44 +413,26 @@ public class ModuleMain {
     private static void routeWheelRPMMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         int id = -1;
         if (keys[2].equals("front_left")) {
-            id = 0;
+            id = 3;
         } else if (keys[2].equals("front_right")) {
             id = 1;
         } else if (keys[2].equals("back_left")) {
             id = 2;
         } else if (keys[2].equals("back_right")) {
-            id = 3;
+            id = 0;
         } else {
             System.out.println("Locomotion motor control routing key has invalid wheel");
             return;
         }
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-        if (id % 2 == 0) { //Left wheels need reversed directions
-            targetValue = -Mechanics.wheelRPMToValue(scc.getRpm());
-        } else {
-            targetValue = Mechanics.wheelRPMToValue(scc.getRpm());
+        targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+        if(id == 3){
+            targetValue *= -1.45;
         }
-        targetValue = 4000.0;
-        queueActuation(id, targetValue);
-    }
-
-    private static void routeWheelPodPosMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
-        int id = -1;
-        if (keys[2].equals("front_left")) {
-            id = 4;
-        } else if (keys[2].equals("front_right")) {
-            id = 5;
-        } else if (keys[2].equals("back_left")) {
-            id = 6;
-        } else if (keys[2].equals("back_right")) {
-            id = 7;
-        } else {
-            System.out.println("Locomotion motor control routing key has invalid wheel");
-            return;
+        if(id == 2){
+            targetValue *= 1.15;
         }
-        Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-        double targetValue = Mechanics.wheelPodPosToValue(pcc.getPosition());
         queueActuation(id, targetValue);
     }
 
@@ -464,20 +444,21 @@ public class ModuleMain {
 
         if (keys[2].equals("conveyor_translation_displacement")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id = 9;
+            int id = 6;
             double targetValue = ((pcc.getPosition() / 100.0F) * 785) + 45;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id = 10;
+            int id1 = 4;
+            int id2 = 5;
             double targetValue = ((90- pcc.getPosition()) * 5.555) + 100 ;
-            queueActuation(id, targetValue);
+            queueActuation(id1, targetValue);
+            queueActuation(id2, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
             Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-            int id = 8;
+            int id = 7;
             double targetValue = (scc.getRpm() / 100.0F) * 32767;
             queueActuation(id, targetValue);
-            System.out.println("printed bucket conveyor rpm command");
         } else {
             System.out.println("Excavation motor control routing key has unrecognized motor");
             return;
@@ -491,18 +472,8 @@ public class ModuleMain {
         }
         if (keys[2].equals("dump_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id = 12;
+            int id = 8;
             double targetValue = (pcc.getPosition() / 100.0F) * 127;
-            queueActuation(id, targetValue);
-        } else if (keys[2].equals("conveyor_rpm")) {
-            Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-            int id = 11;
-            double targetValue = (scc.getRpm() / 100.0F) * 127;
-            queueActuation(id, targetValue);
-        } else if (keys[2].equals("vibration_rpm")) {
-            Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-            int id = 13;
-            double targetValue = (scc.getRpm() / 100.0F) * 255;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Deposition motor control routing key has unrecognized motor");

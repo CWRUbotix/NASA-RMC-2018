@@ -1,12 +1,17 @@
 package com.cwrubotix.glennifer.automodule;
 
+import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.LaunchTransit;
 import com.cwrubotix.glennifer.Messages.TransitSoftStop;
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +34,33 @@ public class AutoModule extends Module {
 	private String exchangeName;
 	private Connection connection;
 	private Channel channel;
+	private Position startPos;
+	private boolean tagFound = false;
+	
+	public AutoModule() {
+		this("amq.topic");
+	}
+
+	public AutoModule(String exchangeName) {
+		this.exchangeName = exchangeName;
+	}
+	
+	public class LocalizationPositionConsumer extends DefaultConsumer {
+	    public LocalizationPositionConsumer(Channel channel){
+		super(channel);
+	    }
+	    
+	    @Override
+	    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+		//parse message
+		Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
+		
+		// Updates current position
+		startPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
+		tagFound = true;
+		System.out.println("starting pos: " + startPos);
+	    }
+	}
 	
 	/*
 	 *TODO list
@@ -47,15 +79,29 @@ public class AutoModule extends Module {
 		this.connection = factory.newConnection();
 		this.channel = connection.createChannel();
 
+		String queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "loc.post");
+		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 		// TODO AutoModule needs to turn around and scan for AprilTags
 
 		// Setup timer for timing tasks
 		Timer taskTimer = new Timer("Task Timer");
-
+		while(!tagFound){
+		    try{
+		    Thread.sleep(100);
+		    } catch(InterruptedException e){
+			e.printStackTrace();
+		    }
+		}
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder()
-				// TODO set message properties (destination, current position, etc)
+				.setCurXPos(startPos.getX())
+				.setCurYPos(startPos.getY())
+				.setCurHeading((float) startPos.getHeading())
+				.setDestXPos(0.0F)
+				.setDestYPos(3.25F)
 				.setTimeAlloc(180)
+				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 

@@ -17,24 +17,24 @@ public class DepositionState {
 
 
     /**
-     * The LoadCell enum is used to specify one of the deposition subsystem's 4
+     * The LoadCell enum is used to specify one of the deposition subsystem's 2
      * load cells.
      */
+	//I guessed left and right, will update if wrong
     public enum LoadCell {
-        FRONT_LEFT,
-        FRONT_RIGHT,
-        BACK_LEFT,
-        BACK_RIGHT
+        LEFT,
+        RIGHT
     }
 
     public enum Side {
         LEFT,
         RIGHT
     }
+// Unneccesary since there are only two load cells??
     
     /* Data members */
-    private EnumMap <LoadCell, Float> loadCellValue;
     private float dumpPos;
+    private EnumMap <LoadCell, Float> loadCellValue;
     private EnumMap <Side, Boolean> dumpSideRetracted;
     private EnumMap <Side, Boolean> dumpSideExtended;
 
@@ -55,11 +55,9 @@ public class DepositionState {
         // TODO: handle no input from sensor
 
         loadCellValue = new EnumMap<>(LoadCell.class);
-        loadCellValue.put(LoadCell.FRONT_LEFT, (float)0);
-        loadCellValue.put(LoadCell.FRONT_RIGHT, (float)0);
-        loadCellValue.put(LoadCell.BACK_LEFT, (float)0);
-        loadCellValue.put(LoadCell.BACK_RIGHT, (float)0);
-
+        loadCellValue.put(LoadCell.LEFT, (float)0);
+        loadCellValue.put(LoadCell.RIGHT, (float)0);
+       
         dumpPos = 0;
 
         dumpSideRetracted = new EnumMap<>(Side.class);
@@ -106,8 +104,7 @@ public class DepositionState {
 
     public float getDumpLoad() {
         //TODO: use linear functions to get more accurate reading
-        return loadCellValue.get(LoadCell.BACK_LEFT) + loadCellValue.get(LoadCell.BACK_RIGHT) +
-                loadCellValue.get(LoadCell.FRONT_LEFT) + loadCellValue.get(LoadCell.FRONT_RIGHT);
+        return loadCellValue.get(LoadCell.LEFT) + loadCellValue.get(LoadCell.RIGHT);
     }
     
     public float getDumpPos() {

@@ -77,9 +77,9 @@ const char* windowName1 = "Camera 1";
 // utility function to provide current system time (used below in
 // determining frame rate at which images are being processed)
 double tic() {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
 }
 
 
@@ -98,12 +98,12 @@ const char* address = "localhost";
  * Normalize angle to be within the interval [-pi,pi].
  */
 inline double standardRad(double t) {
-	if (t >= 0.) {
-		t = fmod(t+PI, TWOPI) - PI;
-	} else {
-		t = fmod(t-PI, -TWOPI) + PI;
-	}
-	return t;
+    if (t >= 0.) {
+        t = fmod(t+PI, TWOPI) - PI;
+    } else {
+        t = fmod(t-PI, -TWOPI) + PI;
+    }
+    return t;
 }
 
 //#include "CamCalibration.cpp"
@@ -114,6 +114,8 @@ double fy = 602.4;
 double cx = 319.5;
 double cy = 239.5;
 double k1 = 0.25524;
+    F <<
+      1, 0,  0,
 double k2 = -10.998;
 double p1 = 0.0;
 double p2 = 0.0;
@@ -126,11 +128,11 @@ cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
  * Convert rotation matrix to Euler angles
  */
 void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {
-	yaw = standardRad(atan2((double)wRo(1,0), (double)wRo(0,0)));
-	double c = cos(yaw);
-	double s = sin(yaw);
-	pitch = standardRad(atan2((double)-wRo(2,0), (double)(wRo(0,0)*c + wRo(1,0)*s)));
-	roll  = standardRad(atan2((double)(wRo(0,2)*s - wRo(1,2)*c), (double)(-wRo(0,1)*s + wRo(1,1)*c)));
+    yaw = standardRad(atan2((double)wRo(1,0), (double)wRo(0,0)));
+    double c = cos(yaw);
+    double s = sin(yaw);
+    pitch = standardRad(atan2((double)-wRo(2,0), (double)(wRo(0,0)*c + wRo(1,0)*s)));
+    roll  = standardRad(atan2((double)(wRo(0,2)*s - wRo(1,2)*c), (double)(-wRo(0,1)*s + wRo(1,1)*c)));
 }
 
 
@@ -138,18 +140,18 @@ AMQP amqp("guest:guest@localhost");
 const char* topic = "locs";
 AMQPQueue *queue = amqp.createQueue(topic);
 
-		//this should be set in methods or somewhere appropriate
-		//all is here for ease of access during testing
+        //this should be set in methods or somewhere appropriate
+        //all is here for ease of access during testing
 
-		//similar code to ConsumerThread::run()
-		//so, should check dor fuplicate topic threads???
+        //similar code to ConsumerThread::run()
+        //so, should check dor fuplicate topic threads???
 
 //Initializes AMQP queue etc
 void init_Queue() {
-	queue->Declare();
-	queue->Bind("amq.topic", topic);
-	//queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
-	queue->Consume(AMQP_NOACK);
+    queue->Declare();
+    queue->Bind("amq.topic", topic);
+    //queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
+    queue->Consume(AMQP_NOACK);
 }
 
 class Demo {
@@ -182,6 +184,180 @@ class Demo {
   Serial m_serial;
 
 public:
+
+  // default constructor
+  Demo() :
+    // default settings, most can be modified through command line options (see below)
+    m_tagDetector(NULL),
+    m_tagCodes(AprilTags::tagCodes36h11),
+
+    m_draw(true),
+    m_arduino(false),
+    m_timing(false),
+
+    m_width(640),
+    m_height(480),
+    m_tagSize(0.165),
+    m_fx(644.12),
+    m_fy(644.12),
+    m_px(319.5),
+    m_py(239.5),
+
+    m_exposure(-1),
+    m_gain(-1),
+    m_brightness(-1),
+
+    m_deviceId(0)
+  {}
+
+  // changing the tag family
+  void setTagCodes(string s) {
+    if (s=="16h5") {
+      m_tagCodes = AprilTags::tagCodes16h5;
+    } else if (s=="25h7") {
+      m_tagCodes = AprilTags::tagCodes25h7;
+    } else if (s=="25h9") {
+      m_tagCodes = AprilTags::tagCodes25h9;
+    } else if (s=="36h9") {
+      m_tagCodes = AprilTags::tagCodes36h9;
+    } else if (s=="36h11") {
+      m_tagCodes = AprilTags::tagCodes36h11;
+    } else {
+      cout << "Invalid tag family specified" << endl;
+      exit(1);
+    }
+  }
+
+  // parse command line options to change default behavior
+  void parseOptions(int argc, char* argv[]) {
+    int c;
+    while ((c = getopt(argc, argv, ":h?adtC:F:H:S:W:E:G:B:D:")) != -1) {
+      // Each option character has to be in the string in getopt();
+      // the first colon changes the error character from '?' to ':';
+      // a colon after an option means that there is an extra
+      // parameter to this option; 'W' is a reserved character
+      switch (c) {
+      case 'h':
+      case '?':
+        //cout << "intro";
+        //cout << "usage"";
+        exit(0);
+        break;
+      case 'a':
+        m_arduino = true;
+        break;
+      case 'd':
+        m_draw = false;
+        break;
+      case 't':
+        m_timing = true;
+        break;
+      case 'C':
+        setTagCodes(optarg);
+        break;
+      case 'F':
+        m_fx = atof(optarg);
+        m_fy = m_fx;
+        break;
+      case 'H':
+        m_height = atoi(optarg);
+        m_py = m_height/2;
+         break;
+      case 'S':
+        m_tagSize = atof(optarg);
+        break;
+      case 'W':
+        m_width = atoi(optarg);
+        m_px = m_width/2;
+        break;
+      case 'E':
+#ifndef EXPOSURE_CONTROL
+        cout << "Error: Exposure option (-E) not available" << endl;
+        exit(1);
+#endif
+        m_exposure = atoi(optarg);
+        break;
+      case 'G':
+#ifndef EXPOSURE_CONTROL
+        cout << "Error: Gain option (-G) not available" << endl;
+        exit(1);
+#endif
+        m_gain = atoi(optarg);
+        break;
+      case 'B':
+#ifndef EXPOSURE_CONTROL
+        cout << "Error: Brightness option (-B) not available" << endl;
+        exit(1);
+#endif
+        m_brightness = atoi(optarg);
+        break;
+      case 'D':
+        m_deviceId = atoi(optarg);
+        break;
+      case ':': // unknown option, from getopt
+        //cout << intro;
+        //cout << usage;
+        exit(1);
+        break;
+      }
+    }
+
+    if (argc > optind) {
+      for (int i=0; i<argc-optind; i++) {
+        m_imgNames.push_back(argv[optind+i]);
+      }
+    }
+  }
+
+  void setup() {
+    m_tagDetector = new AprilTags::TagDetector(m_tagCodes);
+
+    // prepare window for drawing the camera images
+    if (m_draw) {
+      cv::namedWindow(windowName, 1);
+    }
+
+    // optional: prepare serial port for communication with Arduino
+    if (m_arduino) {
+      m_serial.open("/dev/ttyACM0");
+    }
+  }
+
+  void setupVideo() {
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
+
+#ifdef EXPOSURE_CONTROL
+    // manually setting camera exposure settings; OpenCV/v4l1 doesn't
+    // support exposure control; so here we manually use v4l2 before
+    // opening the device via OpenCV; confirmed to work with Logitech
+    // C270; try exposure=20, gain=100, brightness=150
+
+    string video_str = "/dev/video0";
+    video_str[10] = '0' + m_deviceId;
+    int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+
+    if (m_exposure >= 0) {
+      // not sure why, but v4l2_set_control() does not work for
+      // V4L2_CID_EXPOSURE_AUTO...
+      struct v4l2_control c;
+      c.id = V4L2_CID_EXPOSURE_AUTO;
+      c.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+      if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c) != 0) {
+        cout << "Failed to set... " << strerror(errno) << endl;
+      }
+      cout << "exposure: " << m_exposure << endl;
+      v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+    }
+    if (m_gain >= 0) {
+      cout << "gain: " << m_gain << endl;
+      v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
+    }
+    if (m_brightness >= 0) {
+      cout << "brightness: " << m_brightness << endl;
+      v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
+    }
+    v4l2_close(device);
+#endif
 
   // default constructor
   Demo() :
@@ -356,6 +532,8 @@ public:
     v4l2_close(device);
 #endif
 
+=======
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     // find and open a USB camera (built in laptop camera, web cam etc)
     m_cap = cv::VideoCapture(m_deviceId);
         if(!m_cap.isOpened()) {
@@ -373,7 +551,12 @@ public:
 
   void print_detection(AprilTags::TagDetection& detection) const {
     cout << "  Id: " << detection.id
+<<<<<<< HEAD
          << " (Hamming: " << detection.hammingDistance << ")";
+=======
+         //<< " (Hamming: " << detection.hammingDistance << ")";
+    		;
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
 
     // recovering the relative pose of a tag:
 
@@ -383,9 +566,14 @@ public:
 
     Eigen::Vector3d translation;
     Eigen::Matrix3d rotation;
+<<<<<<< HEAD
     Eigen::Vector4d fcol;
     detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
                                              translation, rotation, fcol);
+=======
+    detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
+                                             translation, rotation);
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
 
     Eigen::Matrix3d F;
     F <<
@@ -397,6 +585,7 @@ public:
     wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
 
+<<<<<<< HEAD
 
    AMQPExchange * ex = amqp.createExchange("amq.topic");
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
@@ -404,11 +593,22 @@ public:
     msg.set_x_position((float)(translation.norm() * (sin (pitch*PI/180))));
     msg.set_y_position((float)(translation.norm() * (cos (pitch*PI/180))));
     msg.set_bearing_angle((float) ((-1 * pitch) + PI));
+=======
+   double bearingAngle = (pitch);
+   AMQPExchange * ex = amqp.createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    com::cwrubotix::glennifer::LocalizationPosition msg;
+    //msg.set_x_position((float)(translation.norm() * (sin (bearingAngle))));
+    msg.set_x_position((float)(translation.norm()));
+    msg.set_y_position((float)(translation.norm() * (cos (bearingAngle))));
+    msg.set_bearing_angle((float) ((pitch)));
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     //msg.set_distance_vector((float) ((1) * (translation.norm())));
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
     msg.SerializeToArray(msg_buff, msg_size);
 
+<<<<<<< HEAD
     ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
     cout << "  distance=" << translation.norm()
@@ -419,6 +619,16 @@ public:
              << ", Bering=" << (pitch * 180/PI)
              //<< ", roll=" << roll
              << endl;
+=======
+    //ex->Publish((char*)msg_buff, msg_size, "loc.post");
+
+    cout //<< "  distance=" << translation.norm()
+         //    << "m, x =" << ((translation.norm() * (sin (pitch))))// * (sin (pitch)))
+         //   << "m, y =" << ((translation.norm() * (cos (pitch))))// * (cos (pitch)))
+             << " pitch=" << ((bearingAngle * 180)/PI)
+             ;
+
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     // Also note that for SLAM/multi-view application it is better to
     // use reprojection error of corner points, because the noise in
     // this relative pose is very non-Gaussian; see iSAM source code
@@ -465,6 +675,7 @@ public:
         // only the first detected tag is sent out for now
         Eigen::Vector3d translation;
         Eigen::Matrix3d rotation;
+<<<<<<< HEAD
         Eigen::Vector4d fcol;
         detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
                                                      translation, rotation, fcol);
@@ -475,6 +686,17 @@ public:
         m_serial.print(translation(1));
         m_serial.print(",");
         m_serial.print(translation(2));
+=======
+        detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
+                                                     translation, rotation);
+        m_serial.print(detections[0].id);
+        m_serial.print(",");
+        //m_serial.print(translation(0));
+        m_serial.print(",");
+        //m_serial.print(translation(1));
+        m_serial.print(",");
+        //m_serial.print(translation(2));
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
         m_serial.print("\n");
       } else {
         // no tag detected: tag ID = -1
@@ -526,7 +748,11 @@ public:
 
       // exit if any key is pressed
       if (cv::waitKey(1) >= 0) break;
+<<<<<<< HEAD
       //sleep(1.5);
+=======
+      sleep(2);
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
     }
   }
 
@@ -544,6 +770,7 @@ int main(int argc, char* argv[]) {
 
   if (demo.isVideo()) {
     cout << "Processing video" << endl;
+<<<<<<< HEAD
 
     // setup image source, window for drawing, serial port...
     demo.setupVideo();
@@ -557,7 +784,23 @@ int main(int argc, char* argv[]) {
     // process single image
     demo.loadImages();
 
+=======
+
+    // setup image source, window for drawing, serial port...
+    demo.setupVideo();
+
+    // the actual processing loop where tags are detected and visualized
+    demo.loop();
+
+  } else {
+    cout << "Processing image" << endl;
+
+    // process single image
+    demo.loadImages();
+
+>>>>>>> 5e4ac27ad77d7775840184a5a9589548acb46083
   }
 
   return 0;
 }
+

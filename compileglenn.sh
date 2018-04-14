@@ -17,7 +17,7 @@ mvn package
 cd ..
 
 cd robot_state
-mvn package
+sudo mvn package #dunno why this one needs sudo but it does
 cd ..
 
 cd automodule

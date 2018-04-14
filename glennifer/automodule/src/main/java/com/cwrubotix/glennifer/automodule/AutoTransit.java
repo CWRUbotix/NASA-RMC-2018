@@ -17,10 +17,11 @@ public class AutoTransit extends Module {
 	/*Horizontal line representing where digging arena starts.*/
 	private final Position DIGGING_AREA = new Position(0.0F, 4.41F, -1.0);
 	private final float CLEARANCE_DIST = 0.3F; //Setting this to 30cm for now. Will have to change it after testing locomotion.
-    private final float TRAVEL_SPEED = 1.0F; // Sensible speed at which to travel
+	private final float TRAVEL_SPEED = 1.0F; // Sensible speed at which to travel
 	private static Position currentPos;
 	private PathFinder pathFinder;
 	private Path currentPath;
+	private boolean launched = false;
 
 	// Messaging stuff
 	private String exchangeName;
@@ -51,7 +52,8 @@ public class AutoTransit extends Module {
 
 		@Override
 		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-			Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
+			
+		    Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
 			// Get current position
 			Position currentPos = new Position(
 					cmd.getCurXPos(),
@@ -62,7 +64,11 @@ public class AutoTransit extends Module {
 					cmd.getDestXPos(),
 					cmd.getDestYPos(),
 					0f);
-
+			AutoTransit.currentPos = currentPos;
+			if(!launched){
+			    System.out.println("Launch message received.");
+			    launched = true;
+			}
 			pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destinationPos);
 			currentPath = pathFinder.getPath();
 
@@ -118,6 +124,23 @@ public class AutoTransit extends Module {
 			}
 		}
 	}
+	
+	public class LocalizationPositionConsumer extends DefaultConsumer {
+	    public LocalizationPositionConsumer(Channel channel){
+		super(channel);
+	    }
+	    
+	    @Override
+	    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+		//parse message
+		Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
+		
+
+		// Updates current position
+		currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
+		System.out.println("current pos:" + currentPos);
+	    }
+	}
 
 	/////// MODULE LOGIC
 
@@ -142,7 +165,7 @@ public class AutoTransit extends Module {
 	}
 
 	private void turnAngle(double angle) throws IOException {
-	    if (angle == 0) return;
+	    if (angle < 0) return;
 
         /*
         Determine direction
@@ -228,10 +251,21 @@ public class AutoTransit extends Module {
 		queueName = channel.queueDeclare().getQueue();
 		this.channel.queueBind(queueName, exchangeName, "newobstacle.transit");
 		this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
+		
+		queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "loc.post");
+		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 
 		// TODO Maybe don't use a while loop?
-        while (currentPath.getPath().size() > 1) { // While we still have a position to go to
-        	moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
+		while(!launched){
+		    try{
+			Thread.sleep(100L);
+		    }catch(InterruptedException e){
+			e.printStackTrace();
+		    }
+		}System.out.println("AutoTransit successfully launched.");
+		while (currentPath.getPath().size() > 1) { // While we still have a position to go to
+		    moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
 		}
     }
 
