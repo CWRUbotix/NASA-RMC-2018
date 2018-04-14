@@ -14,6 +14,7 @@
 #include <QCloseEvent>
 #include "doubleedit.h"
 #include "drillslider.h"
+#include <QtMath>
 
 /*
  * In this file, the state of the robot is queried by RPC.
@@ -39,10 +40,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->lineEdit_FrontRightWheel, &IntEdit::valueEdited, ui->slider_FrontRightWheel, &QSlider::setValue);
     connect(ui->lineEdit_BackLeftWheel, &IntEdit::valueEdited, ui->slider_BackLeftWheel, &QSlider::setValue);
     connect(ui->lineEdit_BackRightWheel, &IntEdit::valueEdited, ui->slider_BackRightWheel, &QSlider::setValue);
-    connect(ui->lineEdit_FrontLeftWheelPod, &IntEdit::valueEdited, ui->slider_FrontLeftWheelPod, &QSlider::setValue);
-    connect(ui->lineEdit_FrontRightWheelPod, &IntEdit::valueEdited, ui->slider_FrontRightWheelPod, &QSlider::setValue);
-    connect(ui->lineEdit_BackLeftWheelPod, &IntEdit::valueEdited, ui->slider_BackLeftWheelPod, &QSlider::setValue);
-    connect(ui->lineEdit_BackRightWheelPod, &IntEdit::valueEdited, ui->slider_BackRightWheelPod, &QSlider::setValue);
     connect(ui->lineEdit_DepositionDump, &IntEdit::valueEdited, ui->slider_DepositionDump, &QSlider::setValue);
     connect(ui->lineEdit_ExcavationArm, &IntEdit::valueEdited, ui->slider_ExcavationArm, &QSlider::setValue);
     connect(ui->lineEdit_ExcavationTranslation, &IntEdit::valueEdited, ui->slider_ExcavationTranslation, &QSlider::setValue);
@@ -89,13 +86,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
     depositionScene->addPolygon(poly, outlinePen, redBrush);
 
+    QPixmap image("UnderConstruction.jpg");
+    ui->templabel->setPixmap(image);
+    ui->templabel->setScaledContents(true);
+
+
     //painter.drawEllipse(QPointF(x,y), radius, radius);
     radarScene = new QGraphicsScene(this);
     ui->mapGraphicsView->setScene(radarScene);
-    agent = radarScene->addEllipse(10, 10, 10, 10, outlinePen, greenBrush);
+    agent = radarScene->addEllipse(10, 20, 10, 20, outlinePen, greenBrush);
     //agent->setTransformOriginPoint(55, 55);
 
-    agent2 = radarScene->addEllipse(20, 20, 10, 10, outlinePen, redBrush);
+    //agent2 = radarScene->addEllipse(20, 20, 10, 10, outlinePen, redBrush);
     //agent2->setTransformOriginPoint(75, 75);
 
     QObject::connect(ui->locomotion_UpButton, &QPushButton::clicked,
@@ -130,30 +132,6 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleBackLeftWheelStop);
     QObject::connect(ui->pushButton_BackRightWheelStop, &QPushButton::clicked,
                      this, &MainWindow::handleBackRightWheelStop);
-    QObject::connect(ui->pushButton_FrontLeftWheelPodStraight, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontLeftWheelPodStraight);
-    QObject::connect(ui->pushButton_FrontRightWheelPodStraight, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontRightWheelPodStraight);
-    QObject::connect(ui->pushButton_BackLeftWheelPodStraight, &QPushButton::clicked,
-                     this, &MainWindow::handleBackLeftWheelPodStraight);
-    QObject::connect(ui->pushButton_BackRightWheelPodStraight, &QPushButton::clicked,
-                     this, &MainWindow::handleBackRightWheelPodStraight);
-    QObject::connect(ui->pushButton_FrontLeftWheelPodTurn, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontLeftWheelPodTurn);
-    QObject::connect(ui->pushButton_FrontRightWheelPodTurn, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontRightWheelPodTurn);
-    QObject::connect(ui->pushButton_BackLeftWheelPodTurn, &QPushButton::clicked,
-                     this, &MainWindow::handleBackLeftWheelPodTurn);
-    QObject::connect(ui->pushButton_BackRightWheelPodTurn, &QPushButton::clicked,
-                     this, &MainWindow::handleBackRightWheelPodTurn);
-    QObject::connect(ui->pushButton_FrontLeftWheelPodStrafe, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontLeftWheelPodStrafe);
-    QObject::connect(ui->pushButton_FrontRightWheelPodStrafe, &QPushButton::clicked,
-                     this, &MainWindow::handleFrontRightWheelPodStrafe);
-    QObject::connect(ui->pushButton_BackLeftWheelPodStrafe, &QPushButton::clicked,
-                     this, &MainWindow::handleBackLeftWheelPodStrafe);
-    QObject::connect(ui->pushButton_BackRightWheelPodStrafe, &QPushButton::clicked,
-                     this, &MainWindow::handleBackRightWheelPodStrafe);
     QObject::connect(ui->slider_FrontLeftWheel, &QSlider::valueChanged,
                      this, &MainWindow::handleFrontLeftWheelSet);
     QObject::connect(ui->slider_FrontRightWheel, &QSlider::valueChanged,
@@ -162,14 +140,6 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleBackLeftWheelSet);
     QObject::connect(ui->slider_BackRightWheel, &QSlider::valueChanged,
                      this, &MainWindow::handleBackRightWheelSet);
-    QObject::connect(ui->slider_FrontLeftWheelPod, &QSlider::valueChanged,
-                     this, &MainWindow::handleFrontLeftWheelPodSet);
-    QObject::connect(ui->slider_FrontRightWheelPod, &QSlider::valueChanged,
-                     this, &MainWindow::handleFrontRightWheelPodSet);
-    QObject::connect(ui->slider_BackLeftWheelPod, &QSlider::valueChanged,
-                     this, &MainWindow::handleBackLeftWheelPodSet);
-    QObject::connect(ui->slider_BackRightWheelPod, &QSlider::valueChanged,
-                     this, &MainWindow::handleBackRightWheelPodSet);
     QObject::connect(ui->slider_ExcavationArm, &QSlider::valueChanged,
                      this, &MainWindow::handleExcavationArmSet);
     QObject::connect(ui->pushButton_ExcavationArmDig, &QPushButton::clicked,
@@ -252,7 +222,12 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::handleLocomotionUp() {
-    if (0 == m_desiredConfig) { // straight
+    handleBackRightWheelSet(ui->slider_LocomotionSpeed->value());
+    handleFrontRightWheelSet(ui->slider_LocomotionSpeed->value());
+    handleFrontLeftWheelSet(ui->slider_LocomotionSpeed->value());
+    handleBackLeftWheelSet(ui->slider_LocomotionSpeed->value());
+    ui->consoleOutputTextBrowser->append("handleLocomotionUp");
+    /*if (0 == m_desiredConfig) { // straight
         LocomotionControlCommandStraight msg;
         msg.set_speed(ui->slider_LocomotionSpeed->value() / 100.0F);
         msg.set_timeout(456);
@@ -271,11 +246,16 @@ void MainWindow::handleLocomotionUp() {
         free(msg_buff);
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config");
-    }
+    }*/
 }
 
 void MainWindow::handleLocomotionDown() {
-    if (0 == m_desiredConfig) { // straight
+    handleFrontRightWheelSet((-1 * (ui->slider_LocomotionSpeed->value())));
+    handleBackRightWheelSet((-1 * (ui->slider_LocomotionSpeed->value())));
+    handleFrontLeftWheelSet((-1 * (ui->slider_LocomotionSpeed->value())));
+    handleBackLeftWheelSet((-1 * (ui->slider_LocomotionSpeed->value())));
+    ui->consoleOutputTextBrowser->append("handleLocomotionDown");
+    /*if (0 == m_desiredConfig) { // straight
         LocomotionControlCommandStraight msg;
         msg.set_speed(ui->slider_LocomotionSpeed->value() / -100.0F);
         msg.set_timeout(456);
@@ -294,7 +274,7 @@ void MainWindow::handleLocomotionDown() {
         free(msg_buff);
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config");
-    }
+    }*/
 }
 
 void MainWindow::handleLocomotionLeft() {
@@ -382,7 +362,12 @@ void MainWindow::handleLocomotionRelease() {
 }
 
 void MainWindow::handleLocomotionStop() {
-    LocomotionControlCommandStrafe msg;
+    handleBackRightWheelSet(ui->slider_LocomotionSpeed->value());
+    handleFrontRightWheelSet(ui->slider_LocomotionSpeed->value());
+    handleFrontLeftWheelSet(ui->slider_LocomotionSpeed->value());
+    handleBackLeftWheelSet(ui->slider_LocomotionSpeed->value());
+    ui->consoleOutputTextBrowser->append("handleLocomotionStop");
+    /*LocomotionControlCommandStrafe msg;
     msg.set_speed(0.0F);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -397,7 +382,7 @@ void MainWindow::handleLocomotionStop() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.strafe");
 
-    free(msg_buff);
+    free(msg_buff);*/
 }
 
 void MainWindow::handleLocomotionStraight() {
@@ -476,8 +461,9 @@ void MainWindow::handleFrontLeftWheelStop() {
 }
 
 void MainWindow::handleFrontLeftWheelSet(int value) {
-    SpeedContolCommand msg;
-    msg.set_rpm(60 * (value / 100.0F));
+    SpeedControlCommand msg;
+    //msg.set_rpm(60 * (value / 100.0F));
+    msg.set_rpm(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -501,8 +487,9 @@ void MainWindow::handleFrontRightWheelStop() {
 }
 
 void MainWindow::handleFrontRightWheelSet(int value) {
-    SpeedContolCommand msg;
-    msg.set_rpm(60 * (value / 100.0F));
+    SpeedControlCommand msg;
+    //msg.set_rpm(60 * (value / 100.0F));
+    msg.set_rpm(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -526,8 +513,9 @@ void MainWindow::handleBackLeftWheelStop() {
 }
 
 void MainWindow::handleBackLeftWheelSet(int value) {
-    SpeedContolCommand msg;
-    msg.set_rpm(60 * (value / 100.0F));
+    SpeedControlCommand msg;
+    //msg.set_rpm(60 * (value / 100.0F));
+    msg.set_rpm(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -551,8 +539,9 @@ void MainWindow::handleBackRightWheelStop() {
 }
 
 void MainWindow::handleBackRightWheelSet(int value) {
-    SpeedContolCommand msg;
-    msg.set_rpm(60 * (value / 100.0F));
+    SpeedControlCommand msg;
+    //msg.set_rpm(60 * (value / 100.0F));
+    msg.set_rpm(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -571,140 +560,8 @@ void MainWindow::handleBackRightWheelSet(int value) {
     ui->lineEdit_BackRightWheel->setText(QString::number(value));
 }
 
-void MainWindow::handleFrontLeftWheelPodStrafe() {
-    ui->slider_FrontLeftWheelPod->setValue(90);
-}
-
-void MainWindow::handleFrontLeftWheelPodTurn() {
-    ui->slider_FrontLeftWheelPod->setValue(60);
-}
-
-void MainWindow::handleFrontLeftWheelPodStraight() {
-    ui->slider_FrontLeftWheelPod->setValue(0);
-}
-
-void MainWindow::handleFrontLeftWheelPodSet(int value) {
-    PositionContolCommand msg;
-    msg.set_position(value);
-    msg.set_timeout(456);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.front_left.wheel_pod_pos");
-
-    free(msg_buff);
-
-    ui->lineEdit_FrontLeftWheelPod->setText(QString::number(value));
-}
-
-void MainWindow::handleFrontRightWheelPodStrafe() {
-    ui->slider_FrontRightWheelPod->setValue(90);
-}
-
-void MainWindow::handleFrontRightWheelPodTurn() {
-    ui->slider_FrontRightWheelPod->setValue(60);
-}
-
-void MainWindow::handleFrontRightWheelPodStraight() {
-    ui->slider_FrontRightWheelPod->setValue(0);
-}
-
-void MainWindow::handleFrontRightWheelPodSet(int value) {
-    PositionContolCommand msg;
-    msg.set_position(value);
-    msg.set_timeout(456);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.front_right.wheel_pod_pos");
-
-    free(msg_buff);
-
-    ui->lineEdit_FrontRightWheelPod->setText(QString::number(value));
-}
-
-void MainWindow::handleBackLeftWheelPodStrafe() {
-    ui->slider_BackLeftWheelPod->setValue(90);
-}
-
-void MainWindow::handleBackLeftWheelPodTurn() {
-    ui->slider_BackLeftWheelPod->setValue(60);
-}
-
-void MainWindow::handleBackLeftWheelPodStraight() {
-    ui->slider_BackLeftWheelPod->setValue(0);
-}
-
-void MainWindow::handleBackLeftWheelPodSet(int value) {
-    PositionContolCommand msg;
-    msg.set_position(value);
-    msg.set_timeout(456);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.back_left.wheel_pod_pos");
-
-    free(msg_buff);
-
-    ui->lineEdit_BackLeftWheelPod->setText(QString::number(value));
-}
-
-void MainWindow::handleBackRightWheelPodStrafe() {
-    ui->slider_BackRightWheelPod->setValue(90);
-}
-
-void MainWindow::handleBackRightWheelPodTurn() {
-    ui->slider_BackRightWheelPod->setValue(60);
-}
-
-void MainWindow::handleBackRightWheelPodStraight() {
-    ui->slider_BackRightWheelPod->setValue(0);
-}
-
-void MainWindow::handleBackRightWheelPodSet(int value) {
-    PositionContolCommand msg;
-    msg.set_position(value);
-    msg.set_timeout(456);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.back_right.wheel_pod_pos");
-
-    free(msg_buff);
-
-    ui->lineEdit_BackRightWheelPod->setText(QString::number(value));
-}
-
 void MainWindow::handleExcavationArmSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -741,7 +598,7 @@ void MainWindow::handleExcavationArmStore() {
 }
 
 void MainWindow::handleExcavationTranslationSet(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -774,7 +631,7 @@ void MainWindow::handleExcavationTranslationRetract() {
 }
 
 void MainWindow::handleExcavationConveyor(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->slider_ExcavationConveyor->value();
     speed = ui->checkBox_ExcavationConveyorReverse->isChecked() ? speed : -speed;
     speed = checked ? speed : 0;
@@ -800,7 +657,7 @@ void MainWindow::handleDepositionDumpSet(int value) {
 }
 
 void MainWindow::handleDepositionDumpDump() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(100);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -821,7 +678,7 @@ void MainWindow::handleDepositionDumpDump() {
 }
 
 void MainWindow::handleDepositionDumpStop() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(0);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -842,7 +699,7 @@ void MainWindow::handleDepositionDumpStop() {
 }
 
 void MainWindow::handleDepositionDumpStore() {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(-100);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -863,7 +720,7 @@ void MainWindow::handleDepositionDumpStore() {
 }
 
 void MainWindow::handleDepositionConveyor(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->slider_DepositionConveyor->value();
     speed = ui->checkBox_DepositionConveyorReverse->isChecked() ? speed : -speed;
     speed = checked ? speed : 0;
@@ -885,7 +742,7 @@ void MainWindow::handleDepositionConveyor(bool checked) {
 }
 
 void MainWindow::handleLowerCurrent(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -904,7 +761,7 @@ void MainWindow::handleLowerCurrent(int value) {
 }
 
 void MainWindow::handleVibrate(bool checked) {
-    SpeedContolCommand msg;
+    SpeedControlCommand msg;
     int speed = ui->spinBox_Vibrate->value();
     speed = checked ? speed : 0;
     msg.set_rpm(speed);
@@ -925,7 +782,7 @@ void MainWindow::handleVibrate(bool checked) {
 }
 
 void MainWindow::handleUpperCurrent(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -944,7 +801,7 @@ void MainWindow::handleUpperCurrent(int value) {
 }
 
 void MainWindow::handleDigSpeed(int value) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value / 10.0F);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -1124,7 +981,13 @@ void MainWindow::initSubscription() {
     connect(threadDylann, SIGNAL(finished()), threadDylann, SLOT(deleteLater()));
     threadDylann->start();
 
+    //AMQPExchange *ax = m_amqp->createExchange("amq.topic");
+    ConsumerThread *threadWolfe = new ConsumerThread(m_loginStr, "localization.data");
+    connect(threadWolfe, &ConsumerThread::receivedMessage, this, &MainWindow::handleLocalizationData);
+    connect(threadWolfe, SIGNAL(finished()), threadWolfe, SLOT(deleteLater()));
+
     //on_commandLinkButton_clicked();
+    startLoc_Thread();
 }
 
 void MainWindow::handleState(QString key, QByteArray data) {
@@ -1170,14 +1033,6 @@ void MainWindow::handleState(QString key, QByteArray data) {
     } else {
         ui->progressBar_BackRightWheeBackwards->setValue(-br_rpm);
     }
-    ui->lcdNumber_FrontLeftWheelPod->display(fl_pos);
-    ui->lcdNumber_FrontRightWheelPod->display(fr_pos);
-    ui->lcdNumber_BackLeftWheelPod->display(bl_pos);
-    ui->lcdNumber_BackRightWheelPod->display(br_pos);
-    ui->progressBar_FrontLeftWheelPod->setValue(fl_pos);
-    ui->progressBar_FrontRightWheelPod->setValue(fr_pos);
-    ui->progressBar_BackLeftWheelPod->setValue(bl_pos);
-    ui->progressBar_BackRightWheelPod->setValue(br_pos);
     rectangle1->setRotation(fl_pos);
     rectangle2->setRotation(-fr_pos);
     rectangle3->setRotation(-bl_pos);
@@ -1198,6 +1053,7 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
     if (ev->isAutoRepeat()) {
         QWidget::keyPressEvent(ev);
     } else {
+        //TODO: Update wasd and other functions with appropriate steering when that information is known
         switch (ev->key()) {
         case (Qt::Key_Space):
             handleEStop();
@@ -1213,16 +1069,16 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
             handleLocomotionDown();
             break;
         case (Qt::Key_D):
-            handleD_KeyPress();
+            //handleD_KeyPress();
             break;
         case (Qt::Key_I):
-            handleLocomotionStraight();
+            //handleLocomotionStraight();
             break;
         case (Qt::Key_O):
-            turnConfig();
+            //turnConfig();
             break;
         case (Qt::Key_P):
-            strafeConfig();
+            //strafeConfig();
             break;
         case (Qt::Key_J):
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() - 10);
@@ -1230,12 +1086,12 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
         case (Qt::Key_K):
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() + 10);
             break;
-        //case (Qt::Key_R):
-          //  handleTankPivotRK();
-          //  break;
-        //case (Qt::Key_L):
-          //  handleTankPivotLK;
-          //  break;
+        case (Qt::Key_R):
+            handleTankPivotRK();
+            break;
+        case (Qt::Key_L):
+            handleTankPivotLK();
+            break;
         case (Qt::Key_E):
              actionTabRight();
              break;
@@ -1330,10 +1186,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent *ev) {
         case (Qt::Key_K):
             break;
         case (Qt::Key_R):
-            //handleLocomotionStop();
+            handleLocomotionStop();
             break;
         case (Qt::Key_L):
-            //handleLocomotionStop();
+            handleLocomotionStop();
             break;
         case (Qt::Key_E):
             break;
@@ -1455,6 +1311,9 @@ void MainWindow::handleTankPivotR() {
     if (0 == m_desiredConfig) { // straight
         int leftSide = (ui->slider_LocomotionSpeed->value()); //left wheel speed
         int rightSide = (ui->slider_UpsetSpeed->value()* (-1)); //right wheel speed
+        QString r = QString::number(leftSide);
+        QString l = QString::number(rightSide);
+        ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
         handleFrontRightWheelSet(rightSide);
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
@@ -1469,6 +1328,9 @@ void MainWindow::handleTankPivotL() {
     if (0 == m_desiredConfig) { // straight
         int rightSide = (ui->slider_LocomotionSpeed->value()); //right wheel speed
         int leftSide = (ui->slider_UpsetSpeed->value()* (-1)); //left wheel speed
+        QString r = QString::number(leftSide);
+        QString l = QString::number(rightSide);
+        ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
         handleFrontRightWheelSet(rightSide);
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
@@ -1485,6 +1347,9 @@ void MainWindow::handleTankPivotRK() {
     if (0 == m_desiredConfig) { // straight
         int leftSide = (ui->slider_LocomotionSpeed->value()); //right wheel speed
         int rightSide = (ui->slider_LocomotionSpeed->value()* (-1)); //left wheel speed
+        QString r = QString::number(leftSide);
+        QString l = QString::number(rightSide);
+        ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
         handleFrontRightWheelSet(rightSide);
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
@@ -1499,6 +1364,9 @@ void MainWindow::handleTankPivotLK() {
     if (0 == m_desiredConfig) { // straight
         int rightSide = (ui->slider_LocomotionSpeed->value()); //right wheel speed
         int leftSide = (ui->slider_LocomotionSpeed->value()* (-1)); //left wheel speed
+        QString r = QString::number(leftSide);
+        QString l = QString::number(rightSide);
+        ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
         handleFrontRightWheelSet(rightSide);
         handleBackRightWheelSet(rightSide);
         handleFrontLeftWheelSet(leftSide);
@@ -1595,7 +1463,7 @@ void MainWindow::strafeConfig() {
 
 /* * ON ALL OF THESE MAKE SURE THE KEY RELEASE WORKS AS IT IS MEANT TO * */
 void MainWindow::drill(float value, QString key) {
-    PositionContolCommand msg;
+    PositionControlCommand msg;
     msg.set_position(value);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
@@ -1784,7 +1652,7 @@ void MainWindow::dumpConveyor(bool checked) {
 /* Anti Bucket Conveyor Sends negative Speed */
 void MainWindow::inverseExcavationConveyer(bool checked) {
     if(m_digConfig == 1) {
-        SpeedContolCommand msg;
+        SpeedControlCommand msg;
         int speed = (-1)*(ui->slider_ExcavationConveyor->value());
         msg.set_rpm(checked ? speed : 0);
         msg.set_timeout(456);
@@ -1817,13 +1685,12 @@ void MainWindow::regularExcavationConveyer(bool checked) {
 }
 
 void MainWindow::handleA_KeyPress() {
-    if(m_desiredConfig == 0) { //straight
+    /*if(m_desiredConfig == 0) { //straight
         handleTankPivotLK();
     }
     else                       //turn or strafe
-        handleLocomotionLeft();
+        handleLocomotionLeft();*/
 }
-
 void MainWindow::handleD_KeyPress() {
     if(m_desiredConfig == 0) { //straight
         handleTankPivotRK();
@@ -1843,8 +1710,55 @@ void MainWindow::handleObstacleData(QString key, QByteArray data) {
     QString y = QString::number(y_pos);
     QString z = QString::number(z_pos);
     QString d = QString::number(diameter);
-    ui->consoleOutputTextBrowser->append(x + y + z + d);
+    //ui->consoleOutputTextBrowser->append(x + y + z + d);
+    ui->consoleOutputTextBrowser->append("Received Obstacle Data");
     //QPixmap pix;
    // pix.loadFromData((uchar*)data.data(), data.length(), "JPEG");
     //ui->cam5lbl->setPixmap(pix);
+}
+
+void MainWindow::handleLocalizationData(QString key, QByteArray data) {
+    LocalizationPosition msg;
+    msg.ParseFromArray(data.data(), data.length());
+    float x_pos = msg.x_position();
+    float y_pos = msg.y_position();
+    QString x = QString::number(x_pos);
+    QString y = QString::number(y_pos);
+
+    QString theta = QString::number(msg.bearing_angle());\
+    //QString d = QString::number(msg.distance_vector());
+
+
+    //Currently distance sent instead of x
+    double x_val = 1 * (x.toDouble())*(qSin(theta.toDouble()));
+    double y_val = 1 * (x.toDouble())*(qCos(theta.toDouble()));
+    double yaw = qRadiansToDegrees(theta.toDouble());
+    //double angle = qRadiansToDegrees(qAtan(((double) y_pos)/((double) y_pos)));
+    //double heading = yaw;// - angle;
+    QString newTheta = QString::number(yaw);
+    QString xNew = QString::number(x_val);
+    QString yNew = QString::number(y_val);
+    ui->consoleOutputTextBrowser->append("Approach X: " + xNew + ", Approach Y: " + yNew + ", Heading: " + newTheta);
+    //double angle = qRadiansToDegrees(qAtan((y_val/x_val)));
+    //ui->consoleOutputTextBrowser->append("Relative X: " + y + ", Relative Y: " + x +", Approach X: " + xNew + ", Approach Y: " + yNew);
+    //agent->setX(x_val);
+    //agent->setY(y_val);
+    //agent->setRotation(angle);
+    //agent->setTransformOriginPoint((double)(y_pos), (double)(x_pos));
+    //agent->setPos(x_val, y_val);
+}
+
+void MainWindow::handleLocalization(QString key, QByteArray data) {
+  //  ui->locNumber->display(data.toInt());
+    int value = data.toInt();
+    QString out = QString::number(value);
+    ui->consoleOutputTextBrowser->append(out);
+}
+
+void MainWindow::startLoc_Thread() {
+    ConsumerThread *threadL = new ConsumerThread(m_loginStr, "loc.post");
+    connect(threadL, &ConsumerThread::receivedMessage, this, &MainWindow::handleLocalizationData);
+    connect(threadL, SIGNAL(finished()), threadL, SLOT(deleteLater()));
+    threadL->start();
+
 }
