@@ -18,8 +18,8 @@ O_SRCS += \
 ../Debug/TagDetection.o \
 ../Debug/TagDetector.o \
 ../Debug/TagFamily.o \
-../Debug/TagLocalization.o \
 ../Debug/UnionFindSimple.o \
+../Debug/apriltags_demo.o \
 ../Debug/imu.o 
 
 
