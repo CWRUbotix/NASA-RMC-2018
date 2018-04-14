@@ -7,6 +7,7 @@ import pika
 import sys
 import copy
 import time
+import glob
 import messages_pb2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
@@ -15,15 +16,15 @@ from pylibfreenect2 import LoggerLevel
 
 
 try:
-    	from pylibfreenect2 import OpenCLPacketPipeline
-    	pipeline = OpenCLPacketPipeline()
+		from pylibfreenect2 import OpenCLPacketPipeline
+		pipeline = OpenCLPacketPipeline()
 except:
-    	try:
-       		from pylibfreenect2 import OpenGLPacketPipeline
-        	pipeline = OpenGLPacketPipeline()
-    	except:
-       		from pylibfreenect2 import CpuPacketPipeline
-        	pipeline = CpuPacketPipeline()
+		try:
+	   		from pylibfreenect2 import OpenGLPacketPipeline
+			pipeline = OpenGLPacketPipeline()
+		except:
+	   		from pylibfreenect2 import CpuPacketPipeline
+			pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
 #start messaging
@@ -38,6 +39,7 @@ def publish_obstacle_position(x,y,z,diameter):
 	msg.y_position = y
 	msg.z_position = z
 	msg.diameter = diameter
+	print "Sending obstacle message"
 	topic = 'obstacle.position'
 	channel.basic_publish(exchange=exchange_name,
 			routing_key=topic,
@@ -67,7 +69,14 @@ device.start()
 
 # NOTE: must be called after device.start()
 registration = Registration(device.getIrCameraParams(),
-                            device.getColorCameraParams())
+							device.getColorCameraParams())
+
+#clear test frames if there are any left
+if len(sys.argv) > 1:
+	if sys.argv[1]=="test":
+		files = glob.glob('/test_frames/*')
+		for f in files:
+			os.remove(f)
 
 h,w = 512, 424
 FOVX = 1.232202 #horizontal FOV in radians
@@ -77,9 +86,10 @@ principal_x = device.getIrCameraParams().cx #principal point x
 principal_y = device.getIrCameraParams().cy #principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
-
+frame_i = 0
+num_frames = 200
 while True:
-	
+
 	frames = listener.waitForNewFrame()
 	depth_frame = frames["depth"]
 	color = frames["color"]
@@ -92,6 +102,11 @@ while True:
 	#flip images
 	img = cv2.flip(img,1)
 	imgray = cv2.flip(imgray,1)
+
+	if len(sys.argv) > 1:
+		if sys.argv[1]=="test" and frame_i < num_frames:
+			cv2.imwrite("test_frames/frame_" + str(frame_i) +".bmp", img)
+			frame_i += 1
 
 	#begin edge detection
 
@@ -163,7 +178,7 @@ while True:
 				cx = int(moment['m10']/moment['m00'])
 				cy = int(moment['m01']/moment['m00'])
 
-                # Preferred Options:
+				# Preferred Options:
 				#mm_diameter = (2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object)
 				#(equi_diameter / w) * (2.0 * distance_to_object * math.tan(/2.0)) # ~FOV
 
@@ -177,9 +192,9 @@ while True:
 				if dist_to_centroid < HIGH_DISTANCE_BOUND:
 					coords = registration.getPointXYZ(undistorted, max_loc[1], max_loc[0])
 					mm_diameter = (equi_diameter) * (1.0 / focal_x) * coords[2]
-					
+
 					publish_obstacle_position(coords[0],coords[1],coords[2],mm_diameter)
-					
+
 					color = cv2.ellipse(color,ellipse,(0,255,0),2)
 					cv2.drawContours(color,[box],0,(0,0,255),1)
 
@@ -201,7 +216,7 @@ while True:
 	# visualization backend.
 
 	#cv2.imshow("unknown", sure_bg)
-	#cv2.imshow("depth", color)
+	cv2.imshow("depth", color)
 
 	listener.release(frames)
 	# Use the key 'q' to end!
@@ -209,6 +224,8 @@ while True:
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
 		break
+	#wait to process the next frame
+	time.sleep(1)
 
 cv2.destroyAllWindows()
 device.stop()
