@@ -23,15 +23,7 @@ cd ../
 
 sleep 2
 
-#cd autodrill
-#nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/autodrill-1.0-SNAPSHOT.jar com.cwrubotix.glennifer.autodrill.AutoDrillModule #&> "/home/ubuntu/logs/$datestring/AutoDrillModuleOutput.log" &
-#cd ..
 
 #cd motor_dispatch/src/python
 #nohup python3 locomotion.py #&> "/home/ubuntu/logs/$datestring/LocomotionPyOutput.log" &
 #cd ../../../..
-
-cd client-cameras
-nohup python client-cam-send.py #&> "/home/ubuntu/logs/$datestring/CameraSendPyOutput.log" &
-cd ..
-cd ..

@@ -21,6 +21,7 @@ public class StateModuleTest {
     private LocomotionState locomotionState; // TODO: mock this
     private ExcavationState excavationState;
     private DepositionState depositionState;
+    private AutonomyState autonomyState;
     private StateModule module;
 
     public StateModuleTest() { }
@@ -37,7 +38,8 @@ public class StateModuleTest {
         locomotionState = new LocomotionState();
         excavationState = new ExcavationState();
         depositionState = new DepositionState();
-        module = new StateModule(locomotionState, excavationState, depositionState, "amq.topic");
+        autonomyState = new AutonomyState();
+        module = new StateModule(locomotionState, excavationState, depositionState, autonomyState, "amq.topic");
         module.start();
     }
 

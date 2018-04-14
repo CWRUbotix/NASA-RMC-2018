@@ -68,7 +68,7 @@ message LoadUpdate {
 }
 
 message CountUpdate {
-	required int count = 1;
+	required uint32 count = 1;
 	required UnixTime timestamp = 2;
 }
 
@@ -170,10 +170,10 @@ message LocomotionStateDetailed {
 	required float front_right_rpm = 2;
 	required float back_left_rpm = 3;
 	required float back_right_rpm = 4;
-	required int front_left_count = 5;
-	required int front_right_count = 6;
-	required int back_left_count = 7;
-	required int back_right_count = 8;
+	required uint32 front_left_count = 5;
+	required uint32 front_right_count = 6;
+	required uint32 back_left_count = 7;
+	required uint32 back_right_count = 8;
 }
 
 //summary of excavation state
@@ -211,14 +211,13 @@ message DepositionStateSummary {
 
 //details of deposition state
 message DepositionStateDetailed {
-	required float front_left_load = 2;
-	required float front_right_load = 3;
-	required float back_left_load = 4;
-	required float back_right_load = 5;
-	required bool dump_left_extended = 6;
-	required bool dump_right_extended = 7;
-	required bool dump_left_retracted = 8;
-	required bool dump_right_retracted = 9;
+	required float pos = 1;
+	required float left_load = 2;
+	required float right_load = 3;
+	required bool dump_left_extended = 4;
+	required bool dump_right_extended = 5;
+	required bool dump_left_retracted = 6;
+	required bool dump_right_retracted = 7;
 }
 
 //localization vector

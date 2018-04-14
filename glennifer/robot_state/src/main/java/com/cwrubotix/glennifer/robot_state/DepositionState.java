@@ -104,8 +104,7 @@ public class DepositionState {
 
     public float getDumpLoad() {
         //TODO: use linear functions to get more accurate reading
-        return loadCellValue.get(LoadCell.BACK_LEFT) + loadCellValue.get(LoadCell.BACK_RIGHT) +
-                loadCellValue.get(LoadCell.FRONT_LEFT) + loadCellValue.get(LoadCell.FRONT_RIGHT);
+        return loadCellValue.get(LoadCell.LEFT) + loadCellValue.get(LoadCell.RIGHT);
     }
     
     public float getDumpPos() {

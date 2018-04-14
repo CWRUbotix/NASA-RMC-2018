@@ -53,8 +53,8 @@ public class SubscriptionTestMain {
                     .setDepositionDetailed(true)
                     .setExcavationSummary(true)
                     .setExcavationDetailed(true)
-                    .setAutonomySummary(true)
-                    .setAutonomyDetailed(true)
+                    //.setAutonomySummary(true)
+                    //.setAutonomyDetailed(true)
                     .build();
 
             channel.basicPublish("amq.topic", "state.subscribe", null, subMsg.toByteArray());

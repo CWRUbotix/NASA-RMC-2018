@@ -32,7 +32,7 @@ public class LocomotionState {
 
     /* Data members */
     private EnumMap<Wheel, Optional<Float>> wheelRpm;
-    private EnumMap<Wheel, Optional<Int>> wheelCount;
+    private EnumMap<Wheel, Optional<Integer>> wheelCount;
 
     // TODO: Store the time most recently updated, either for the whole system
     // or for each sensor. If you want to handle out of order updates, you'll
@@ -88,7 +88,7 @@ public class LocomotionState {
         //else update PodPos time
         timeSinceWheelRPM = Instant.now();
     }
-    public void updateWheelCounts(Wheel wheel, int counts, Instant time) throws RobotFaultException {
+    public void updateWheelCount(Wheel wheel, int counts, Instant time) throws RobotFaultException {
     	//Note: wheel count is the output from the encoder, may need processing to be a valid unit
     	
     	wheelCount.put(wheel, Optional.of(counts));
@@ -126,6 +126,10 @@ public class LocomotionState {
         }
         //speed is the averaged RPM for reporting wheels
         return rpmTot / divNum;
+    }
+
+    public int getWheelCount(Wheel wheel){
+        return wheelCount.get(wheel).get();
     }
 
     //

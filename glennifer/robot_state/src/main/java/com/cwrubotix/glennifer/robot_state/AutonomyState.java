@@ -1,6 +1,7 @@
 package com.cwrubotix.glennifer.robot_state;
 
 import java.time.Instant;
+import java.util.LinkedList;
 
 
 /**
@@ -16,25 +17,27 @@ import java.time.Instant;
  *
  */
 
-
 public class AutonomyState {
 
 	/* Data members*/
+	/*
 	private LinkedList<Coordinate> obstacles; //linked list of coordinates for known obstacles
 	private Position position; //contains xy coordinates and heading
-	
+	*/
+
 	public AutonomyState() {
 		/*Implementation note: This constructor initiallizes all data members
 		 * to 0, including the xy coordinates for the robot position and
 		 * the robot's heading. These will not be accurate and should be replaced 
 		 * with input as soon as it is availible.
 		 */
-		
+		/*
 		position = new Position(0.0,0.0,0.0);
 		obstacles = new LinkedList();
+		*/
 	}
 	
-	/* Update methods */
+	/* Update methods 
 	public void updatePosition (Position position) {
 		this.position = position;
 	}
@@ -48,7 +51,7 @@ public class AutonomyState {
 		obstacles.add(obstacle);
 	}
 	
-	/*Getter Methods */
+	/*Getter Methods 
 	
 	public Position getPosition() {
 		return position;
@@ -57,4 +60,5 @@ public class AutonomyState {
 	public LinkedList<Coordinate> getObstacles() {
 		return obstacles;
 	}
+	*/
 }

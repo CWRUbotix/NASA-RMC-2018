@@ -16,6 +16,7 @@ import com.cwrubotix.glennifer.Messages.LimitUpdate;
 import com.cwrubotix.glennifer.Messages.PositionUpdate;
 import com.cwrubotix.glennifer.Messages.DisplacementUpdate;
 import com.cwrubotix.glennifer.Messages.CurrentUpdate;
+import com.cwrubotix.glennifer.Messages.CountUpdate;
 import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.UnixTime;
 
@@ -121,10 +122,9 @@ public class StateModule {
                 }
                 if (dep_detailed) {
                     Messages.DepositionStateDetailed msg = Messages.DepositionStateDetailed.newBuilder()
-                            .setFrontLeftLoad(depositionState.getDumpLoad(DepositionState.LoadCell.FRONT_LEFT))
-                            .setFrontRightLoad(depositionState.getDumpLoad(DepositionState.LoadCell.FRONT_RIGHT))
-                            .setBackLeftLoad(depositionState.getDumpLoad(DepositionState.LoadCell.BACK_LEFT))
-                            .setBackRightLoad(depositionState.getDumpLoad(DepositionState.LoadCell.BACK_RIGHT))
+                            .setPos(depositionState.getDumpPos())
+                            .setLeftLoad(depositionState.getDumpLoad(DepositionState.LoadCell.LEFT))
+                            .setRightLoad(depositionState.getDumpLoad(DepositionState.LoadCell.RIGHT))
                             .setDumpLeftExtended(depositionState.getDumpExtended(DepositionState.Side.LEFT))
                             .setDumpRightExtended(depositionState.getDumpExtended(DepositionState.Side.RIGHT))
                             .setDumpLeftRetracted(depositionState.getDumpRetracted(DepositionState.Side.LEFT))
@@ -132,13 +132,13 @@ public class StateModule {
                             .build();
                     stateMsgBuilder.setDepDetailed(msg);
                 }
-                if(auto_summary) {
+                /*if(auto_summary) {
                 	Messages.AutonomyStateSummary msg = Messages.AutonomyStateSummary.newBuilder()
                 			.setPos(autonomyState.getPosition())
                 			.setObst(autonomyState.getObstacles())
                 			.build();
                 	stateMsgBuilder.setAutoSummary(msg);
-                }
+                }*/
                 try {
                     //Not sure how to do this bit properly
                     StateModule.this.channel.basicPublish(exchangeName, returnKey, null, stateMsgBuilder.build().toByteArray());
@@ -261,11 +261,11 @@ public class StateModule {
                     handleDumpPosUpdate(body);
                 } else if (sensorString.equals("load")) {
                     String sideString = keys[4];
-                    DepositionState.Side side;
+                    DepositionState.LoadCell side;
                     if (sideString.equals("left")) {
-                        side = DepositionState.Side.LEFT;
+                        side = DepositionState.LoadCell.LEFT;
                     } else if (sideString.equals("right")) {
-                        side = DepositionState.Side.RIGHT;
+                        side = DepositionState.LoadCell.RIGHT;
                     } else {
                         System.out.println("Bad side string in routing key");
                         return;
@@ -403,12 +403,12 @@ public class StateModule {
         }
     }
 
-    private void handleConveyorMotorCurrentUpdate(byte[] body) throws IOException {
+    private void handleConveyorCurrentUpdate(byte[] body) throws IOException {
         CurrentUpdate message = CurrentUpdate.parseFrom(body);
         float current = message.getCurrent();
         Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
         try {
-            excavationState.updateConveyorMotorCurrent(current, time);
+            excavationState.updateConveyorCurrent(current, time);
         } catch (RobotFaultException e) {
             sendFault(e.getFaultCode(), time);
         }
@@ -513,8 +513,8 @@ public class StateModule {
         }
     }
     
-    private void handlePositionUpdate(byte[] body) throws IOException {
-    	PositionUpdate message PositionUpdate.parseFrom(body);
+    /*private void handlePositionUpdate(byte[] body) throws IOException {
+    	PositionUpdate message = PositionUpdate.parseFrom(body);
     	Position pos = message.getPosition();
     	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
     	try {
@@ -525,7 +525,7 @@ public class StateModule {
     }
     
     private void handleObstacleUpdate(byte[] body) throws IOException {
-    	ObstacleUpdate message ObstacleUpdate.parseFrom(body);
+    	ObstacleUpdate message = ObstacleUpdate.parseFrom(body);
     	Coordinate obstacle = message.getObstacle();
     	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
     	try {
@@ -533,7 +533,7 @@ public class StateModule {
     	} catch (RobotFaultException e) {
     		sendFault(e.getFaultCode(), time);
     	}
-    }
+    }*/
     
     /*Hash Table for SubscriptionThreads*/
     private class SubscriptionThreads{
