@@ -36,6 +36,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1246691549" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.libs.559003056" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="opencv_core"/>
+									<listOptionValue builtIn="false" value="protobuf-lite"/>
 									<listOptionValue builtIn="false" value="protoc"/>
 									<listOptionValue builtIn="false" value="protobuf"/>
 									<listOptionValue builtIn="false" value="v4l1"/>

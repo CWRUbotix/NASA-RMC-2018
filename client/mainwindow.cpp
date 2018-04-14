@@ -560,6 +560,139 @@ void MainWindow::handleBackRightWheelSet(int value) {
     ui->lineEdit_BackRightWheel->setText(QString::number(value));
 }
 
+void MainWindow::handleFrontLeftWheelPodStrafe() {
+    ui->slider_FrontLeftWheelPod->setValue(90);
+}
+
+void MainWindow::handleFrontLeftWheelPodTurn() {
+    ui->slider_FrontLeftWheelPod->setValue(60);
+}
+
+void MainWindow::handleFrontLeftWheelPodStraight() {
+    ui->slider_FrontLeftWheelPod->setValue(0);
+}
+
+void MainWindow::handleFrontLeftWheelPodSet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.front_left.wheel_pod_pos");
+
+    free(msg_buff);
+
+    ui->lineEdit_FrontLeftWheelPod->setText(QString::number(value));
+}
+
+void MainWindow::handleFrontRightWheelPodStrafe() {
+    ui->slider_FrontRightWheelPod->setValue(90);
+}
+
+void MainWindow::handleFrontRightWheelPodTurn() {
+    ui->slider_FrontRightWheelPod->setValue(60);
+}
+
+void MainWindow::handleFrontRightWheelPodStraight() {
+    ui->slider_FrontRightWheelPod->setValue(0);
+}
+
+void MainWindow::handleFrontRightWheelPodSet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.front_right.wheel_pod_pos");
+
+    free(msg_buff);
+
+    ui->lineEdit_FrontRightWheelPod->setText(QString::number(value));
+}
+
+void MainWindow::handleBackLeftWheelPodStrafe() {
+    ui->slider_BackLeftWheelPod->setValue(90);
+}
+
+void MainWindow::handleBackLeftWheelPodTurn() {
+    ui->slider_BackLeftWheelPod->setValue(60);
+}
+
+void MainWindow::handleBackLeftWheelPodStraight() {
+    ui->slider_BackLeftWheelPod->setValue(0);
+}
+
+void MainWindow::handleBackLeftWheelPodSet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.back_left.wheel_pod_pos");
+
+    free(msg_buff);
+
+    ui->lineEdit_BackLeftWheelPod->setText(QString::number(value));
+}
+
+void MainWindow::handleBackRightWheelPodStrafe() {
+    ui->slider_BackRightWheelPod->setValue(90);
+}
+
+void MainWindow::handleBackRightWheelPodTurn() {
+    ui->slider_BackRightWheelPod->setValue(60);
+}
+
+void MainWindow::handleBackRightWheelPodStraight() {
+    ui->slider_BackRightWheelPod->setValue(0);
+}
+
+void MainWindow::handleBackRightWheelPodSet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.back_right.wheel_pod_pos");
+
+    free(msg_buff);
+
+    ui->lineEdit_BackRightWheelPod->setText(QString::number(value));
+}
+
+>>>>>>> b52a188f67122c32252f6872e13a1987b1ca31c4
 void MainWindow::handleExcavationArmSet(int value) {
     PositionControlCommand msg;
     msg.set_position(value);
