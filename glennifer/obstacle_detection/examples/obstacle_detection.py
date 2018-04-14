@@ -47,7 +47,15 @@ def publish_obstacle_position(x, y, z, diameter):
                           routing_key=topic,
                           body=msg.SerializeToString())
 
-
+save_frames = False
+#clear test frames if there are any left
+if len(sys.argv) > 1:
+	if sys.argv[1]=="test":
+		files = glob.glob('/test_frames/*')
+		save_frames = True
+		for f in files:
+			os.remove(f)
+            
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
 setGlobalLogger(logger)
@@ -100,6 +108,9 @@ while True:
     # flip images
     img = cv2.flip(img, 1)
     imgray = cv2.flip(imgray, 1)
+    if len(sys.argv) > 1:
+		if sys.argv[1]=="test" and frame_i < num_frames:
+			cv2.imwrite("test_frames/frame_" + str(frame_i) +".bmp", img)
 
     # begin edge detection
     ret, thresh = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY)
