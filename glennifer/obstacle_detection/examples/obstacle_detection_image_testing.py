@@ -14,18 +14,16 @@ frame_i = 0
 
 while True:
 
-<<<<<<< HEAD
 	img = np.load("test_frames/" + str(frame_i) +".npy") / 4500.
 	imgray = np.uint8(img/255.0)
 	cv2.imshow("depth", img)
 	#save depth image as raw frame in video
 	#out.write(img)
-=======
+
 	img = cv2.imread("test_frames/frame_" + str(frame_i) +".bmp") #* 4500.0
 	#imgray = np.uint8(img/255.0)
 	imgray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 	cv2.imshow("depth", img)
->>>>>>> ebe939e5b60ab866f095151055c59ae2f96005a4
 
 	#begin edge detection
 
@@ -137,14 +135,11 @@ while True:
 	#cv2.imshow("unknown", sure_bg)
 	cv2.imshow("depth", img)
 
-<<<<<<< HEAD
-
 	time.sleep(1)
-=======
 	listener.release(frames)
 	# Use the key 'q' to end!
 
->>>>>>> ebe939e5b60ab866f095151055c59ae2f96005a4
+	# Use the key 'q' to end!
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
 		break

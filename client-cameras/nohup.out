@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "client-cam-send.py", line 20, in <module>
+    channel.exchange_declare(exchange='amq.topic', type = 'topic', durable = True)
+TypeError: exchange_declare() got an unexpected keyword argument 'type'
+Traceback (most recent call last):
+  File "client-cam-send.py", line 20, in <module>
+    channel.exchange_declare(exchange='amq.topic', type = 'topic', durable = True)
+TypeError: exchange_declare() got an unexpected keyword argument 'type'
+Traceback (most recent call last):
+  File "client-cam-send.py", line 20, in <module>
+    channel.exchange_declare(exchange='amq.topic', type = 'topic', durable = True)
+TypeError: exchange_declare() got an unexpected keyword argument 'type'
