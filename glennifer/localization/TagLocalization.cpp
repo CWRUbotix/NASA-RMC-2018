@@ -198,8 +198,8 @@ public:
     m_width(640),
     m_height(480),
     m_tagSize(0.165),
-    m_fx(644.12),
-    m_fy(644.12),
+    m_fx(525),
+    m_fy(525),
     m_px(319.5),
     m_py(239.5),
 
@@ -375,8 +375,7 @@ public:
 
   void print_detection(AprilTags::TagDetection& detection) const {
     cout << "  Id: " << detection.id
-         //<< " (Hamming: " << detection.hammingDistance << ")";
-    		;
+         << " (Hamming: " << detection.hammingDistance << ")";
 
     // recovering the relative pose of a tag:
 
@@ -386,8 +385,10 @@ public:
 
     Eigen::Vector3d translation;
     Eigen::Matrix3d rotation;
+    Eigen::Vector4d fcol;
     detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                             translation, rotation);
+                                             translation, rotation, fcol);
+
 
     Eigen::Matrix3d F;
     F <<
@@ -399,26 +400,28 @@ public:
     wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
 
-   double bearingAngle = (pitch);
    AMQPExchange * ex = amqp.createExchange("amq.topic");
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     com::cwrubotix::glennifer::LocalizationPosition msg;
-    //msg.set_x_position((float)(translation.norm() * (sin (bearingAngle))));
-    msg.set_x_position((float)(translation.norm()));
-    msg.set_y_position((float)(translation.norm() * (cos (bearingAngle))));
-    msg.set_bearing_angle((float) ((pitch)));
+    msg.set_x_position((float)fcol(0));
+    msg.set_y_position((float)fcol(2));
+    msg.set_bearing_angle((float) ((-1 * pitch) + PI));
+
     //msg.set_distance_vector((float) ((1) * (translation.norm())));
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
     msg.SerializeToArray(msg_buff, msg_size);
 
-    //ex->Publish((char*)msg_buff, msg_size, "loc.post");
+    ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
-    cout //<< "  distance=" << translation.norm()
-         //    << "m, x =" << ((translation.norm() * (sin (pitch))))// * (sin (pitch)))
-         //   << "m, y =" << ((translation.norm() * (cos (pitch))))// * (cos (pitch)))
-             << " pitch=" << ((bearingAngle * 180)/PI)
-             ;
+    cout << "  distance=" << translation.norm()
+            << "m, x=" << fcol(0) //(translation.norm() * (sin (pitch)))
+            << ", y=" << fcol(2)//(translation.norm() * (cos (pitch)))
+             //<< ", z=" << fcol(2)//translation(2)
+             //<< ", w=" << fcol(1) //yaw
+             << ", Bearing=" << (pitch * 180/PI)
+             //<< ", roll=" << roll
+             << endl;
 
     // Also note that for SLAM/multi-view application it is better to
     // use reprojection error of corner points, because the noise in
@@ -466,15 +469,18 @@ public:
         // only the first detected tag is sent out for now
         Eigen::Vector3d translation;
         Eigen::Matrix3d rotation;
+
+        Eigen::Vector4d fcol;
         detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                                     translation, rotation);
+                                                     translation, rotation, fcol);
         m_serial.print(detections[0].id);
         m_serial.print(",");
-        //m_serial.print(translation(0));
+        m_serial.print(translation(0));
         m_serial.print(",");
-        //m_serial.print(translation(1));
+        m_serial.print(translation(1));
         m_serial.print(",");
-        //m_serial.print(translation(2));
+        m_serial.print(translation(2));
+
         m_serial.print("\n");
       } else {
         // no tag detected: tag ID = -1
@@ -526,7 +532,8 @@ public:
 
       // exit if any key is pressed
       if (cv::waitKey(1) >= 0) break;
-      sleep(2);
+      //sleep(1.5);
+
     }
   }
 
@@ -556,7 +563,6 @@ int main(int argc, char* argv[]) {
 
     // process single image
     demo.loadImages();
-
   }
 
   return 0;

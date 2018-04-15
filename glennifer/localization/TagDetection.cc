@@ -112,7 +112,7 @@ Eigen::Matrix4d TagDetection::getRelativeTransform(double tag_size, double fx, d
 }
 
 void TagDetection::getRelativeTranslationRotation(double tag_size, double fx, double fy, double px, double py,
-                                                  Eigen::Vector3d& trans, Eigen::Matrix3d& rot) const {
+                                                  Eigen::Vector3d& trans, Eigen::Matrix3d& rot, Eigen::Vector4d& fcol) const {
   Eigen::Matrix4d T =
     getRelativeTransform(tag_size, fx, fy, px, py);
 
@@ -127,6 +127,11 @@ void TagDetection::getRelativeTranslationRotation(double tag_size, double fx, do
   Eigen::Matrix4d MT = M*T;
   // translation vector from camera to the April tag
   trans = MT.col(3).head(3);
+  //fcol = T.block<1,4>(0,3);
+  fcol(0) = T(0, 3);
+  fcol(1) = T(1, 3);
+  fcol(2) = T(2, 3);
+  fcol(3) = T(3, 3);
   // orientation of April tag with respect to camera: the camera
   // convention makes more sense here, because yaw,pitch,roll then
   // naturally agree with the orientation of the object

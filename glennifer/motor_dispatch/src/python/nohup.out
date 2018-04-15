@@ -2,3 +2,63 @@ Traceback (most recent call last):
   File "locomotion.py", line 2, in <module>
     import messages_pb2
 ImportError: No module named 'messages_pb2'
+Traceback (most recent call last):
+  File "locomotion.py", line 161, in <module>
+    connection.ioloop.start()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 209, in start
+    self._poller.start()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 495, in start
+    self.poll()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 935, in poll
+    self._dispatch_fd_events(fd_event_map)
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 625, in _dispatch_fd_events
+    handler(fileno, events)
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/base_connection.py", line 398, in _handle_events
+    self._handle_read()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/base_connection.py", line 453, in _handle_read
+    self._on_data_available(data)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 1908, in _on_data_available
+    self._process_frame(frame_value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 2042, in _process_frame
+    self._deliver_frame_to_channel(frame_value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 1455, in _deliver_frame_to_channel
+    self._channels[value.channel_number]._handle_content_frame(value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/channel.py", line 996, in _handle_content_frame
+    self._on_deliver(*response)
+  File "/usr/local/lib/python3.5/dist-packages/pika/channel.py", line 1125, in _on_deliver
+    header_frame.properties, body)
+  File "locomotion.py", line 107, in handle_strafe
+    publish_wheel_rpm(Wheel.front_left, msg_in.speed / 0.015959, msg_in.timeout)
+  File "locomotion.py", line 136, in publish_wheel_rpm
+    msg = messages_pb2.SpeedContolCommand()
+AttributeError: module 'messages_pb2' has no attribute 'SpeedContolCommand'
+Traceback (most recent call last):
+  File "locomotion.py", line 161, in <module>
+    connection.ioloop.start()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 209, in start
+    self._poller.start()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 495, in start
+    self.poll()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 935, in poll
+    self._dispatch_fd_events(fd_event_map)
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/select_connection.py", line 625, in _dispatch_fd_events
+    handler(fileno, events)
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/base_connection.py", line 398, in _handle_events
+    self._handle_read()
+  File "/usr/local/lib/python3.5/dist-packages/pika/adapters/base_connection.py", line 453, in _handle_read
+    self._on_data_available(data)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 1908, in _on_data_available
+    self._process_frame(frame_value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 2042, in _process_frame
+    self._deliver_frame_to_channel(frame_value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/connection.py", line 1455, in _deliver_frame_to_channel
+    self._channels[value.channel_number]._handle_content_frame(value)
+  File "/usr/local/lib/python3.5/dist-packages/pika/channel.py", line 996, in _handle_content_frame
+    self._on_deliver(*response)
+  File "/usr/local/lib/python3.5/dist-packages/pika/channel.py", line 1125, in _on_deliver
+    header_frame.properties, body)
+  File "locomotion.py", line 118, in handle_configure
+    publish_wheel_pod_angle(Wheel.front_left, 20, configuration.timeout)
+  File "locomotion.py", line 146, in publish_wheel_pod_angle
+    msg = messages_pb2.PositionContolCommand()
+AttributeError: module 'messages_pb2' has no attribute 'PositionContolCommand'
