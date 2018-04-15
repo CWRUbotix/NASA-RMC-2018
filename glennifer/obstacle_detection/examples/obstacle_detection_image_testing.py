@@ -2,6 +2,7 @@
 
 import numpy as np
 import math
+import time
 import cv2
 import sys
 import os
@@ -13,14 +14,11 @@ frame_i = 0
 
 while True:
 
-	img = cv2.imread("test_frames/frame_" + str(frame_i) +".bmp") * 4500.0
+	img = np.load("test_frames/" + str(frame_i) +".npy") / 4500.
 	imgray = np.uint8(img/255.0)
 	cv2.imshow("depth", img)
 	#save depth image as raw frame in video
 	#out.write(img)
-	if len(sys.argv) > 1:
-		if sys.argv[1]=="output":
-			cv2.imwrite("test_frames/frame_" + str(frame_i) +".bmp", img)
 
 	#begin edge detection
 
@@ -92,6 +90,8 @@ while True:
 	cv2.imshow("unknown", unknown)
 	cv2.imshow("depth", img)
 
+
+	time.sleep(1)
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
 		break

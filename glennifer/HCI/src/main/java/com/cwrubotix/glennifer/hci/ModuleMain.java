@@ -413,13 +413,13 @@ public class ModuleMain {
     private static void routeWheelRPMMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         int id = -1;
         if (keys[2].equals("front_left")) {
-            id = 3;
+            id = 0;
         } else if (keys[2].equals("front_right")) {
             id = 1;
         } else if (keys[2].equals("back_left")) {
             id = 2;
         } else if (keys[2].equals("back_right")) {
-            id = 0;
+            id = 3;
         } else {
             System.out.println("Locomotion motor control routing key has invalid wheel");
             return;
@@ -427,11 +427,17 @@ public class ModuleMain {
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
         targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
-        if(id == 3){
-            targetValue *= -1.45;
+        if(id == 0){
+            targetValue *= 1.00;
+        }
+        if(id == 1){
+            targetValue *= 1.00;
         }
         if(id == 2){
-            targetValue *= 1.15;
+            targetValue *= 1.00;
+        }
+        if(id == 3){
+            targetValue *= 1.00;
         }
         queueActuation(id, targetValue);
     }
