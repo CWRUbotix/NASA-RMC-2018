@@ -3,15 +3,46 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 void setup_sensors(){
-	// SENSORS
-	// For testing
-	SensorInfo sensor_0;
-	sensor_infos[0].hardware 	= SH_PIN_POT;
-	sensor_infos[0].whichPin 	= A0;
-	sensor_infos[0].responsiveness = 1;
-	sensor_infos[0].scale 		= 1;
-	sensor_infos[0] 	= sensor_0;
+	// 
 
+
+	// port side linear actuator
+	sensor_infos[10].hardware 		= SH_PIN_POT;
+	sensor_infos[10].whichPin 		= A0;
+	
+	// starboard side linear actuator
+	sensor_infos[11].hardware 		= SH_PIN_POT;
+	sensor_infos[11].whichPin 		= A1;
+
+	// Linear Pot for Excavation Translation
+	sensor_infos[12].hardware 		= SH_PIN_POT;
+	sensor_infos[12].whichPin 		= A2;
+
+	// LIMIT SWITCHES
+	sensor_infos[13].hardware 		= SH_PIN_LIMIT;
+	sensor_infos[13].whichPin 		= 24;
+	sensor_infos[13].whichMotor 	= 8;
+	limit_switches[0] 				= 13;
+
+	sensor_infos[14].hardware 		= SH_PIN_LIMIT;
+	sensor_infos[14].whichPin 		= 25;
+	sensor_infos[14].whichMotor 	= 8;
+	limit_switches[1] 				= 14;
+
+	sensor_infos[15].hardware 		= SH_PIN_LIMIT;
+	sensor_infos[15].whichPin 		= 26;
+	sensor_infos[15].whichMotor 	= 8;
+	limit_switches[2] 				= 15;
+
+	sensor_infos[16].hardware 		= SH_PIN_LIMIT;
+	sensor_infos[16].whichPin 		= 27;
+	sensor_infos[16].whichMotor 	= 6;
+	limit_switches[3] 				= 16;
+
+	sensor_infos[17].hardware 		= SH_PIN_LIMIT;
+	sensor_infos[17].whichPin 		= 28;
+	sensor_infos[17].whichMotor 	= 7;
+	limit_switches[4] 				= 17;
 
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,23 +52,23 @@ void setup_motors(){
 	SabertoothSimplified ST(Serial2); 	//
 	roboclawSerial.begin(ROBOCLAW_BAUD);
 
-	board_infos[0].type 	= MC_ROBOCLAW;
-	board_infos[0].addr 	= ROBOCLAW_0_ADDR;
-	board_infos[0].roboclaw = & roboclawSerial;
+	board_infos[0].type 		= MC_ROBOCLAW;
+	board_infos[0].addr 		= ROBOCLAW_0_ADDR;
+	board_infos[0].roboclaw 	= & roboclawSerial;
 	
-	board_infos[1].type 	= MC_ROBOCLAW;
-	board_infos[1].addr 	= ROBOCLAW_1_ADDR;
-	board_infos[1].roboclaw = & roboclawSerial;
+	board_infos[1].type 		= MC_ROBOCLAW;
+	board_infos[1].addr 		= ROBOCLAW_1_ADDR;
+	board_infos[1].roboclaw 	= & roboclawSerial;
 	
-	board_infos[2].type 	= MC_ROBOCLAW;
-	board_infos[2].addr 	= ROBOCLAW_2_ADDR;
-	board_infos[2].roboclaw = & roboclawSerial;
+	board_infos[2].type 		= MC_ROBOCLAW;
+	board_infos[2].addr 		= ROBOCLAW_2_ADDR;
+	board_infos[2].roboclaw 	= & roboclawSerial;
 
-	board_infos[3].type 		= MC_BRUSHED;
+	board_infos[3].type 		= MC_SABERTOOTH;
 	board_infos[3].ST 			= & ST;
 	board_infos[3].selectPin 	= SABERTOOTH_1_SLCT;
 
-	board_infos[4].type 		= MC_BRUSHED;
+	board_infos[4].type 		= MC_SABERTOOTH;
 	board_infos[4].ST 			= & ST;
 	board_infos[4].selectPin 	= SABERTOOTH_0_SLCT;
 	
@@ -46,12 +77,12 @@ void setup_motors(){
 	
 
 	// MOTORS
+	// DRIVE MOTORS
 	motor_infos[0].whichMotor	= 0;
 	motor_infos[0].hardware 	= MH_RC_VEL;
 	motor_infos[0].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[0].board 		= & (board_infos[0]);
 
-	
 	motor_infos[1].whichMotor 	= 1;
 	motor_infos[1].hardware 	= MH_RC_VEL;
 	motor_infos[1].is_reversed 	= true;
@@ -68,22 +99,28 @@ void setup_motors(){
 	motor_infos[3].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[3].board 		= & (board_infos[2]);
 	
-	// motor_infos[4].whichMotor 	= 0;
-	// motor_infos[4].hardware 	= MH_RC_VEL;
-	// motor_infos[4].board 		= & (board_infos[1]);
 
-	motor_infos[6].whichMotor = 0;
-	motor_infos[6].board = &(board_infos[3]);
-	motor_infos[6].hardware = MH_ST_POS;
-	
-	motor_infos[7].whichMotor = 1;
-	motor_infos[7].board = &(board_infos[3]);
-	motor_infos[7].hardware = MH_ST_POS;
-	
-	motor_infos[8].whichMotor = 0;
-	motor_infos[8].board = &(board_infos[4]);
-	motor_infos[8].hardware = MH_ST_POS;
+	// EXCAVATION MOTORS
+	// main digging
+	motor_infos[4].whichMotor 	= 0;
+	motor_infos[4].hardware 	= MH_RC_VEL;
+	motor_infos[4].max_delta 	= DFLT_MAX_DELTA;
+	motor_infos[4].board 		= & (board_infos[1]);
 
+	// port-side linear actuator
+	motor_infos[6].whichMotor 	= 0;
+	motor_infos[6].board 		= &(board_infos[3]);
+	motor_infos[6].hardware 	= MH_ST_POS;
+	
+	// starboard-side linear actuator
+	motor_infos[7].whichMotor 	= 1;
+	motor_infos[7].board 		= &(board_infos[3]);
+	motor_infos[7].hardware 	= MH_ST_POS;
+	
+	// translation
+	motor_infos[8].whichMotor 	= 0;
+	motor_infos[8].board 		= &(board_infos[4]);
+	motor_infos[8].hardware 	= MH_ST_PWM;
 
 }
 

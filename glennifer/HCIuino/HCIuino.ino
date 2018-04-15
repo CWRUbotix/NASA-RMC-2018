@@ -8,8 +8,6 @@
 #include <RoboClaw.h>
 #include <math.h>
 
-RoboClaw roboclawSerial(&Serial1, 10000);
-
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
 #include "hciRead.h"
