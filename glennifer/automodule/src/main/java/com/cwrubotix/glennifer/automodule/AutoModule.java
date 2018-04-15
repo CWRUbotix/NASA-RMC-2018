@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class AutoModule extends Module {
 	private Stage currentStage;
+	private Stage lastStage = null;
 	private enum Stage {TRANSIT, DIGGING, DUMPING, EMERGENCY};
 
 	private String exchangeName;
@@ -62,6 +63,26 @@ public class AutoModule extends Module {
 	    }
 	}
 	
+	public class TransitProgressConsumer extends DefaultConsumer {
+	    public TransitProgressConsumer(Channel channel){
+		super(channel);
+	    }
+	    
+	    @Override
+	    public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+		Messages.ProgressReport report = Messages.ProgressReport.parseFrom(body);
+		if(report.getDone()){
+		    if(lastStage == null || lastStage.equals(Stage.DUMPING)){
+			lastStage = currentStage;
+			currentStage = Stage.DIGGING;
+		    } else if(lastStage.equals(Stage.DIGGING)){
+			lastStage = currentStage;
+			currentStage = Stage.DUMPING;
+		    }
+		}
+	    }
+	}
+	
 	/*
 	 *TODO list
 	 *	1) Decide on course of actions on possible situations (Obstacles, Path plan, Setting up Dumping position)
@@ -82,6 +103,11 @@ public class AutoModule extends Module {
 		String queueName = channel.queueDeclare().getQueue();
 		this.channel.queueBind(queueName, exchangeName, "loc.pos");
 		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
+		
+		queueName = channel.queueDeclare().getQueue();
+		this.channel.queueBind(queueName, exchangeName, "progress.transit");
+		this.channel.basicConsume(queueName, true, new TransitProgressConsumer(channel));
+		
 		// TODO AutoModule needs to turn around and scan for AprilTags
 
 		// Setup timer for timing tasks
@@ -99,7 +125,7 @@ public class AutoModule extends Module {
 				.setCurYPos(startPos.getY())
 				.setCurHeading((float) startPos.getHeading())
 				.setDestXPos(0.0F)
-				.setDestYPos(3.25F)
+				.setDestYPos(4.50F)
 				.setTimeAlloc(180)
 				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
@@ -117,6 +143,16 @@ public class AutoModule extends Module {
 				}
 			}
 		}, 1800000);
+		
+		currentStage = Stage.TRANSIT;
+		while(!currentStage.equals(Stage.DIGGING)){
+		    try{
+			Thread.sleep(100);
+		    } catch(InterruptedException e){
+			e.printStackTrace();
+		    }
+		}
+		System.out.println("First Transit Cycle Done");
 	}
 
     public static void main(String[] args) {

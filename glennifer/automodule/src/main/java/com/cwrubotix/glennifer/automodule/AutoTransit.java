@@ -1,10 +1,12 @@
 package main.java.com.cwrubotix.glennifer.automodule;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.ProgressReport;
 import com.cwrubotix.glennifer.Messages.RpmUpdate;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -23,6 +25,7 @@ public class AutoTransit extends Module {
     private static Position currentPos;
     private PathFinder pathFinder;
     private Path currentPath;
+    private Position subTarget;
     private boolean launched = false;
 
     // Messaging stuff
@@ -112,12 +115,6 @@ public class AutoTransit extends Module {
 	    Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
 	    launchNavigation(currentPos, newObs);
-	    // Register new obstacle, and reset path if necessary
-	    try {
-		pathFinder.registerObstacle(newObs);
-	    } catch (PathFinder.DestinationModified destinationModified) {
-		currentPath = pathFinder.getPath();
-	    }
 	}
     }
 
@@ -135,6 +132,18 @@ public class AutoTransit extends Module {
 	    // Updates current position
 	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 	    System.out.println("current pos:" + currentPos);
+	    if(currentPath.getPath().size() < 1){
+		launched = false;
+		ProgressReport report = ProgressReport.newBuilder().setDone(true)
+								   .setTimestamp(instantToUnixTime(Instant.now()))
+								   .build();
+		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
+	    }
+	    else if(subTarget.equals(currentPos)){
+		moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	    } else{
+		moveToPos(currentPos, subTarget);
+	    }
 	}
     }
 
@@ -157,9 +166,7 @@ public class AutoTransit extends Module {
 	    AutoTransit.currentPos = currentPos;
 	    pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destination);
 	    currentPath = pathFinder.getPath();
-	    while (currentPath.getPath().size() > 1 && launched) { // While we still have a position to go to	
-		moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
-	    }
+	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
 	}
     }
     
@@ -172,9 +179,7 @@ public class AutoTransit extends Module {
 	    } finally{
 		currentPath = pathFinder.getPath();
 	    }
-	    while (currentPath.getPath().size() > 1 && launched) { // While we still have a position to go to
-		moveToPos(currentPath.getPath().remove(), currentPath.getPath().getFirst());
-	    }
+	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
 	}
     }
 
@@ -182,8 +187,10 @@ public class AutoTransit extends Module {
 	// Compute angle to turn to -- clockwise is positive
 	double angleBetween = Position.angleBetween(currPos, destPos);
 
-	turnAngle(angleBetween);
-	driveTo(destPos);
+	if(launched){
+	    turnAngle(angleBetween);
+	    driveTo(destPos);
+	}
     }
 
     private void turnAngle(double angle) throws IOException {
@@ -195,19 +202,19 @@ public class AutoTransit extends Module {
 	 * heading sleep 100ms stop
 	 */
 	// Build messages
-	RpmUpdate rWheelsMsg = RpmUpdate.newBuilder().setRpm(-Math.signum((float) angle) * TRAVEL_SPEED).build();
+	RpmUpdate rWheelsMsg = RpmUpdate.newBuilder().setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
+						     .setTimestamp(instantToUnixTime(Instant.now()))
+						     .build();
 
-	RpmUpdate lWheelsMsg = RpmUpdate.newBuilder().setRpm(Math.signum((float) angle) * TRAVEL_SPEED).build();
+	RpmUpdate lWheelsMsg = RpmUpdate.newBuilder().setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
+						     .setTimestamp(instantToUnixTime(Instant.now()))
+						     .build();
 
 	// Tell wheels to start moving
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null,
-		rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null,
-		rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null,
-		lWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null,
-		lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
 
 	// Stop when angle is reached
 	while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
@@ -226,10 +233,11 @@ public class AutoTransit extends Module {
 	 */
 
 	// Drive
-	RpmUpdate driveMsg = RpmUpdate.newBuilder().setRpm(TRAVEL_SPEED).build();
+	RpmUpdate driveMsg = RpmUpdate.newBuilder().setRpm(TRAVEL_SPEED)
+						   .setTimestamp(instantToUnixTime(Instant.now()))
+						   .build();
 
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null,
-		driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
