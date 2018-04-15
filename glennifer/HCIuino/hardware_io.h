@@ -65,14 +65,20 @@ int16_t contstrainMag(int16_t og, uint16_t max){
 	return retval;
 }
 
-int16_t ramp(MotorInfo* motor, int16_t newSetPt){
+int16_t ramp_up(MotorInfo* motor, int16_t newSetPt){
 	int16_t delta 	= newSetPt - motor->lastSet;// / delta_t;
 	int16_t retval 	= motor->lastSet;
-	if(delta > motor->max_delta){
-		retval += max_delta;
+
+	if( (delta > motor->max_delta) && (motor->max_delta != 0) ){
+		retval += motor->max_delta;
 	}else{
 		retval = newSetPt;
 	}
+	// Serial3.print("Target : ");
+	// Serial3.print(motor->setPt);
+	// Serial3.print("\t Actual value : ");
+	// Serial3.println(retval);
+	// delay(100);
 	return retval;
 }
 
@@ -108,16 +114,12 @@ void maintain_motors(byte* cmd, bool success){
 			uint8_t id 		= cmd[i];
 			uint16_t val 	= 0;
 			MotorInfo* motor = &(motor_infos[id]); 	// get a pointer to the struct
+			bool writeSuccess 	= false;
 
 			val += cmd[i+1];
 			val = val << 8;
 			val += cmd[i+2];
-			Serial3.print("Motor of ID  ");
-			Serial3.print(id);
-			Serial3.print("\t should be set to ");
-			Serial3.println(val);
 			motor->setPt = val; 	// deref the ptr and set the struct field
-			delay(100);
 
 			switch(motor->hardware){
 				case MH_NONE:
@@ -138,48 +140,52 @@ void maintain_motors(byte* cmd, bool success){
 
 				case MH_BL_VEL:
 					(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
+					writeSuccess = true;
 					break;
 
 				case MH_BL_POS:
 					(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
+					writeSuccess = true;
 					break;
 
 				case MH_BL_BOTH:
 					break;
 
 				case MH_RC_VEL: {
-					bool writeSuccess 	= false;
 					int16_t newSetPt 	= contstrainMag(motor->setPt, motor->maxDuty);
+					int16_t sign 		= 1;
 					if(motor->is_reversed){
-						newSetPt = newSetPt * (-1);
+						sign = (-1);
 					}
 					motor->setPt 	= newSetPt;
-					newSetPt 		= ramp(motor, newSetPt);
+					newSetPt 		= ramp_up(motor, newSetPt);
 					uint8_t which 	= motor->whichMotor;
 					uint8_t address	= (uint8_t) motor->board->addr;
 					RoboClaw* rc  	= motor->board->roboclaw;
-					Serial3.print("Write to the ROBOCLAW : ");
-					Serial3.print(newSetPt);
-					Serial3.print("   Duty Cycle : ");
-					Serial3.println((newSetPt * 100)/32767);
-					delay(100);
+					// Serial3.print("Write to the ROBOCLAW : ");
+					// Serial3.print(newSetPt);
+					// Serial3.print("   Duty Cycle : ");
+					// Serial3.println((newSetPt * 100)/32767);
+					// delay(100);
 					if(which == 0){
 						//(*rc).SpeedM1(addr,motor->setPt);
-						writeSuccess = roboclawSerial.DutyM1(address,(uint16_t) newSetPt);
+						writeSuccess = roboclawSerial.DutyM1(address,(uint16_t) (sign*newSetPt) );
 					}else{
 						//(*rc).SpeedM2(addr,motor->setPt);
-						writeSuccess = roboclawSerial.DutyM2(address,(uint16_t) newSetPt);
+						writeSuccess = roboclawSerial.DutyM2(address,(uint16_t) (sign*newSetPt) );
 					}
 					motor->lastSet = newSetPt;
 					break; }
 
 			}
-			motor->lastUpdateTime = millis();
+			if(writeSuccess){
+				motor->lastUpdateTime = millis();
+			}
 		}
 	}
 
 
-	for(i=0; i<NUM_MOTORS; i++){
+	for(int i=0; i<NUM_MOTORS; i++){
 		MotorInfo* motor 	= &(motor_infos[i]); 	// get a pointer to the struct
 		bool writeSuccess 	= false;
 
@@ -188,12 +194,14 @@ void maintain_motors(byte* cmd, bool success){
 				break;
 			case MH_RC_VEL: {
 				int16_t newSetPt 	= motor->lastSet;
+				int16_t sign 		= 1;
+				if(motor->is_reversed){sign = (-1);}
 				if(motor->setPt != newSetPt){
-					newSetPt = ramp(motor, motor->setPt);
-					if(motor->which == 0){
-						writeSuccess = roboclawSerial.DutyM1(motor->addr,(uint16_t) newSetPt);
+					newSetPt = ramp_up(motor, motor->setPt);
+					if(motor->whichMotor == 0){
+						writeSuccess = roboclawSerial.DutyM1(motor->board->addr,(uint16_t) (sign*newSetPt) );
 					}else{
-						writeSuccess = roboclawSerial.DutyM2(motor->addr,(uint16_t) newSetPt);
+						writeSuccess = roboclawSerial.DutyM2(motor->board->addr,(uint16_t) (sign*newSetPt) );
 					}
 					motor->lastSet = newSetPt;
 					motor->lastUpdateTime = millis();

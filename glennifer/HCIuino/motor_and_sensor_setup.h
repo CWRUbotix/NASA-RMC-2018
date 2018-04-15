@@ -48,19 +48,24 @@ void setup_motors(){
 	// MOTORS
 	motor_infos[0].whichMotor	= 0;
 	motor_infos[0].hardware 	= MH_RC_VEL;
+	motor_infos[0].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[0].board 		= & (board_infos[0]);
+
 	
-	motor_infos[1].whichMotor 	= 0; // USED TO BE 1
+	motor_infos[1].whichMotor 	= 1;
 	motor_infos[1].hardware 	= MH_RC_VEL;
 	motor_infos[1].is_reversed 	= true;
-	motor_infos[1].board 		= & (board_infos[1]);
+	motor_infos[1].max_delta 	= DFLT_MAX_DELTA;
+	motor_infos[1].board 		= & (board_infos[0]);
 	
-	motor_infos[2].whichMotor 	= 0;
+	motor_infos[2].whichMotor 	= 1;
 	motor_infos[2].hardware 	= MH_RC_VEL;
+	motor_infos[2].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[2].board 		= & (board_infos[2]);
 
-	motor_infos[3].whichMotor 	= 1;
+	motor_infos[3].whichMotor 	= 0;
 	motor_infos[3].hardware 	= MH_RC_VEL;
+	motor_infos[3].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[3].board 		= & (board_infos[2]);
 	
 	// motor_infos[4].whichMotor 	= 0;

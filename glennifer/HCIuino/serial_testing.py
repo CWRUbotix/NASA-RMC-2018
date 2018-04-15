@@ -21,6 +21,7 @@ def dispCMDTypes():
 	print('='*79)
 	print("CMD tpyes are:")
 	print("\t1 : Read Sensor \n\t2 : Set Outputs \n\t3 : HCI Test")
+	print("Enter: CMD TYPE \t NUMBER \t ID_1 \t VAL_1 \t ...")
 	print('='*79)
 
 #===============================================================================
@@ -41,22 +42,34 @@ def readSensors(cmdType):
 	return byteArr
 
 #===============================================================================
-def setOutputs(cmdType):
+def setOutputs(cmdType, inputs):
 	byteArr 	= [cmdType]
 	byteArr.append(0) 			# placeholder until later
 	respLen 	= 2
 	bodyLen 	= 0
-	numMtrs 	= int(input("How many to set \t: "))
-
-	for i in range(0,numMtrs):
-		ID  = int(input("ID             \t: "))
-		val =     input("Value (in hex) \t: ")
+	numMtrs = int(inputs[1])
+	for n in range(0, numMtrs):
+		ID  = int(inputs[2*n + 2])
+		val = inputs[2*n + 3]
+		print(val)
 		tmp = bytearray.fromhex(val)
 		byteArr.append(ID)
 		byteArr.append(tmp[0])
 		byteArr.append(tmp[1])
-		# byteArr.append(tmp[1])
 		bodyLen+=3
+
+	
+	# numMtrs 	= int(input("How many to set \t: "))
+
+	# for i in range(0,numMtrs):
+	# 	ID  = int(input("ID             \t: "))
+	# 	val =     input("Value (in hex) \t: ")
+	# 	tmp = bytearray.fromhex(val)
+	# 	byteArr.append(ID)
+	# 	byteArr.append(tmp[0])
+	# 	byteArr.append(tmp[1])
+	# 	# byteArr.append(tmp[1])
+	#	bodyLen+=3
 
 	byteArr[1] = bodyLen
 	return byteArr
@@ -93,7 +106,9 @@ def main():
 
 		#--------------------------------------------------------------------
 		while not done:
-			cmdType = int(input("CMD Type:\t"))
+			line 	= input("Enter: ")
+			inputs 	= line.split(' ')
+			cmdType = int(inputs[0]) #int(input("CMD Type:\t"))
 			respLen = 0
 			byteArr = []
 
@@ -104,7 +119,7 @@ def main():
 				respLen = 3
 				
 			elif cmdType == CMD_SET_OUTPUTS:
-				byteArr = setOutputs(cmdType)
+				byteArr = setOutputs(cmdType, inputs)
 				respLen = 2 + byteArr[1];
 				
 			elif cmdType == CMD_READ_SENSORS:
@@ -127,7 +142,7 @@ def main():
 	
 	
 	except Exception as e:
-		print("Error:\t")
+		print(e)
 	
 	finally:
 		ser.close()

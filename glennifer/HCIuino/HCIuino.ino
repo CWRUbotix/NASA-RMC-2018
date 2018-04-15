@@ -9,6 +9,7 @@
 #include <math.h>
 
 RoboClaw roboclawSerial(&Serial1, 10000);
+
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
 #include "hciRead.h"
@@ -69,6 +70,7 @@ void loop(){
 			Serial3.print(fault_code);
 			Serial3.print("\t");
 			Serial3.println(cmd_type(cmd));
+			delay(50);
 		}
 	}else{
 		if(time >= 5000){
@@ -76,19 +78,20 @@ void loop(){
 			lastTime 		= millis();
 			loops 			= 0;
 			Serial3.println(avg);
+			delay(50);
 		}
 		
 	}
 	maintain_motors(cmd, success);			// keep robot in a stable state
 
 	if(success){
-		Serial3.print("CMD:\t");
-		for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
-			Serial3.print((uint8_t)cmd[i]);
-			Serial3.print(" ");
-		}
-		Serial3.println();
-		delay(100);
+		// Serial3.print("CMD:\t");
+		// for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
+		// 	Serial3.print((uint8_t)cmd[i]);
+		// 	Serial3.print(" ");
+		// }
+		// Serial3.println();
+		// delay(100);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
 	}
 	loops++;

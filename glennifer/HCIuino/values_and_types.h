@@ -33,6 +33,7 @@
 #define MOTOR_INSTRUC_SIZE 		(2)
 #define ANLG_READ_RES 			(12)
 #define ANLG_WRITE_RES 			(12)
+#define DFLT_MAX_DELTA 			(200)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -143,7 +144,7 @@ typedef struct MotorInfo{
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
-	int16_t  max_delta;			// for ramp-up function
+	int16_t  max_delta = 0;		// for ramp-up function
 	uint8_t  feedbackSensorID;	//
 	float    saturation; 		//
 	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
@@ -173,6 +174,8 @@ bool 	stopped 								= true;	// default status is stopped
 
 int lastTime = 0;
 int debugging[5] = {};
+
+uint32_t loops 									= 0;
 
 // ODriveArduino odrive0(Serial1);
 // ODriveArduino odrive1(Serial2);
