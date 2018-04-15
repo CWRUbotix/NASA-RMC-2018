@@ -1,5 +1,10 @@
 package com.cwrubotix.glennifer.automodule;
 
+/**
+ * 
+ * @author Seohyun Jung
+ * @deprecated
+ */
 public class RobotPosition extends Position{
     
     private float tilt;
