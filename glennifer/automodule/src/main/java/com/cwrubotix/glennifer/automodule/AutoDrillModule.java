@@ -483,7 +483,7 @@ public class AutoDrillModule extends Module {
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
                 Messages.State msg = Messages.State.parseFrom(body);
                 bc_trans = msg.getExcDetailed().getDisplacement();
-                bc_current = msg.getExcDetailed().getConveyorMotorCurrent();
+                bc_current = msg.getExcDetailed().getCurrent();
                 bc_angle = msg.getExcDetailed().getArmPos();
 
 			    detectStall();

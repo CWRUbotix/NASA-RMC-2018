@@ -101,7 +101,7 @@ public class AutoModule extends Module {
 		this.channel = connection.createChannel();
 
 		String queueName = channel.queueDeclare().getQueue();
-		this.channel.queueBind(queueName, exchangeName, "loc.pos");
+		this.channel.queueBind(queueName, exchangeName, "loc.post");
 		this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
 		
 		queueName = channel.queueDeclare().getQueue();

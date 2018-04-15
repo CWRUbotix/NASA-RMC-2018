@@ -7,6 +7,8 @@ import pika
 import sys
 import copy
 import time
+import os
+import glob
 import messages_pb2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
@@ -42,6 +44,17 @@ def publish_obstacle_position(x,y,z,diameter):
 	channel.basic_publish(exchange=exchange_name,
 			routing_key=topic,
 			body=msg.SerializeToString())
+
+save_frames = False
+num_frames = 100
+frame_i = 0
+#clear test frames if there are any left
+if len(sys.argv) > 1:
+	if sys.argv[1]=="test":
+		files = glob.glob('/test_frames/*')
+		save_frames = True
+		for f in files:
+			os.remove(f)
 
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
@@ -92,6 +105,10 @@ while True:
 	#flip images
 	img = cv2.flip(img,1)
 	imgray = cv2.flip(imgray,1)
+	if len(sys.argv) > 1:
+		if sys.argv[1]=="test" and frame_i < num_frames:
+			np.save("test_frames/" + str(frame_i)+".npy",depth_frame.asarray(np.float32))
+			frame_i += 1
 
 	#begin edge detection
 
@@ -201,11 +218,12 @@ while True:
 	# visualization backend.
 
 	#cv2.imshow("unknown", sure_bg)
-	#cv2.imshow("depth", color)
+	cv2.imshow("depth", color)
 
 	listener.release(frames)
 	# Use the key 'q' to end!
 
+	time.sleep(1)
 	key = cv2.waitKey(delay=1)
 	if key == ord('q'):
 		break

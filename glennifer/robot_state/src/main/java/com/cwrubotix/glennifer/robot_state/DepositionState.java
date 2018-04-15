@@ -33,8 +33,8 @@ public class DepositionState {
 // Unneccesary since there are only two load cells??
     
     /* Data members */
-    private EnumMap <LoadCell, Float> loadCellValue;
     private float dumpPos;
+    private EnumMap <LoadCell, Float> loadCellValue;
     private EnumMap <Side, Boolean> dumpSideRetracted;
     private EnumMap <Side, Boolean> dumpSideExtended;
 
@@ -104,8 +104,7 @@ public class DepositionState {
 
     public float getDumpLoad() {
         //TODO: use linear functions to get more accurate reading
-        return loadCellValue.get(LoadCell.BACK_LEFT) + loadCellValue.get(LoadCell.BACK_RIGHT) +
-                loadCellValue.get(LoadCell.FRONT_LEFT) + loadCellValue.get(LoadCell.FRONT_RIGHT);
+        return loadCellValue.get(LoadCell.LEFT) + loadCellValue.get(LoadCell.RIGHT);
     }
     
     public float getDumpPos() {

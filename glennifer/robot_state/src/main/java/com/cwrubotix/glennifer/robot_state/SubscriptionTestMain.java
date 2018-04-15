@@ -20,12 +20,14 @@ public class SubscriptionTestMain {
             LocomotionState locomotionState;
             ExcavationState excavationState;
             DepositionState depositionState;
+            AutonomyState autonomyState;
             StateModule module;
 
             locomotionState = new LocomotionState();
             excavationState = new ExcavationState();
             depositionState = new DepositionState();
-            module = new StateModule(locomotionState, excavationState, depositionState, "amq.topic");
+            autonomyState = new AutonomyState();
+            module = new StateModule(locomotionState, excavationState, depositionState, autonomyState, "amq.topic");
             module.start();
 
             ConnectionFactory factory = new ConnectionFactory();
@@ -51,6 +53,8 @@ public class SubscriptionTestMain {
                     .setDepositionDetailed(true)
                     .setExcavationSummary(true)
                     .setExcavationDetailed(true)
+                    //.setAutonomySummary(true)
+                    //.setAutonomyDetailed(true)
                     .build();
 
             channel.basicPublish("amq.topic", "state.subscribe", null, subMsg.toByteArray());

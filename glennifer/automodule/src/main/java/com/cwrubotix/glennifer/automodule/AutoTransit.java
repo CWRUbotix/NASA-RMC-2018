@@ -254,6 +254,7 @@ public class AutoTransit extends Module {
 
     @Override
     protected void runWithExceptions() throws IOException, TimeoutException {
+
 	ConnectionFactory factory = new ConnectionFactory();
 	factory.setHost("localhost");
 	this.connection = factory.newConnection();
@@ -279,7 +280,7 @@ public class AutoTransit extends Module {
 	queueName = channel.queueDeclare().getQueue();
 	this.channel.queueBind(queueName, exchangeName, "loc.pos");
 	this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
-
+      
     }
 
     public static void main(String[] args) {
