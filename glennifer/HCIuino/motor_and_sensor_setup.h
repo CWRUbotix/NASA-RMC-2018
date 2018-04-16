@@ -46,10 +46,10 @@ void setup_motors(){
 	
 
 	// MOTORS
-	motor_infos[0].whichMotor	= 0;
+	motor_infos[0].whichMotor	= 1;
 	motor_infos[0].hardware 	= MH_RC_VEL;
 	motor_infos[0].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[0].board 		= & (board_infos[0]);
+	motor_infos[0].board 		= & (board_infos[2]);
 
 	
 	motor_infos[1].whichMotor 	= 1;
@@ -58,31 +58,32 @@ void setup_motors(){
 	motor_infos[1].max_delta 	= DFLT_MAX_DELTA;
 	motor_infos[1].board 		= & (board_infos[0]);
 	
-	motor_infos[2].whichMotor 	= 1;
+	motor_infos[2].whichMotor 	= 0;
 	motor_infos[2].hardware 	= MH_RC_VEL;
 	motor_infos[2].max_delta 	= DFLT_MAX_DELTA;
+	motor_infos[2].is_reversed 	= true;
 	motor_infos[2].board 		= & (board_infos[2]);
 
 	motor_infos[3].whichMotor 	= 0;
 	motor_infos[3].hardware 	= MH_RC_VEL;
 	motor_infos[3].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[3].board 		= & (board_infos[2]);
+	motor_infos[3].board 		= & (board_infos[0]);
 	
 	// motor_infos[4].whichMotor 	= 0;
 	// motor_infos[4].hardware 	= MH_RC_VEL;
 	// motor_infos[4].board 		= & (board_infos[1]);
 
-	motor_infos[6].whichMotor = 0;
-	motor_infos[6].board = &(board_infos[3]);
-	motor_infos[6].hardware = MH_ST_POS;
+	// motor_infos[6].whichMotor = 0;
+	// motor_infos[6].board = &(board_infos[3]);
+	// motor_infos[6].hardware = MH_ST_POS;
 	
-	motor_infos[7].whichMotor = 1;
-	motor_infos[7].board = &(board_infos[3]);
-	motor_infos[7].hardware = MH_ST_POS;
+	// motor_infos[7].whichMotor = 1;
+	// motor_infos[7].board = &(board_infos[3]);
+	// motor_infos[7].hardware = MH_ST_POS;
 	
-	motor_infos[8].whichMotor = 0;
-	motor_infos[8].board = &(board_infos[4]);
-	motor_infos[8].hardware = MH_ST_POS;
+	// motor_infos[8].whichMotor = 0;
+	// motor_infos[8].board = &(board_infos[4]);
+	// motor_infos[8].hardware = MH_ST_POS;
 
 
 }
