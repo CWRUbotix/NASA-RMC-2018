@@ -1,6 +1,30 @@
 #ifndef HARDWARE_IO_H_FILE
 #define HARDWARE_IO_H_FILE
 
+////////////////////////////////////////////////////////////////////////////////
+// @param 	limit 	: a pointer to the SensorInfo struct for a limit switch
+// @return 	true	: if limit switch is triggered
+////////////////////////////////////////////////////////////////////////////////
+bool is_limit_triggered(SensorInfo* limit){
+	if(limit->hardware != SH_PIN_LIMIT){
+		return false;
+	}
+	uint8_t id 			= 0;
+	int16_t tmp 		= 0;
+	bool is_triggered 	= false;
+	FAULT_T fault 		= NO_FAULT;
+
+	fault 			= read_sensor(id, &tmp);
+	is_triggered 	= (bool) (tmp & 1);
+	if(is_triggered){
+		MotorInfo* motor 	= &(motor_infos[limit->whichMotor]);
+		motor->setPt 		= 0;
+		update_motor(motor);
+	}
+	
+	return is_triggered;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // 	@param loadyBio:	ptr to the SensorInfo struct for the sensor
@@ -24,6 +48,44 @@ uint16_t read_load_cell(SensorInfo* loadyBoi){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Returns a signed number from a potentiometer sensor
+// @param pot a pointer to a SensorInfo struct that represents the pot
+////////////////////////////////////////////////////////////////////////////////
+int16_t read_pot(SensorInfo* pot){
+	int16_t readVal = (int16_t)analogRead(pot->whichPin) / pot->scale;
+	pot->storedVal 	= (pot->storedVal * (1 - pot->responsiveness)) + (readVal * pot->responsiveness);
+	return pot->storedVal;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Returns a full width number from the encoder
+// Used for PID, etc.
+////////////////////////////////////////////////////////////////////////////////
+int32_t read_enc(SensorInfo* enc, uint8_t* status, bool* valid){
+	int32_t retval = 0;
+
+	switch(enc->hardware){
+		case SH_RC_ENC_VEL:{
+			MotorInfo* motor 	= & motor_infos[enc->whichMotor];
+			uint8_t address 	= motor->board->address;
+			uint8_t which 		= motor->whichMotor;
+			RoboClaw* rc = motor->board->roboclaw;
+
+			
+			retval = (which == 0 ? 
+				rc.ReadEncM1(address, status, valid) : 
+				rc.ReadEncM2(address, status, valid) );
+			// also ReadSpeedMX(addr, ... )
+			break;}
+		case SH_PIN_POT:
+
+	}
+
+
+	return retval;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // 	@param ID:	takes a sensor ID
 // 	@param val:	ptr to the 16-bit signed int where the sensor data will go
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,20 +99,26 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 	MotorInfo* motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
 
 	switch (sensor->hardware) {
+
 		case SH_PIN_LIMIT:
-			if(sensor->is_reversed){
-				*val = !digitalRead(sensor->whichPin);
-			}else{
-				*val = digitalRead(sensor->whichPin);
-			}
+			*val = is_limit_triggered(sensor);
 			break;
 
 		case SH_PIN_POT:
-			readVal 				= (int16_t)analogRead(sensor->whichPin) / sensor->scale;
-			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
-			*val 					= sensor->storedVal;
+			*val = read_pot(sensor);
 			break;
 
+		case SH_RC_ENC_VEL:{
+			uint8_t status;
+			bool valid;
+			int32_t tmp = read_enc(sensor, &status, &valid);
+			if(tmp > ((int16_t) 32767) ){
+				*val = (int16_t) 32767;
+			}else{
+				int16_t raw = tmp & 0xFFFF;
+				*val = (tmp < 0 ? raw*(-1) : raw);
+			}
+			break;}
 		case SH_BL_ENC_VEL: {
 			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
 			// MCInfo* board 			= motor->board;
@@ -76,30 +144,6 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 	return NO_FAULT;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// @param 	limit 	: a pointer to the SensorInfo struct for a limit switch
-// @return 	true	: if limit switch is triggered
-////////////////////////////////////////////////////////////////////////////////
-bool is_limit_triggered(SensorInfo* limit){
-	if(limit->hardware != SH_PIN_LIMIT){
-		return false;
-	}
-
-	int16_t tmp 		= 0;
-	bool is_triggered 	= false;
-	FAULT_T fault 		= NO_FAULT;
-
-	fault 			= read_sensor(id, &tmp);
-	is_triggered 	= (bool) (tmp & 1);
-	if(is_triggered){
-		MotorInfo* motor 	= &(motor_infos[limit->whichMotor]):
-		motor->setPt 		= 0;
-		update_motor(motor);
-	}
-	
-	return is_triggered;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // constrains the magnitue of a signed number (og), 
@@ -134,18 +178,23 @@ int16_t ramp_up(MotorInfo* motor, int16_t newSetPt){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// 	Writes the motor set-point to the motor
+// - checks if set-point is diff from the LAST-set-point (ie: value was updated)
+// - constrains the magnitude of the set-point to an acceptable value
+// - outputs the motor's set-point to the motor-controller
 // 	@param MotorInfo* motor : ptr to a MotorInfo struct for the target motor
 ////////////////////////////////////////////////////////////////////////////////
 bool update_motor(MotorInfo* motor){
+	bool writeSuccess = false;
 	switch(motor->hardware){
 		case MH_NONE:
 			break;
 		case MH_ST_PWM:
-			digitalWrite( motor->board->selectPin, HIGH);
-			(*(motor->board->ST)).motor(motor->whichMotor + 1, motor->setPt);
-			delayMicroseconds(50);
-			digitalWrite( motor->board->selectPin, LOW);
+			if(motor->setPt != motor->lastSet){
+				digitalWrite( motor->board->selectPin, HIGH);
+				(*(motor->board->ST)).motor(motor->whichMotor + 1, motor->setPt);
+				delayMicroseconds(50);
+				digitalWrite( motor->board->selectPin, LOW);
+			}
 			break;
 
 		case MH_ST_VEL:
@@ -155,13 +204,17 @@ bool update_motor(MotorInfo* motor){
 			break;
 
 		case MH_BL_VEL:
-			(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
-			writeSuccess = true;
+			if(motor->setPt != motor->lastSet){
+				(*(motor->board->odrive)).SetVelocity(motor->whichMotor, motor->setPt);
+				writeSuccess = true;
+			}
 			break;
 
 		case MH_BL_POS:
-			(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
-			writeSuccess = true;
+			if(motor->setPt != motor->lastSet){
+				(*(motor->board->odrive)).SetPosition(motor->whichMotor, motor->setPt);
+				writeSuccess = true;
+			}
 			break;
 
 		case MH_BL_BOTH:
@@ -181,12 +234,10 @@ bool update_motor(MotorInfo* motor){
 
 			if(which == 0){
 				//(*rc).SpeedM1(addr,motor->setPt);
-				writeSuccess = roboclawSerial.DutyM1((uint8_t) motor->board->addr,
-													 (uint16_t) (sign*newSetPt) );
+				writeSuccess = roboclawSerial.DutyM1(address, (uint16_t) (sign*newSetPt) );
 			}else{
 				//(*rc).SpeedM2(addr,motor->setPt);
-				writeSuccess = roboclawSerial.DutyM2((uint8_t) motor->board->addr,
-													 (uint16_t) (sign*newSetPt) );
+				writeSuccess = roboclawSerial.DutyM2(address, (uint16_t) (sign*newSetPt) );
 			}
 			motor->lastSet = newSetPt;
 			break; }
@@ -194,6 +245,8 @@ bool update_motor(MotorInfo* motor){
 
 	return writeSuccess;
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //	maintain_motors(byte* cmd)
@@ -225,7 +278,7 @@ void maintain_motors(byte* cmd, bool success){
 			val += cmd[i+2];
 			motor->setPt = val; 	// deref the ptr and set the struct field
 
-			writeSuccess = update_motor(motor, val);
+			writeSuccess = update_motor(motor);//, val);
 
 			if(writeSuccess){
 				motor->lastUpdateTime = millis();
@@ -240,14 +293,12 @@ void maintain_motors(byte* cmd, bool success){
 		bool writeSuccess 	= false;
 
 		if(motor->hardware == MH_RC_VEL){
-			int16_t newSetPt 	= motor->lastSet;
-			if(motor->setPt != newSetPt){
-				newSetPt 		= ramp_up(motor, motor->setPt);
-				motor->setPt 	= newSetPt;
-				update_motor(motor);
-				motor->lastSet 	= newSetPt;
-				motor->lastUpdateTime = millis();
-			}
+			// these need to be updated each time for ramp_up, etc
+			// first, do PID
+			uint8_t status;
+			bool valid;
+			int32_t enc_val = read_enc(motor->encoder, &status, &valid);
+			int32_t error 	= motor->target_vel - enc_val;
 			writeSuccess = update_motor(motor);
 		}
 
@@ -256,9 +307,9 @@ void maintain_motors(byte* cmd, bool success){
 		}
 	}
 
-
+	// check for and handle collisions
 	for(int i = 0; i < NUM_LIM_SWITCHES; i++){
-		uint8_t id 			= limit_switches[i];
+		uint8_t id 			= 0; //limit_switches[i];
 		int16_t tmp 		= 0;
 		bool is_triggered 	= false;
 		FAULT_T fault 		= NO_FAULT;
@@ -267,7 +318,7 @@ void maintain_motors(byte* cmd, bool success){
 			fault 			= read_sensor(id, &tmp);
 			is_triggered 	= (bool) (tmp & 1);
 			if(is_triggered){
-				MotorInfo* motor 	= &(motor_infos[sensor_infos[id].whichMotor]):
+				MotorInfo* motor 	= &(motor_infos[sensor_infos[id].whichMotor]);
 				motor->setPt 		= 0;
 				update_motor(motor);
 			}

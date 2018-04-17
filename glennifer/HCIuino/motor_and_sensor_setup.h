@@ -5,6 +5,18 @@
 void setup_sensors(){
 	// 
 
+	//ENCODERS
+	sensor_infos[1].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[1].whichMotor 		= FRONT_PORT_MTR_ID;
+
+	sensor_infos[3].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+
+	sensor_infos[5].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
+
+	sensor_infos[7].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
 
 	// port side linear actuator
 	sensor_infos[10].hardware 		= SH_PIN_POT;
@@ -22,27 +34,27 @@ void setup_sensors(){
 	sensor_infos[13].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[13].whichPin 		= 24;
 	sensor_infos[13].whichMotor 	= 8;
-	limit_switches[0] 				= 13;
+	// limit_switches[0] 				= 13;
 
 	sensor_infos[14].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[14].whichPin 		= 25;
 	sensor_infos[14].whichMotor 	= 8;
-	limit_switches[1] 				= 14;
+	// limit_switches[1] 				= 14;
 
 	sensor_infos[15].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[15].whichPin 		= 26;
 	sensor_infos[15].whichMotor 	= 8;
-	limit_switches[2] 				= 15;
+	// limit_switches[2] 				= 15;
 
 	sensor_infos[16].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[16].whichPin 		= 27;
 	sensor_infos[16].whichMotor 	= 6;
-	limit_switches[3] 				= 16;
+	// limit_switches[3] 				= 16;
 
 	sensor_infos[17].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[17].whichPin 		= 28;
 	sensor_infos[17].whichMotor 	= 7;
-	limit_switches[4] 				= 17;
+	// limit_switches[4] 				= 17;
 
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,27 +90,33 @@ void setup_motors(){
 
 	// MOTORS
 	// DRIVE MOTORS
-	motor_infos[0].whichMotor	= 0;
-	motor_infos[0].hardware 	= MH_RC_VEL;
-	motor_infos[0].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[0].board 		= & (board_infos[0]);
+	motor_infos[FRONT_PORT_MTR_ID].whichMotor		= 1;
+	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_RC_VEL;
+	motor_infos[FRONT_PORT_MTR_ID].max_delta 		= DFLT_MAX_DELTA;
+	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[2]);
+	motor_infos[FRONT_PORT_MTR_ID].encoder 			= & (sensor_infos[1]);
 
-	motor_infos[1].whichMotor 	= 1;
-	motor_infos[1].hardware 	= MH_RC_VEL;
-	motor_infos[1].is_reversed 	= true;
-	motor_infos[1].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[1].board 		= & (board_infos[0]);
 	
-	motor_infos[2].whichMotor 	= 1;
-	motor_infos[2].hardware 	= MH_RC_VEL;
-	motor_infos[2].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[2].board 		= & (board_infos[2]);
+	motor_infos[FRONT_STARBOARD_MTR_ID].whichMotor 	= 1;
+	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_RC_VEL;
+	motor_infos[FRONT_STARBOARD_MTR_ID].is_reversed = true;
+	motor_infos[FRONT_STARBOARD_MTR_ID].max_delta 	= DFLT_MAX_DELTA;
+	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[0]);
+	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[3]);
+	
+	motor_infos[REAR_PORT_MTR_ID].whichMotor 		= 0;
+	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_RC_VEL;
+	motor_infos[REAR_PORT_MTR_ID].max_delta 		= DFLT_MAX_DELTA;
+	motor_infos[REAR_PORT_MTR_ID].is_reversed 		= true;
+	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[2]);
+	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[7]);
 
-	motor_infos[3].whichMotor 	= 0;
-	motor_infos[3].hardware 	= MH_RC_VEL;
-	motor_infos[3].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[3].board 		= & (board_infos[2]);
-	
+	motor_infos[REAR_STARBOARD_MTR_ID].whichMotor 	= 0;
+	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_RC_VEL;
+	motor_infos[REAR_STARBOARD_MTR_ID].max_delta 	= DFLT_MAX_DELTA;
+	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[0]);
+	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[5]);
+
 
 	// EXCAVATION MOTORS
 	// main digging
@@ -125,74 +143,3 @@ void setup_motors(){
 }
 
 #endif
-	// motor_infos[3] 		= drive_3;
-	// motor_infos[2] 				= drive_2;
-	// MotorInfo drive_3;
-	// MotorInfo drive_1;
-	// motor_infos[1] 		= drive_1;
-	// MotorInfo drive_2;// MotorInfo drive_0;
-	// PID(roboclaw_0.addr,drive_0.kd,drive_0.kp,drive_0.ki,drive_0.qpps);
-	// motor_infos[0] 		= drive_0;
-	// MotorInfo motor_6;
-	// motor_infos[6] = motor_6;
-	// MotorInfo motor_7;
-	// motor_infos[7] = motor_7;
-	// MotorInfo motor_8;
-	// motor_infos[8] = motor_8;
-	
-
-	// MotorInfo motor_0;
-	// motor_0.whichMotor = 0;
-	// motor_0.board = & odrive_board_0;
-	// motor_0.hardware = MH_BL_VEL;
-	// motor_infos[0] = motor_0;
-
-	// MotorInfo motor_1;
-	// motor_1.whichMotor = 1;
-	// motor_1.board = & odrive_board_0;
-	// motor_1.hardware = MH_BL_VEL;
-	// motor_infos[1] = motor_1;
-
-	// MotorInfo motor_2;
-	// motor_2.whichMotor = 0;
-	// motor_2.board = & odrive_board_1;
-	// motor_2.hardware = MH_BL_VEL;
-	// motor_infos[2] = motor_2;
-
-	// MotorInfo motor_3;
-	// motor_3.whichMotor = 1;
-	// motor_3.board = & odrive_board_1;
-	// motor_3.hardware = MH_BL_VEL;
-	// motor_infos[3] = motor_3;
-
-	// MotorInfo motor_4;
-	// motor_4.whichMotor = 0;
-	// motor_4.board = & odrive_board_2;
-	// motor_4.hardware = MH_BL_POS;
-	// motor_infos[4] = motor_4;
-
-	// MotorInfo motor_5;
-	// motor_5.whichMotor = 1;
-	// motor_5.board = & odrive_board_2;
-	// motor_5.hardware = MH_BL_POS;
-	// motor_infos[5] = motor_5;
-
-	// MOTOR CONTROLLERS (BOARDS)
-	// ODrive motors were "setup" in values_and_types.h
-	// MCInfo odrive_board_0;
-	// odrive_board_0.odrive = & odrive0;
-	// board_infos[0] = odrive_board_0;
-	// MCInfo odrive_board_1;
-	// odrive_board_1.odrive = & odrive1;
-	// board_infos[1] = odrive_board_1;
-	// MCInfo odrive_board_2;
-	// odrive_board_2.odrive = & odrive2;
-	// board_infos[1] = odrive_board_2;
-	// MCInfo board_0;
-	// board_infos[4] 		= board_0;
-	// MCInfo board_1;
-	// board_infos[3] 		= board_1;
-	//MCInfo roboclaw_0;//board_infos[0] 		= roboclaw_0;
-	//MCInfo roboclaw_1;//board_infos[1] 		= roboclaw_1;
-	//MCInfo roboclaw_2;
-	//board_infos[2]  	= roboclaw_2;

@@ -60,6 +60,10 @@
 #define ROBOCLAW_0_ADDR 		(0x80)
 #define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
+#define FRONT_PORT_MTR_ID 		(0)
+#define REAR_PORT_MTR_ID 		(2)
+#define FRONT_STARBOARD_MTR_ID 	(1)
+#define REAR_STARBOARD_MTR_ID 	(3)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,6 +78,8 @@ enum SensorHardware {
 	SH_BL_POT,		// BL := brushless motor
 	SH_BL_ENC_VEL, 	//
 	SH_BL_ENC_POS, 	//
+	SH_RC_ENC_VEL, 	//
+	SH_RC_ENC_POS, 	//
 	SH_BL_CUR,		// Motor Current
 	SH_BR_POT,		// BR := brushed motor
 	SH_BR_ENC,		// 
@@ -95,6 +101,7 @@ typedef struct SensorInfo{
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
 	uint32_t lastUpdateTime; 	// 
+	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
 	//HX711*   loadCell; 			// if this happens to be a load cell
 }SensorInfo;
 
@@ -133,10 +140,12 @@ typedef struct MCInfo {
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 			// motor controller board info
+	SensorInfo* encoder; 		// pointer to this motor's encoder
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
 	bool is_reversed = false;
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
+	int32_t  target_vel = 0; 	//
 	int16_t  lastSet = 0; 		//
 	float    kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	float    ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
@@ -164,7 +173,7 @@ typedef struct MotorInfo{
 FAULT_T faults[DEFAULT_BUF_LEN];						// to hold faults that have occurred
 byte faultIndex = 0;									// tracks the location of the last fault
 
-uint8_t 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
+SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
 MCInfo      board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
 SensorInfo* limit_switches 	[DEFAULT_BUF_LEN] 	= {}; 	// iterate thru & check for collisions
