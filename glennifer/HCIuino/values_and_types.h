@@ -18,11 +18,12 @@
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
 #define NUM_MOTORS 				(9)
+#define NUM_LIM_SWITCHES 		(5)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
 #define ROBOCLAW_BAUD 			(38400)
-#define ROBOCLAW_TIMEOUT 		(10000)
+#define ROBOCLAW_TIMEOUT 		(250)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -59,6 +60,10 @@
 #define ROBOCLAW_0_ADDR 		(0x80)
 #define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
+#define FRONT_PORT_MTR_ID 		(0)
+#define REAR_PORT_MTR_ID 		(2)
+#define FRONT_STARBOARD_MTR_ID 	(1)
+#define REAR_STARBOARD_MTR_ID 	(3)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +78,8 @@ enum SensorHardware {
 	SH_BL_POT,		// BL := brushless motor
 	SH_BL_ENC_VEL, 	//
 	SH_BL_ENC_POS, 	//
+	SH_RC_ENC_VEL, 	//
+	SH_RC_ENC_POS, 	//
 	SH_BL_CUR,		// Motor Current
 	SH_BR_POT,		// BR := brushed motor
 	SH_BR_ENC,		// 
@@ -85,14 +92,16 @@ enum SensorHardware {
 
 //SENSOR INFO
 typedef struct SensorInfo{
-	SensorHardware hardware;
+	SensorHardware hardware = SH_NONE;
 	uint8_t  addr; 				// When hardware = SH_I2C_* or ...
 	uint8_t  whichMotor; 		// Holds the ID of the motor if applicable
 	int      whichPin; 			// 
-	bool     is_reversed;		// When hardware = SH_PIN_LIMIT
+	bool     is_reversed = false;// When hardware = SH_PIN_LIMIT
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
+	uint32_t lastUpdateTime; 	// 
+	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
 	//HX711*   loadCell; 			// if this happens to be a load cell
 }SensorInfo;
 
@@ -114,7 +123,7 @@ enum MotorHardware {
 enum MCType{
 	MC_NONE,
 	MC_ODRIVE,
-	MC_BRUSHED,
+	MC_SABERTOOTH,
 	MC_ROBOCLAW
 };
 
@@ -131,10 +140,12 @@ typedef struct MCInfo {
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 			// motor controller board info
+	SensorInfo* encoder; 		// pointer to this motor's encoder
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
 	bool is_reversed = false;
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
+	int32_t  target_vel = 0; 	//
 	int16_t  lastSet = 0; 		//
 	float    kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	float    ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
@@ -150,6 +161,7 @@ typedef struct MotorInfo{
 	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
 	uint16_t lastError; 		// for tracking the derivative
 	float    integral; 			// replaces the motor_integrals array
+	bool     is_stopped = false;// to stop if we hit a limit switch
 }MotorInfo;
 
 
@@ -164,6 +176,7 @@ byte faultIndex = 0;									// tracks the location of the last fault
 SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
 MCInfo      board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
+SensorInfo* limit_switches 	[DEFAULT_BUF_LEN] 	= {}; 	// iterate thru & check for collisions
 
 int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
@@ -172,10 +185,13 @@ float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 bool 	stopped 								= true;	// default status is stopped
 
+
 int lastTime = 0;
 int debugging[5] = {};
 
 uint32_t loops 									= 0;
+
+RoboClaw roboclawSerial(&Serial1, ROBOCLAW_TIMEOUT);
 
 // ODriveArduino odrive0(Serial1);
 // ODriveArduino odrive1(Serial2);
