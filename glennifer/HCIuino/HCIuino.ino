@@ -1,5 +1,27 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
+//					HCIuino.h
+//
+// 		This is the main source file for the HCI microcontroller board. 
+// 		It is designed for use on an Arduino Due.
+//
+// 		Required Libraries:
+// 		○ Sabertooth: 
+// 			• https://www.dimensionengineering.com/info/arduino
+// 		○ Roboclaw: 
+// 			• Libraries 	: http://www.ionmc.com/downloads
+// 			• User Manual 	: http://downloads.ionmc.com/docs/roboclaw_user_manual.pdf
+// 		○ ODrive:
+// 			• http://odriverobotics.com
+//
+//		This file covers:
+//		• setup() Arduino function
+// 		• loop() Arduino function
+//
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+//
 //	PREPROCESSOR INCLUDES
 //
 ////////////////////////////////////////////////////////////////////////////////
