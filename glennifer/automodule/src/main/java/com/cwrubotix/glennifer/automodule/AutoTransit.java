@@ -3,6 +3,7 @@ package com.cwrubotix.glennifer.automodule;
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.ProgressReport;
 import com.cwrubotix.glennifer.Messages.RpmUpdate;
+import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
@@ -133,16 +134,17 @@ public class AutoTransit extends Module {
 	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 	    System.out.println("current pos:" + currentPos);
 	    if(currentPath.getPath().size() < 1){
-		launched = false;
-		ProgressReport report = ProgressReport.newBuilder().setDone(true)
-								   .setTimestamp(instantToUnixTime(Instant.now()))
-								   .build();
-		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
+			launched = false;
+			ProgressReport report = ProgressReport.newBuilder()
+				.setDone(true)
+				.setTimestamp(instantToUnixTime(Instant.now()))
+				.build();
+			this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
 	    }
 	    else if(subTarget.equals(currentPos)){
-		moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+			moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
 	    } else{
-		moveToPos(currentPos, subTarget);
+			moveToPos(currentPos, subTarget);
 	    }
 	}
     }
@@ -174,23 +176,22 @@ public class AutoTransit extends Module {
 	if(launched){
 	    pathFinder.setCurrentPos(currentPos);
 	    try {
-		pathFinder.registerObstacle(obs);
+			pathFinder.registerObstacle(obs);
 	    } catch (PathFinder.DestinationModified destinationModified) {
 	    } finally{
-		currentPath = pathFinder.getPath();
+			currentPath = pathFinder.getPath();
 	    }
-	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
-	}
+	    	moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+		}
     }
 
     private void moveToPos(Position currPos, Position destPos) throws IOException {
 	// Compute angle to turn to -- clockwise is positive
-	double angleBetween = Position.angleBetween(currPos, destPos);
-
-	if(launched){
-	    turnAngle(angleBetween);
-	    driveTo(destPos);
-	}
+		double angleBetween = Position.angleBetween(currPos, destPos);
+		if(launched){
+	    	turnAngle(angleBetween);
+	    	driveTo(destPos);
+		}
     }
 
     private void turnAngle(double angle) throws IOException {
@@ -202,19 +203,21 @@ public class AutoTransit extends Module {
 	 * heading sleep 100ms stop
 	 */
 	// Build messages
-	RpmUpdate rWheelsMsg = RpmUpdate.newBuilder().setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
-						     .setTimestamp(instantToUnixTime(Instant.now()))
-						     .build();
+	SpeedControlCommand rWheelsMsg = SpeedControlCommand.newBuilder()
+							.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
+						    .setTimestamp(instantToUnixTime(Instant.now()))
+						    .build();
 
-	RpmUpdate lWheelsMsg = RpmUpdate.newBuilder().setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
-						     .setTimestamp(instantToUnixTime(Instant.now()))
-						     .build();
+	SpeedControlCommand lWheelsMsg = SpeedControlCommand.newBuilder()
+							.setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
+						    .setTimestamp(instantToUnixTime(Instant.now()))
+						    .build();
 
 	// Tell wheels to start moving
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
 
 	System.out.println("Trying to turn...");
 	// Stop when angle is reached
@@ -235,14 +238,14 @@ public class AutoTransit extends Module {
 	 */
 
 	// Drive
-	RpmUpdate driveMsg = RpmUpdate.newBuilder().setRpm(TRAVEL_SPEED)
+	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED)
 						   .setTimestamp(instantToUnixTime(Instant.now()))
 						   .build();
 
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
 	System.out.println("Moving forward...");
 	// Stop when destination reached (within tolerance)
 	while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
@@ -281,7 +284,7 @@ public class AutoTransit extends Module {
 	this.channel.basicConsume(queueName, true, new TransitNewObstacleConsumer(channel));
 
 	queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "loc.pos");
+	this.channel.queueBind(queueName, exchangeName, "loc.post");
 	this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
       
 	System.out.println("Ready to listen to messages");
