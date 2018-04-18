@@ -216,6 +216,7 @@ public class AutoTransit extends Module {
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
 
+	System.out.println("Trying to turn...");
 	// Stop when angle is reached
 	while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
 	    try {
@@ -224,6 +225,7 @@ public class AutoTransit extends Module {
 		e.printStackTrace();
 	    }
 	}
+	System.out.println("Desired angle reached");
     }
 
     private void driveTo(Position destPos) throws IOException {
@@ -241,7 +243,7 @@ public class AutoTransit extends Module {
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "sensor.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
-
+	System.out.println("Moving forward...");
 	// Stop when destination reached (within tolerance)
 	while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
 	    try {
@@ -250,6 +252,7 @@ public class AutoTransit extends Module {
 		e.printStackTrace();
 	    }
 	}
+	System.out.println("Reached subgoal");
     }
 
     @Override
@@ -281,6 +284,7 @@ public class AutoTransit extends Module {
 	this.channel.queueBind(queueName, exchangeName, "loc.pos");
 	this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
       
+	System.out.println("Ready to listen to messages");
     }
 
     public static void main(String[] args) {

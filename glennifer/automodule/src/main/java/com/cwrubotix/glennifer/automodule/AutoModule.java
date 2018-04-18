@@ -132,6 +132,9 @@ public class AutoModule extends Module {
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
 		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
+				.setTimeLeft(1.0F)
+				.setStop(true)
+				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
 		taskTimer.schedule(new TimerTask() {
 			@Override
