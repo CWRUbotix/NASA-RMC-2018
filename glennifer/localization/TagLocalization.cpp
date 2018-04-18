@@ -198,8 +198,8 @@ public:
     m_width(640),
     m_height(480),
     m_tagSize(0.165),
-    m_fx(525),
-    m_fy(525),
+    m_fx(644.12),
+    m_fy(644.12),
     m_px(319.5),
     m_py(239.5),
 

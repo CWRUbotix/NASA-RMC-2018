@@ -8,7 +8,6 @@ RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include Release/subdir.mk
 -include Debug/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -55,5 +54,6 @@ clean:
 	-@echo ' '
 
 .PHONY: all clean dependents
+.SECONDARY:
 
 -include ../makefile.targets
