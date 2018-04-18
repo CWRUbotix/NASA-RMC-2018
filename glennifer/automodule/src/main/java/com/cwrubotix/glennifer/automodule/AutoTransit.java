@@ -112,6 +112,8 @@ public class AutoTransit extends Module {
 	    // Construct obstacle data
 	    float obsXPos = cmd.getXPos();
 	    float obsYPos = cmd.getXPos();
+	    obsXPos += currentPos.getX(); // TODO Temporarily converting obstacle position relative to the tag
+	    obsYPos += currentPos.getY(); //Probably good idea to move this to the StateModule in the future.
 	    float obsDiameter = cmd.getDiameter();
 	    Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
