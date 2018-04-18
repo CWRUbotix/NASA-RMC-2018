@@ -218,7 +218,7 @@ while True:
 	# visualization backend.
 
 	#cv2.imshow("unknown", sure_bg)
-	cv2.imshow("depth", color)
+	#cv2.imshow("depth", color)
 
 	listener.release(frames)
 	# Use the key 'q' to end!

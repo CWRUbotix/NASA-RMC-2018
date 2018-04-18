@@ -17,6 +17,21 @@
  * Current Implementation of AprilTags for CWRUbotix NASA RMC 2018
  */
 
+/* Camera Calibration Inputs */
+/*double fx = 602.4;
+double fy = 602.4;
+double cx = 319.5;
+double cy = 239.5;
+double k1 = 0.25524;
+    F <<
+      1, 0,  0,
+double k2 = -10.998;
+double p1 = 0.0;
+double p2 = 0.0;
+double k3 = 125.0015;
+
+cv::Mat cameraMatrix = (cv::Mat1d(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
 
 using namespace std;
 
@@ -77,9 +92,9 @@ const char* windowName1 = "Camera 1";
 // utility function to provide current system time (used below in
 // determining frame rate at which images are being processed)
 double tic() {
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
 }
 
 
@@ -98,473 +113,476 @@ const char* address = "localhost";
  * Normalize angle to be within the interval [-pi,pi].
  */
 inline double standardRad(double t) {
-    if (t >= 0.) {
-        t = fmod(t+PI, TWOPI) - PI;
-    } else {
-        t = fmod(t-PI, -TWOPI) + PI;
-    }
-    return t;
+	if (t >= 0.) {
+		t = fmod(t+PI, TWOPI) - PI;
+	} else {
+		t = fmod(t-PI, -TWOPI) + PI;
+	}
+	return t;
 }
-
-//#include "CamCalibration.cpp"
-
-/* Camera Calibration Inputs */
-/*double fx = 602.4;
-double fy = 602.4;
-double cx = 319.5;
-double cy = 239.5;
-double k1 = 0.25524;
-    F <<
-      1, 0,  0,
-double k2 = -10.998;
-double p1 = 0.0;
-double p2 = 0.0;
-double k3 = 125.0015;
-
-cv::Mat cameraMatrix = (cv::Mat1d(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
-cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
 
 /**
  * Convert rotation matrix to Euler angles
  */
 void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {
-    yaw = standardRad(atan2((double)wRo(1,0), (double)wRo(0,0)));
-    double c = cos(yaw);
-    double s = sin(yaw);
-    pitch = standardRad(atan2((double)-wRo(2,0), (double)(wRo(0,0)*c + wRo(1,0)*s)));
-    roll  = standardRad(atan2((double)(wRo(0,2)*s - wRo(1,2)*c), (double)(-wRo(0,1)*s + wRo(1,1)*c)));
+	yaw = standardRad(atan2((double)wRo(1,0), (double)wRo(0,0)));
+	double c = cos(yaw);
+	double s = sin(yaw);
+	pitch = standardRad(atan2((double)-wRo(2,0), (double)(wRo(0,0)*c + wRo(1,0)*s)));
+	roll  = standardRad(atan2((double)(wRo(0,2)*s - wRo(1,2)*c), (double)(-wRo(0,1)*s + wRo(1,1)*c)));
 }
 
+//Camera Structure
+struct camera {
+	double c_fx;	//camera focal length for green cam
+	double c_fy;
+	double c_px;	//camera principal length for green cam
+	double c_py;
+	int c_id;
+};
+
+camera greenCam = {644.12, 644.12, 319.5, 239.5, 0};
+camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
+camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
+
+const char* windowGreenCam = "Green Cam";
+const char* windowYellowCam = "Yellow Cam";
+const char* windowBlueCam = "Blue Cam";
 
 AMQP amqp("guest:guest@localhost");
 const char* topic = "locs";
 AMQPQueue *queue = amqp.createQueue(topic);
 
-        //this should be set in methods or somewhere appropriate
-        //all is here for ease of access during testing
-
-        //similar code to ConsumerThread::run()
-        //so, should check dor fuplicate topic threads???
-
 //Initializes AMQP queue etc
 void init_Queue() {
-    queue->Declare();
-    queue->Bind("amq.topic", topic);
-    //queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
-    queue->Consume(AMQP_NOACK);
+	queue->Declare();
+	queue->Bind("amq.topic", topic);
+	//queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
+	queue->Consume(AMQP_NOACK);
 }
 
 class Demo {
 
-  AprilTags::TagDetector* m_tagDetector;
-  AprilTags::TagCodes m_tagCodes;
+	AprilTags::TagDetector* m_tagDetector;
+	AprilTags::TagCodes m_tagCodes;
 
-  bool m_draw; // draw image and April tag detections?
-  bool m_arduino; // send tag detections to serial port?
-  bool m_timing; // print timing information for each tag extraction call
+	bool m_draw; // draw image and April tag detections?
+	bool m_arduino; // send tag detections to serial port?
+	bool m_timing; // print timing information for each tag extraction call
 
-  int m_width; // image size in pixels
-  int m_height;
-  double m_tagSize; // April tag side length in meters of square black frame
-  double m_fx; // camera focal length in pixels
-  double m_fy;
-  double m_px; // camera principal point
-  double m_py;
+	int m_width; // image size in pixels
+	int m_height;
+	double m_tagSize; // April tag side length in meters of square black frame
+	double m_fx; // camera focal length in pixels
+	double m_fy;
+	double m_px; // camera principal point
+	double m_py;
 
-  int m_deviceId; // camera id (in case of multiple cameras)
+	int m_deviceId; // camera id (in case of multiple cameras)
 
-  list<string> m_imgNames;
+	list<string> m_imgNames;
 
-  cv::VideoCapture m_cap;
+	cv::VideoCapture m_cap;
 
-  int m_exposure;
-  int m_gain;
-  int m_brightness;
+	int m_exposure;
+	int m_gain;
+	int m_brightness;
 
-  Serial m_serial;
+	Serial m_serial;
+
+	cv::VideoCapture green_cap;
+	cv::VideoCapture yellow_cap;
+	cv::VideoCapture blue_cap;
 
 public:
 
-  // default constructor
-  Demo() :
-    // default settings, most can be modified through command line options (see below)
-    m_tagDetector(NULL),
-    m_tagCodes(AprilTags::tagCodes36h11),
+	// default constructor
+	Demo() :
+		// default settings, most can be modified through command line options (see below)
+		m_tagDetector(NULL),
+		m_tagCodes(AprilTags::tagCodes36h11),
 
-    m_draw(true),
-    m_arduino(false),
-    m_timing(false),
+		m_draw(true),
+		m_arduino(false),
+		m_timing(false),
 
-    m_width(640),
-    m_height(480),
-    m_tagSize(0.165),
-    m_fx(644.12),
-    m_fy(644.12),
-    m_px(319.5),
-    m_py(239.5),
+		m_width(640),
+		m_height(480),
+		m_tagSize(0.165),
+		m_fx(644.12),
+		m_fy(644.12),
+		m_px(319.5),
+		m_py(239.5),
 
-    m_exposure(-1),
-    m_gain(-1),
-    m_brightness(-1),
+		m_exposure(-1),
+		m_gain(-1),
+		m_brightness(-1),
 
-    m_deviceId(0)
-  {}
+		m_deviceId(0)
+{}
 
-  // changing the tag family
-  void setTagCodes(string s) {
-    if (s=="16h5") {
-      m_tagCodes = AprilTags::tagCodes16h5;
-    } else if (s=="25h7") {
-      m_tagCodes = AprilTags::tagCodes25h7;
-    } else if (s=="25h9") {
-      m_tagCodes = AprilTags::tagCodes25h9;
-    } else if (s=="36h9") {
-      m_tagCodes = AprilTags::tagCodes36h9;
-    } else if (s=="36h11") {
-      m_tagCodes = AprilTags::tagCodes36h11;
-    } else {
-      cout << "Invalid tag family specified" << endl;
-      exit(1);
-    }
-  }
+	// changing the tag family
+	void setTagCodes(string s) {
+		if (s=="16h5") {
+			m_tagCodes = AprilTags::tagCodes16h5;
+		} else if (s=="25h7") {
+			m_tagCodes = AprilTags::tagCodes25h7;
+		} else if (s=="25h9") {
+			m_tagCodes = AprilTags::tagCodes25h9;
+		} else if (s=="36h9") {
+			m_tagCodes = AprilTags::tagCodes36h9;
+		} else if (s=="36h11") {
+			m_tagCodes = AprilTags::tagCodes36h11;
+		} else {
+			cout << "Invalid tag family specified" << endl;
+			exit(1);
+		}
+	}
 
-  // parse command line options to change default behavior
-  void parseOptions(int argc, char* argv[]) {
-    int c;
-    while ((c = getopt(argc, argv, ":h?adtC:F:H:S:W:E:G:B:D:")) != -1) {
-      // Each option character has to be in the string in getopt();
-      // the first colon changes the error character from '?' to ':';
-      // a colon after an option means that there is an extra
-      // parameter to this option; 'W' is a reserved character
-      switch (c) {
-      case 'h':
-      case '?':
-        //cout << "intro";
-        //cout << "usage"";
-        exit(0);
-        break;
-      case 'a':
-        m_arduino = true;
-        break;
-      case 'd':
-        m_draw = false;
-        break;
-      case 't':
-        m_timing = true;
-        break;
-      case 'C':
-        setTagCodes(optarg);
-        break;
-      case 'F':
-        m_fx = atof(optarg);
-        m_fy = m_fx;
-        break;
-      case 'H':
-        m_height = atoi(optarg);
-        m_py = m_height/2;
-         break;
-      case 'S':
-        m_tagSize = atof(optarg);
-        break;
-      case 'W':
-        m_width = atoi(optarg);
-        m_px = m_width/2;
-        break;
-      case 'E':
-#ifndef EXPOSURE_CONTROL
-        cout << "Error: Exposure option (-E) not available" << endl;
-        exit(1);
-#endif
-        m_exposure = atoi(optarg);
-        break;
-      case 'G':
-#ifndef EXPOSURE_CONTROL
-        cout << "Error: Gain option (-G) not available" << endl;
-        exit(1);
-#endif
-        m_gain = atoi(optarg);
-        break;
-      case 'B':
-#ifndef EXPOSURE_CONTROL
-        cout << "Error: Brightness option (-B) not available" << endl;
-        exit(1);
-#endif
-        m_brightness = atoi(optarg);
-        break;
-      case 'D':
-        m_deviceId = atoi(optarg);
-        break;
-      case ':': // unknown option, from getopt
-        //cout << intro;
-        //cout << usage;
-        exit(1);
-        break;
-      }
-    }
+	void setup() {
+		m_tagDetector = new AprilTags::TagDetector(m_tagCodes);
 
-    if (argc > optind) {
-      for (int i=0; i<argc-optind; i++) {
-        m_imgNames.push_back(argv[optind+i]);
-      }
-    }
-  }
+		// prepare window for drawing the camera images
+		if (m_draw) {
+			cv::namedWindow(windowGreenCam, 1);
+			cv::namedWindow(windowYellowCam, 1);
+			cv::namedWindow(windowBlueCam, 1);
+		}
 
-  void setup() {
-    m_tagDetector = new AprilTags::TagDetector(m_tagCodes);
+		// optional: prepare serial port for communication with Arduino
+		if (m_arduino) {
+			m_serial.open("/dev/ttyACM0");
+		}
+	}
 
-    // prepare window for drawing the camera images
-    if (m_draw) {
-      cv::namedWindow(windowName, 1);
-    }
-
-    // optional: prepare serial port for communication with Arduino
-    if (m_arduino) {
-      m_serial.open("/dev/ttyACM0");
-    }
-  }
-
-  void setupVideo() {
+	void setupVideo() {
 
 #ifdef EXPOSURE_CONTROL
-    // manually setting camera exposure settings; OpenCV/v4l1 doesn't
-    // support exposure control; so here we manually use v4l2 before
-    // opening the device via OpenCV; confirmed to work with Logitech
-    // C270; try exposure=20, gain=100, brightness=150
+		// manually setting camera exposure settings; OpenCV/v4l1 doesn't
+		// support exposure control; so here we manually use v4l2 before
+		// opening the device via OpenCV; confirmed to work with Logitech
+		// C270; try exposure=20, gain=100, brightness=150
 
-    string video_str = "/dev/video0";
-    video_str[10] = '0' + m_deviceId;
-    int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		string video_str_green = "/dev/video0";
+		video_str_green[10] = '0' + greenCam.c_id;
+		int deviceGreen = v4l2_open(video_str_green.c_str(), O_RDWR | O_NONBLOCK);
 
-    if (m_exposure >= 0) {
-      // not sure why, but v4l2_set_control() does not work for
-      // V4L2_CID_EXPOSURE_AUTO...
-      struct v4l2_control c;
-      c.id = V4L2_CID_EXPOSURE_AUTO;
-      c.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-      if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c) != 0) {
-        cout << "Failed to set... " << strerror(errno) << endl;
-      }
-      cout << "exposure: " << m_exposure << endl;
-      v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-    }
-    if (m_gain >= 0) {
-      cout << "gain: " << m_gain << endl;
-      v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
-    }
-    if (m_brightness >= 0) {
-      cout << "brightness: " << m_brightness << endl;
-      v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
-    }
-    v4l2_close(device);
+		string video_str_yellow = "/dev/video1";
+		video_str_yellow[10] = '1' + yellowCam.c_id;
+		int deviceYellow = v4l2_open(video_str_yellow.c_str(), O_RDWR | O_NONBLOCK);
+
+		string video_str_blue = "/dev/video3";
+		video_str_blue[10] = '1' + blueCam.c_id;
+		int deviceBlue = v4l2_open(video_str_blue.c_str(), O_RDWR | O_NONBLOCK);
+
+		if (m_exposure >= 0) {
+			// not sure why, but v4l2_set_control() does not work for
+			// V4L2_CID_EXPOSURE_AUTO...
+			struct v4l2_control c_green;
+			c_green.id = V4L2_CID_EXPOSURE_AUTO;
+			c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceGreen, VIDIOC_S_CTRL, &c_green) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceGreen);
+
+		if (m_exposure >= 0) {
+			struct v4l2_control c_yellow;
+			c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
+			c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceYellow, VIDIOC_S_CTRL, &c_yellow) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceYellow);
+
+		if (m_exposure >= 0) {
+			struct v4l2_control c_blue;
+			c_blue.id = V4L2_CID_EXPOSURE_AUTO;
+			c_blue.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceBlue, VIDIOC_S_CTRL, &c_blue) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceBlue);
+
 #endif
 
-    // find and open a USB camera (built in laptop camera, web cam etc)
-    m_cap = cv::VideoCapture(m_deviceId);
-        if(!m_cap.isOpened()) {
-      cerr << "ERROR: Can't find video device " << m_deviceId << "\n";
-      exit(1);
-    }
-    m_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
-    m_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
-    cout << "Camera successfully opened (ignore error messages above...)" << endl;
-    cout << "Actual resolution: "
-         << m_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
-         << m_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
+		// find and open a USB camera (built in laptop camera, web cam etc)
+		green_cap = cv::VideoCapture(greenCam.c_id);
+		if(!green_cap.isOpened()) {
+			cerr << "ERROR: Can't find Green Camera" << "\n";
+			exit(1);
+		}
 
-  }
+		green_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		green_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
 
-  void print_detection(AprilTags::TagDetection& detection) const {
-    cout << "  Id: " << detection.id
-         << " (Hamming: " << detection.hammingDistance << ")";
+		cout << "Green Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< green_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< green_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
 
-    // recovering the relative pose of a tag:
+		yellow_cap = cv::VideoCapture(yellowCam.c_id);
+		if(!yellow_cap.isOpened()) {
+			cerr << "ERROR: Can't find Yellow Camera" << "\n";
+			exit(1);
+		}
+		yellow_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		yellow_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
 
-    // NOTE: for this to be accurate, it is necessary to use the
-    // actual camera parameters here as well as the actual tag size
-    // (m_fx, m_fy, m_px, m_py, m_tagSize)
+		cout << "Yellow Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< yellow_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< yellow_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
 
-    Eigen::Vector3d translation;
-    Eigen::Matrix3d rotation;
-    Eigen::Vector4d fcol;
-    detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                             translation, rotation, fcol);
+		blue_cap = cv::VideoCapture(blueCam.c_id);
+		if(!blue_cap.isOpened()) {
+			cerr << "ERROR: Can't find Blue Camera" << "\n";
+			exit(1);
+		}
+		blue_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		blue_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
+
+		cout << "Blue Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< blue_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< blue_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
+
+	}
+
+	void print_detection(AprilTags::TagDetection& detection, camera camera, string name) const {
+		cout << "  Id: " << detection.id
+				<< " (Hamming: " << detection.hammingDistance << ")";
+
+		// recovering the relative pose of a tag:
+
+		// NOTE: for this to be accurate, it is necessary to use the
+		// actual camera parameters here as well as the actual tag size
+		// (m_fx, m_fy, m_px, m_py, m_tagSize)
+
+		Eigen::Vector3d translation;
+		Eigen::Matrix3d rotation;
+		Eigen::Vector4d realcoor;
+		detection.getRelativeTranslationRotation(m_tagSize, camera.c_fx, camera.c_fy, camera.c_px, camera.c_py, translation, rotation, realcoor);
 
 
-    Eigen::Matrix3d F;
-    F <<
-      1, 0,  0,
-      0,  -1,  0,
-      0,  0,  1;
-    Eigen::Matrix3d fixed_rot = F*rotation;
-    double yaw, pitch, roll;
-    wRo_to_euler(fixed_rot, yaw, pitch, roll);
+		Eigen::Matrix3d F;
+		F <<
+				1, 0,  0,
+				0,  -1,  0,
+				0,  0,  1;
+		Eigen::Matrix3d fixed_rot = F*rotation;
+		double yaw, pitch, roll;
+		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
 
-   AMQPExchange * ex = amqp.createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    com::cwrubotix::glennifer::LocalizationPosition msg;
-    msg.set_x_position((float)fcol(0));
-    msg.set_y_position((float)fcol(2));
-    msg.set_bearing_angle((float) ((-1 * pitch) + PI));
+		AMQPExchange * ex = amqp.createExchange("amq.topic");
+		ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+		com::cwrubotix::glennifer::LocalizationPosition msg;
+		msg.set_x_position((float)realcoor(0));
+		msg.set_y_position((float)realcoor(2));
+		msg.set_bearing_angle((float) ((-1 * pitch) + PI));
 
-    //msg.set_distance_vector((float) ((1) * (translation.norm())));
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    msg.SerializeToArray(msg_buff, msg_size);
+		//msg.set_distance_vector((float) ((1) * (translation.norm())));
+		int msg_size = msg.ByteSize();
+		void *msg_buff = malloc(msg_size);
+		msg.SerializeToArray(msg_buff, msg_size);
 
-    ex->Publish((char*)msg_buff, msg_size, "loc.post");
+		ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
-    cout << "  distance=" << translation.norm()
-            << "m, x=" << fcol(0) //(translation.norm() * (sin (pitch)))
-            << ", y=" << fcol(2)//(translation.norm() * (cos (pitch)))
-             //<< ", z=" << fcol(2)//translation(2)
-             //<< ", w=" << fcol(1) //yaw
-             << ", Bearing=" << (pitch * 180/PI)
-             //<< ", roll=" << roll
-             << endl;
+		cout << "  distance=" << translation.norm()
+            		<< "m, x=" << realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y=" << realcoor(2)//(translation.norm() * (cos (pitch)))
+					//<< ", z=" << fcol(2)//translation(2)
+					//<< ", w=" << fcol(1) //yaw
+					<< ", Bearing=" << (pitch * 180/PI);
+		//<< ", roll=" << roll
+		//<< endl;
 
-    // Also note that for SLAM/multi-view application it is better to
-    // use reprojection error of corner points, because the noise in
-    // this relative pose is very non-Gaussian; see iSAM source code
-    // for suitable factors.
-  }
+		// Also note that for SLAM/multi-view application it is better to
+		// use reprojection error of corner points, because the noise in
+		// this relative pose is very non-Gaussian; see iSAM source code
+		// for suitable factors.
+	}
 
-  void processImage(cv::Mat& image, cv::Mat& image_gray) {
-    // alternative way is to grab, then retrieve; allows for
-    // multiple grab when processing below frame rate - v4l keeps a
-    // number of frames buffered, which can lead to significant lag
-    //      m_cap.grab();
-    //      m_cap.retrieve(image);
+	void processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name) {
+		// alternative way is to grab, then retrieve; allows for
+		// multiple grab when processing below frame rate - v4l keeps a
+		// number of frames buffered, which can lead to significant lag
+		//      m_cap.grab();
+		//      m_cap.retrieve(image);
 
-    // detect April tags (requires a gray scale image)
-    cv::cvtColor(image, image_gray, CV_BGR2GRAY);
-    double t0;
-    if (m_timing) {
-      t0 = tic();
-    }
-    vector<AprilTags::TagDetection> detections = m_tagDetector->extractTags(image_gray);
-    if (m_timing) {
-      double dt = tic()-t0;
-      cout << "Extracting tags took " << dt << " seconds." << endl;
-    }
+		// detect April tags (requires a gray scale image)
+		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
+		double t0;
+		if (m_timing) {
+			t0 = tic();
+		}
+		vector<AprilTags::TagDetection> detections = m_tagDetector->extractTags(image_gray);
+		if (m_timing) {
+			double dt = tic()-t0;
+			cout << "Extracting tags took " << dt << " seconds." << endl;
+		}
 
-    // print out each detection
-    cout << detections.size() << " tags detected:" << endl;
-    for (int i=0; i<detections.size(); i++) {
-      print_detection(detections[i]);
-    }
+		// print out each detection
+		cout << detections.size() << " tags detected:" << endl;
+		for (int i=0; i<detections.size(); i++) {
+			print_detection(detections[i], camera, name);
+		}
 
-    // show the current image including any detections
-    if (m_draw) {
-      for (int i=0; i<detections.size(); i++) {
-        // also highlight in the image
-        detections[i].draw(image);
-      }
-      imshow(windowName, image); // OpenCV call
-    }
+		// show the current image including any detections
+		if (m_draw) {
+			for (int i=0; i<detections.size(); i++) {
+				// also highlight in the image
+				detections[i].draw(image);
+			}
+			//imshow(name, image); // OpenCV call
+		}
 
-    // optionally send tag information to serial port (e.g. to Arduino)
-    if (m_arduino) {
-      if (detections.size() > 0) {
-        // only the first detected tag is sent out for now
-        Eigen::Vector3d translation;
-        Eigen::Matrix3d rotation;
+		// optionally send tag information to serial port (e.g. to Arduino)
+		if (m_arduino) {
+			if (detections.size() > 0) {
+				// only the first detected tag is sent out for now
+				Eigen::Vector3d translation;
+				Eigen::Matrix3d rotation;
+				Eigen::Vector4d realcoor;
+				detections[0].getRelativeTranslationRotation(m_tagSize, camera.c_fx, camera.c_fy, camera.c_px, camera.c_py,
+						translation, rotation, realcoor);
+				m_serial.print(detections[0].id);
+				m_serial.print(",");
+				m_serial.print(translation(0));
+				m_serial.print(",");
+				m_serial.print(translation(1));
+				m_serial.print(",");
+				m_serial.print(translation(2));
 
-        Eigen::Vector4d fcol;
-        detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-                                                     translation, rotation, fcol);
-        m_serial.print(detections[0].id);
-        m_serial.print(",");
-        m_serial.print(translation(0));
-        m_serial.print(",");
-        m_serial.print(translation(1));
-        m_serial.print(",");
-        m_serial.print(translation(2));
+				m_serial.print("\n");
+			} else {
+				// no tag detected: tag ID = -1
+				m_serial.print("-1,0.0,0.0,0.0\n");
+			}
+		}
+	}
 
-        m_serial.print("\n");
-      } else {
-        // no tag detected: tag ID = -1
-        m_serial.print("-1,0.0,0.0,0.0\n");
-      }
-    }
-  }
+	// Load and process a single image
+	void loadImages() {
+		cv::Mat image;
+		cv::Mat image_gray;
 
-  // Load and process a single image
-  void loadImages() {
-    cv::Mat image;
-    cv::Mat image_gray;
-
-    for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
+		/*for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
       image = cv::imread(*it); // load image with opencv
       processImage(image, image_gray);
       while (cv::waitKey(100) == -1) {}
-    }
-  }
+    }*/
+	}
 
-  // Video or image processing?
-  bool isVideo() {
-    return m_imgNames.empty();
-  }
+	// Video or image processing?
+	bool isVideo() {
+		return m_imgNames.empty();
+	}
 
-  // The processing loop where images are retrieved, tags detected,
-  // and information about detections generated
-  void loop() {
+	// The processing loop where images are retrieved, tags detected,
+	// and information about detections generated
+	void loop() {
 
-    cv::Mat image;
-    cv::Mat image_gray;
+		cv::Mat green_image;
+		cv::Mat green_image_gray;
+		cv::Mat yellow_image;
+		cv::Mat yellow_image_gray;
+		cv::Mat blue_image;
+		cv::Mat blue_image_gray;
 
-    int frame = 0;
-    double last_t = tic();
-    while (true) {
+		int frame = 0;
+		double last_t = tic();
+		while (true) {
 
-      // capture frame
-      m_cap >> image;
+			// capture frame
+			green_cap >> green_image;
+			cout << "communicating data..." << endl;
+			yellow_cap >> yellow_image;
+			cout << "communicating data1..." << endl;
+			blue_cap >> blue_image;
+			cout << "communicating data2..." << endl;
 
-      processImage(image, image_gray);
+			processImage(green_image, green_image_gray, greenCam, windowGreenCam);
+			processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam);
+			processImage(blue_image, blue_image_gray, blueCam, windowBlueCam);
 
-      // print out the frame rate at which image frames are being processed
-      frame++;
-      if (frame % 10 == 0) {
-        double t = tic();
-        cout << "  " << 10./(t-last_t) << " fps" << endl;
-        last_t = t;
-      }
+			// print out the frame rate at which image frames are being processed
+			frame++;
+			if (frame % 10 == 0) {
+				double t = tic();
+				cout << "  " << 10./(t-last_t) << " fps" << endl;
+				last_t = t;
+			}
 
-      // exit if any key is pressed
-      if (cv::waitKey(1) >= 0) break;
-      //sleep(1.5);
+			// exit if any key is pressed
+			if (cv::waitKey(1) >= 0) break;
+			//sleep(1.5);
 
-    }
-  }
+		}
+	}
 
 }; // Demo
 
 
 // here is were everything begins
 int main(int argc, char* argv[]) {
-  Demo demo;
+	Demo demo;
 
-  // process command line options
-  demo.parseOptions(argc, argv);
+	// process command line options
+	//demo.parseOptions(argc, argv);
 
-  demo.setup();
+	demo.setup();
 
-  if (demo.isVideo()) {
-    cout << "Processing video" << endl;
+	if (demo.isVideo()) {
+		cout << "Processing video" << endl;
 
-    // setup image source, window for drawing, serial port...
-    demo.setupVideo();
+		// setup image source, window for drawing, serial port...
+		demo.setupVideo();
 
-    // the actual processing loop where tags are detected and visualized
-    demo.loop();
+		// the actual processing loop where tags are detected and visualized
+		demo.loop();
 
-  } else {
-    cout << "Processing image" << endl;
+	} else {
+		cout << "Processing image" << endl;
 
-    // process single image
-    demo.loadImages();
-  }
+		// process single image
+		demo.loadImages();
+	}
 
-  return 0;
+	return 0;
 }
 
