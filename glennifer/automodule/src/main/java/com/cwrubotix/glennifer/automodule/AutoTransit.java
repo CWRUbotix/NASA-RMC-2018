@@ -205,12 +205,10 @@ public class AutoTransit extends Module {
 	// Build messages
 	SpeedControlCommand rWheelsMsg = SpeedControlCommand.newBuilder()
 							.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
-						    .setTimestamp(instantToUnixTime(Instant.now()))
 						    .build();
 
 	SpeedControlCommand lWheelsMsg = SpeedControlCommand.newBuilder()
 							.setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
-						    .setTimestamp(instantToUnixTime(Instant.now()))
 						    .build();
 
 	// Tell wheels to start moving
@@ -239,7 +237,6 @@ public class AutoTransit extends Module {
 
 	// Drive
 	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED)
-						   .setTimestamp(instantToUnixTime(Instant.now()))
 						   .build();
 
 	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
