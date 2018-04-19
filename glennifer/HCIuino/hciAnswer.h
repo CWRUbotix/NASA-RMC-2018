@@ -28,6 +28,7 @@ uint8_t cmd_sense_sensor_id(byte* cmd, uint8_t i){
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// **** NOT USED ****
 //    • takes reply bytes as an array argument 
 //    • write these bytes to the client
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,22 +83,27 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 		case CMD_SET_OUTPUTS:
 			num = cmd_body_len(cmd)/3;
 			uint16_t setPt;
+			uint8_t cmd_index = CMD_HEADER_SIZE;
+			uint8_t rpy_index = RPY_HEADER_SIZE;
 			for(i = 0; i<num; i++){
-				ID    = cmd[(3*i)+CMD_HEADER_SIZE];
+				cmd_index += (3*i);
+				rpy_index += (3*i);
+				ID    = cmd[cmd_index];
 				setPt = motor_infos[ID].setPt;
-				rpy[RPY_HEADER_SIZE+i*3]   = ID;
-				rpy[RPY_HEADER_SIZE+i*3+1] = (uint8_t)(setPt >> 8);
-				rpy[RPY_HEADER_SIZE+i*3+2] = (uint8_t)(setPt & 0xFF);
+				rpy[rpy_index]   = ID;
+				rpy[rpy_index+1] = (uint8_t)(setPt >> 8);
+				rpy[rpy_index+2] = (uint8_t)(setPt & 0xFF);
 				bodyLen+=3;
 			}
 			break;
-
 	}
 
 	rpy_set_len(rpy, bodyLen); 	// we only want to consider body length
 	size 	= RPY_HEADER_SIZE + bodyLen;
 	debugging[4] = size;
-	retval 	= Serial.write(rpy, size);
+
+	retval 	= Serial.write(rpy, size); 	// Actually write to the client
+	
 	success = (retval == size);
 	if(success){
 		//clear_fault_log();

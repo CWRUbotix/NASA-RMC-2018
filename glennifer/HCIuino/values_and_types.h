@@ -17,10 +17,12 @@
 // Sizes & Number of things
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
+#define NUM_MOTORS 				(9)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
-#define SERIAL_BAUD 			HCI_BAUD
+#define ROBOCLAW_BAUD 			(38400)
+#define ROBOCLAW_TIMEOUT 		(250)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -29,10 +31,9 @@
 #define SENSOR_DATA_SIZE 		(1)
 #define MOTOR_ID_SIZE 			(1)
 #define MOTOR_INSTRUC_SIZE 		(2)
-#define NUM_MOTORS 				(9)
-#define NUM_SENSORS 			(100)
 #define ANLG_READ_RES 			(12)
 #define ANLG_WRITE_RES 			(12)
+#define DFLT_MAX_DELTA 			(200)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -51,10 +52,13 @@
 //Logging faults
 #define FAULT_LOG_FULL			(7)
 
-// PIN NUMBERS
+// PIN NUMBERS & ADDRESSES
 //Motor Control Boards
 #define SABERTOOTH_0_SLCT 		(22)
 #define SABERTOOTH_1_SLCT 		(23)
+#define ROBOCLAW_0_ADDR 		(0x80)
+#define ROBOCLAW_1_ADDR  		(0x81)
+#define ROBOCLAW_2_ADDR 		(0x82)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,25 +93,29 @@ typedef struct SensorInfo{
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
-	HX711*   loadCell; 			// if this happens to be a load cell
+	//HX711*   loadCell; 			// if this happens to be a load cell
 }SensorInfo;
 
 //MOTOR STUFF
 enum MotorHardware {
 	MH_NONE,
-	MH_BL_VEL,		// 
+	MH_BL_VEL,		// if ODrive
 	MH_BL_POS,		// 
 	MH_BL_BOTH,		// 
-	MH_ST_PWM, 		//
+	MH_ST_PWM, 		// if Sabertooth
 	MH_ST_VEL, 		//
 	MH_ST_POS, 		//
-	MH_ALL			// 
+	MH_RC_VEL, 		// if RoboClaw
+	MH_RC_POS, 		//
+	MH_RC_BOTH, 	//
+	MH_ALL			// if All?
 };
 
 enum MCType{
 	MC_NONE,
 	MC_ODRIVE,
-	MC_BRUSHED
+	MC_BRUSHED,
+	MC_ROBOCLAW
 };
 
 typedef struct MCInfo {
@@ -115,31 +123,38 @@ typedef struct MCInfo {
 	SabertoothSimplified* ST; 	// the sabertooth board object if applicable
 	uint8_t selectPin; 			// slave select pin
 	ODriveArduino* odrive; 		// if MC_ODRIVE
+	RoboClaw* roboclaw;
+	uint8_t addr; 				// used if MC_ROBOCLAW
 }MCInfo;
 
 //MOTOR INFO
 typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
-	MCInfo*  board; 		// motor controller board info
-	uint8_t  addr; 			// 
-	uint8_t  whichMotor; 	// motor 0 or 1 on the board?
-	uint16_t scale = 1; 	// 1 unless needed
-	uint16_t setPt = 0;		// set point for motor (rather that use an array)
-	float    kp; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	float    ki; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	float    kd; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	uint32_t qpps; 			// When hardware = MH_RC_POS or MC_RC_VEL
-	uint32_t deadband; 		// When hardware = MH_RC_POS
-	uint32_t minpos; 		// When hardware = MH_RC_POS
-	uint32_t maxpos; 		// When hardware = MH_RC_POS
-	uint32_t accel;
-	uint16_t feedbackSensorID;
-	float    saturation;
-	uint32_t lastUpdateTime;// replaces the motor_lastUpdateTime array
-	uint16_t lastError; 	// for tracking the derivative
-	float    integral; 		// replaces the motor_integrals array
+	MCInfo*  board; 			// motor controller board info
+	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
+	bool is_reversed = false;
+	uint16_t scale = 1; 		// 1 unless needed
+	int16_t  setPt = 0;			// set point for motor (rather that use an array)
+	int16_t  lastSet = 0; 		//
+	float    kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	float    ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	float    kd; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	uint32_t qpps; 				// When hardware = MH_RC_POS or MC_RC_VEL
+	uint32_t deadband; 			// When hardware = MH_RC_POS
+	uint32_t minpos; 			// When hardware = MH_RC_POS
+	uint32_t maxpos; 			// When hardware = MH_RC_POS
+	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
+	int16_t  max_delta = 0;		// for ramp-up function
+	uint8_t  feedbackSensorID;	//
+	float    saturation; 		//
+	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
+	uint16_t lastError; 		// for tracking the derivative
+	float    integral; 			// replaces the motor_integrals array
 }MotorInfo;
 
+int sign(int val){
+	return (0 < val) - (val < 0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -163,8 +178,10 @@ bool 	stopped 								= true;	// default status is stopped
 int lastTime = 0;
 int debugging[5] = {};
 
-ODriveArduino odrive0(Serial1);
-ODriveArduino odrive1(Serial2);
-ODriveArduino odrive2(Serial3);
+uint32_t loops 									= 0;
+
+// ODriveArduino odrive0(Serial1);
+// ODriveArduino odrive1(Serial2);
+// ODriveArduino odrive2(Serial3);
 
 #endif
