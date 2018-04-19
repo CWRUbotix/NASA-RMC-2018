@@ -68,7 +68,7 @@ void setup(){
 void loop(){
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
-	bool success = false;
+	bool success = false; 
 
 	long time = millis() - lastTime;
 	FAULT_T fault_code = NO_FAULT;
@@ -97,7 +97,7 @@ void loop(){
 			uint32_t avg 	= time / loops;
 			lastTime 		= millis();
 			loops 			= 0;
-			Serial3.println(avg);
+			//Serial3.println(avg);
 			delay(50);
 		}
 		
@@ -113,6 +113,7 @@ void loop(){
 		// Serial3.println();
 		// delay(100);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
+		delay(10);
 	}
 	loops++;
 }

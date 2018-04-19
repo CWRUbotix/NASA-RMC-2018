@@ -68,10 +68,13 @@
 #define ROBOCLAW_0_ADDR 		(0x80)
 #define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
+#define ENCODER_MODE 			((uint8_t) 128)
 #define FRONT_PORT_MTR_ID 		(0)
 #define REAR_PORT_MTR_ID 		(2)
 #define FRONT_STARBOARD_MTR_ID 	(1)
 #define REAR_STARBOARD_MTR_ID 	(3)
+#define PORT_LIN_ACT_ID 		(6)
+#define STARBOARD_LIN_ACT_ID 	(7)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,7 +97,8 @@ enum SensorHardware {
 	SH_BR_CUR,		// Motor Current Sense
 	SH_I2C_BAT,		// 
 	SH_PIN_LIMIT,	// Limit switch
-	SH_PIN_POT,		// Uses an ADC
+	SH_PIN_POT,		// Uses an analog pin
+	SH_POT_POS, 	// For determining position using pots
 	SH_LD_CELL
 };
 
@@ -150,10 +154,11 @@ typedef struct MotorInfo{
 	MCInfo*  board; 			// motor controller board info
 	SensorInfo* encoder; 		// pointer to this motor's encoder
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
-	bool is_reversed = false;
+	bool     is_reversed = false;
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
 	int32_t  target_vel = 0; 	//
+	int32_t  target_pos = 0;
 	int16_t  lastSet = 0; 		//
 	float    kp; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	float    ki; 				// When hardware = MH_RC_POS or MC_RC_VEL
@@ -172,6 +177,9 @@ typedef struct MotorInfo{
 	bool     is_stopped = false;// to stop if we hit a limit switch
 }MotorInfo;
 
+int sign(int val){
+	return (0 < val) - (val < 0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
