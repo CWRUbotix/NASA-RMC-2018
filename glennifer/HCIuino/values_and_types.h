@@ -22,7 +22,7 @@
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
 #define ROBOCLAW_BAUD 			(38400)
-#define ROBOCLAW_TIMEOUT 		(10000)
+#define ROBOCLAW_TIMEOUT 		(250)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -152,6 +152,9 @@ typedef struct MotorInfo{
 	float    integral; 			// replaces the motor_integrals array
 }MotorInfo;
 
+int sign(int val){
+	return (0 < val) - (val < 0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //

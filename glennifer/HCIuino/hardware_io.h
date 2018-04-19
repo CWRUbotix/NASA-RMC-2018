@@ -70,7 +70,7 @@ int16_t ramp_up(MotorInfo* motor, int16_t newSetPt){
 	int16_t retval 	= motor->lastSet;
 
 	if( (delta > motor->max_delta) && (motor->max_delta != 0) ){
-		retval += motor->max_delta;
+		retval += (motor->max_delta);
 	}else{
 		retval = newSetPt;
 	}
