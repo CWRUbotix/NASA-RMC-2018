@@ -237,6 +237,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                     addNode(openSet,neighbor);
                     neighbor.setFound(true);
                     neighbor.setPrevious(current);
+                    neighbor.setHeruistic(end);
                     neighbor.updateDist(current.getDist() + current.getDistTo(neighbor));
                 }
                 else if(!neighbor.isVisited()){ //If seen before, update cost.
@@ -244,6 +245,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                     if (neighbor.getDist() > tempGScore) {
                         neighbor.updateDist(tempGScore);
                         neighbor.setPrevious(current);
+                        neighbor.setHeruistic(end);
                     }
                 }
             }
@@ -285,7 +287,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      */
     private void astarSetup(AStarNode end){
 	for(AStarNode node : getNodes()){
-            node.setHeruistic(end);
             node.setVisited(false);
             node.setFound(false);
             node.updateDist(Float.POSITIVE_INFINITY);
@@ -488,7 +489,11 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * @param end the destination of the path search
          */
         public void setHeruistic(AStarNode end) {
-            this.heruistic = this.getDistTo(end);
+            if(getPrevious() !=null){
+        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end) + getHeading());
+            } else{
+        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end));
+            }
         }
 
         /**
