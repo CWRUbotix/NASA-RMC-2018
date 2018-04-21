@@ -5,8 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <ODriveArduino.h>
 #include <SabertoothSimplified.h>
+#include <RoboClaw.h>
 #include <math.h>
-#include <HX711.h>
+
+RoboClaw roboclawSerial(&Serial1, 250);
 
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
@@ -24,14 +26,19 @@
 ////  SETUP
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
-	Serial.begin(HCI_BAUD);	// Begin communication with computer
-	SerialUSB.begin(9600); 		// Comms with something-or-other
+	Serial.begin(HCI_BAUD); 	// Begin communication with computer
 	setup_sensors();
-	setup_motors();
+	setup_motors(); 
+	Serial3.begin(9600); 		// For the FTDI-USB converter debugging tool
+	
+	analogWriteResolution(ANLG_WRITE_RES);
+	analogReadResolution(ANLG_READ_RES);
 	
 	stopped = false;
-	SerialUSB.println("================================================================================");
-	SerialUSB.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
+	Serial3.println("================================================================================");
+	Serial3.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
+	Serial3.println("================================================================================");
+	delay(50);
 }
 
 
@@ -39,11 +46,9 @@ void setup(){
 ////  MAIN LOOP
 ////////////////////////////////////////////////////////////////////////////////
 void loop(){
-	analogWriteResolution(12);
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false;
-	debugging[0]=0; debugging[1]=0; debugging[2]=0; debugging[3]=0; debugging[4]=0;
 
 	long time = millis() - lastTime;
 	FAULT_T fault_code = NO_FAULT;
@@ -52,65 +57,45 @@ void loop(){
 		fault_code = hciRead(cmd);	// verify the command
 
 		if(cmd_type(cmd) > 0){
-			for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
-				SerialUSB.print((uint8_t)cmd[i]);
-				SerialUSB.print(" ");
-			}
-			SerialUSB.println();
+			Serial3.print("CMD type:\t");
+			Serial3.println(cmd_type(cmd));
+			delay(10);
 		}
-
-		debugging[0] = fault_code;
 
 		if(fault_code == NO_FAULT){
 			success = true;
 		}else{ // there was an issue with the command
 			success = false;
-			SerialUSB.print("READ ERROR:\t");
-			SerialUSB.print(fault_code);
-			SerialUSB.print("\t");
-			SerialUSB.println(cmd_type(cmd));
-			//log_fault(fault_code);			// add to log or whatever
+			Serial3.print("READ ERROR:\t");
+			Serial3.print(fault_code);
+			Serial3.print("\t");
+			Serial3.println(cmd_type(cmd));
+			delay(50);
 		}
 	}else{
-		//SerialUSB.println("Client is still not available.");
 		if(time >= 5000){
-			SerialUSB.println("Client is still not available.");
-			lastTime = millis();
+			uint32_t avg 	= time / loops;
+			lastTime 		= millis();
+			loops 			= 0;
+			Serial3.println(avg);
+			delay(50);
 		}
 		
 	}
 	maintain_motors(cmd, success);			// keep robot in a stable state
-											// we may not need the cmd argument
 
 	if(success){
-		SerialUSB.print("SUCCESS! CMD received:\t");
-		for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
-			SerialUSB.print((uint8_t)cmd[i]);
-			SerialUSB.print(" ");
-		}
-		SerialUSB.println();
+		// Serial3.print("CMD:\t");
+		// for(int i = 0; i<cmd_body_len(cmd)+RPY_HEADER_SIZE; i++){
+		// 	Serial3.print((uint8_t)cmd[i]);
+		// 	Serial3.print(" ");
+		// }
+		// Serial3.println();
+		// delay(100);
 		fault_code = hciAnswer(cmd, rpy);	// reply to the client
-
-		// SerialUSB.print("\t");
-		// SerialUSB.println(fault_code);
-		debugging[3] = fault_code;
 	}
-	// if(debugging[0] != 0){
-	// 	SerialUSB.print("   ");
-	// 	SerialUSB.print(debugging[0]);
-	// 	SerialUSB.print("            ");
-	// 	SerialUSB.print(debugging[1]);
-	// 	SerialUSB.print("            ");
-	// 	SerialUSB.print(debugging[2]);
-	// 	SerialUSB.print("      ");
-	// 	SerialUSB.print(debugging[3]);
-	// 	SerialUSB.print("      ");
-	// 	SerialUSB.print(debugging[4]);
-	// 	SerialUSB.println();
-	// }
+	loops++;
 }
-
-
 
 
 
@@ -148,21 +133,3 @@ FAULT_T popLastFault(){
 	return retVal;
 
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// analagous to "execute(cmd)"
-// not sure this is necessary
-////////////////////////////////////////////////////////////////////////////////
-FAULT_T update_motor_infos(byte* cmd){
-	return NO_FAULT;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// update sensor data requested by client
-// not sure this is necessary
-////////////////////////////////////////////////////////////////////////////////
-FAULT_T update_sensor_infos(byte* cmd){
-	return NO_FAULT;
-}
-
