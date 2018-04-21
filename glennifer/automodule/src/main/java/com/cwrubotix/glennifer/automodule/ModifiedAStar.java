@@ -111,7 +111,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 	for(int i = 0; i < 10; i++){
 	    double angle = Math.PI * i / 5;
-	    float clearance = CLEARANCE / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
+	    float clearance = (CLEARANCE + 0.1F) / 2 + obs.getRadius();
 	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
 		addNode(getNodes(), new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
@@ -306,6 +306,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         Path path = new Path();
         AStarNode ptr = end;
         while (!ptr.equals(start)) {
+            findNearestObs(ptr);
             path.addFirst(ptr);
             ptr = ptr.getPrevious();
         }
@@ -328,6 +329,20 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                 ((AStarNode) p).setHeading();
             }
         }
+    }
+    
+    /**
+     * Finds obstacle that is nearest to the input and sets the node's field
+     * 
+     * @param node node to set obstacle
+     */
+    private void findNearestObs(AStarNode node){
+	Obstacle obs = null;
+	for(Obstacle o : getObstacles()){
+	    if(obs == null || obs.getDistTo(node) > o.getDistTo(node))
+		obs = o;
+	}
+	node.setNearestObs(obs);
     }
 
     /**
@@ -362,6 +377,10 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * indicator of whether this node belongs to open set during each A* search
          */
         private boolean found = false;
+        /**
+         * Stores the nearest obstacle from the node
+         */
+        private Obstacle nearestObs;
 
         /**
          * Creates AStarNode with given coordinate positions
@@ -462,6 +481,15 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         public boolean found() {
             return found;
         }
+        
+        /**
+         * Returns the obstacle within the arena that is the nearest one from this node
+         * 
+         * @return the obstacle within the arena that is the nearest one from this node
+         */
+        public Obstacle getNearestObs(){
+            return nearestObs;
+        }
 	
 	/*Setter methods*/
 
@@ -519,6 +547,15 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          */
         public void setFound(boolean found) {
             this.found = found;
+        }
+        
+        /**
+         * Sets the nearest obstacle from this node as given input
+         * 
+         * @param obs the nearest obstacle from this node
+         */
+        public void setNearestObs(Obstacle obs){
+            this.nearestObs = obs;
         }
     }
 }
