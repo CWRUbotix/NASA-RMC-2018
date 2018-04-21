@@ -133,7 +133,7 @@ public class AutoTransit extends Module {
 	    // Updates current position
 	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 	    System.out.println("current pos:" + currentPos);
-	    if(currentPath.getPath().size() < 1){
+	    if(currentPath == null ||currentPath.getPath().size() < 1){
 			launched = false;
 			ProgressReport report = ProgressReport.newBuilder()
 				.setDone(true)
