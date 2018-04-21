@@ -184,6 +184,8 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleEStop);
     QObject::connect(ui->pushButton_EUnstop, &QPushButton::clicked,
                      this, &MainWindow::handleEUnstop);
+    QObject::connect(ui->slider_LocomotionSpeed, &QSlider::valueChanged,
+                     this, &MainWindow::handleLocomotionSpeedSet);
 
     //Add tankPivotButtonR and tankPivotButtonL
     QObject::connect(ui->tankPivotButtonR, &QPushButton::clicked,
@@ -195,7 +197,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->tankPivotButtonL, &QPushButton::released,
                      this, &MainWindow::handleLocomotionRelease);
 
-    //Drive Configuration
+    /*Drive Configuration*/
     QObject::connect(ui->pushButton_ExcavationArmDrive, &QPushButton::clicked,
                      this, &MainWindow::handleExcavationArmDrive);
     QObject::connect(ui->checkBox_Vibrate, &QCheckBox::stateChanged,
@@ -278,7 +280,7 @@ void MainWindow::handleLocomotionDown() {
 }
 
 void MainWindow::handleLocomotionLeft() {
-    if (1 == m_desiredConfig) { // turn
+   /* if (1 == m_desiredConfig) { // turn
         LocomotionControlCommandTurn msg;
         msg.set_speed(ui->slider_LocomotionSpeed->value() / -100.0F);
         msg.set_timeout(456);
@@ -314,11 +316,11 @@ void MainWindow::handleLocomotionLeft() {
         free(msg_buff);
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config");
-    }
+    }*/
 }
 
 void MainWindow::handleLocomotionRight() {
-    if (1 == m_desiredConfig) { // turn
+    /*if (1 == m_desiredConfig) { // turn
         LocomotionControlCommandTurn msg;
         msg.set_speed(ui->slider_LocomotionSpeed->value() / 100.0F);
         msg.set_timeout(456);
@@ -354,7 +356,7 @@ void MainWindow::handleLocomotionRight() {
         free(msg_buff);
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config");
-    }
+    }*/
 }
 
 void MainWindow::handleLocomotionRelease() {
@@ -362,10 +364,10 @@ void MainWindow::handleLocomotionRelease() {
 }
 
 void MainWindow::handleLocomotionStop() {
-    handleBackRightWheelSet(ui->slider_LocomotionSpeed->value());
-    handleFrontRightWheelSet(ui->slider_LocomotionSpeed->value());
-    handleFrontLeftWheelSet(ui->slider_LocomotionSpeed->value());
-    handleBackLeftWheelSet(ui->slider_LocomotionSpeed->value());
+    handleBackRightWheelSet(0);
+    handleFrontRightWheelSet(0);
+    handleFrontLeftWheelSet(0);
+    handleBackLeftWheelSet(0);
     ui->consoleOutputTextBrowser->append("handleLocomotionStop");
     /*LocomotionControlCommandStrafe msg;
     msg.set_speed(0.0F);
@@ -386,7 +388,7 @@ void MainWindow::handleLocomotionStop() {
 }
 
 void MainWindow::handleLocomotionStraight() {
-    m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
+    /*m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
     m_desiredConfig = 0;
     ui->slider_LocomotionSpeed->setValue(m_configSpeeds[m_desiredConfig]);
     LocomotionControlCommandConfigure msg;
@@ -405,12 +407,12 @@ void MainWindow::handleLocomotionStraight() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.configure");
 
-    free(msg_buff);
+    free(msg_buff);*/
 }
 
 void MainWindow::handleLocomotionTurn() {
     //check the arm is in drive and hopper maybe if ()
-    m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
+    /*m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
     m_desiredConfig = 1;
     ui->slider_LocomotionSpeed->setValue(m_configSpeeds[m_desiredConfig]);
     LocomotionControlCommandConfigure msg;
@@ -429,12 +431,12 @@ void MainWindow::handleLocomotionTurn() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.configure");
 
-    free(msg_buff);
+    free(msg_buff);*/
 }
 
 void MainWindow::handleLocomotionStrafe() {
     //check the arm is in drive and hopper maybe if ()
-    m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
+    /*m_configSpeeds[m_desiredConfig] = ui->slider_LocomotionSpeed->value();
     m_desiredConfig = 2;
     ui->slider_LocomotionSpeed->setValue(m_configSpeeds[m_desiredConfig]);
     LocomotionControlCommandConfigure msg;
@@ -453,7 +455,7 @@ void MainWindow::handleLocomotionStrafe() {
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "subsyscommand.locomotion.configure");
 
-    free(msg_buff);
+    free(msg_buff);*/
 }
 
 void MainWindow::handleFrontLeftWheelStop() {
@@ -997,14 +999,14 @@ void MainWindow::handleState(QString key, QByteArray data) {
     float fr_rpm = s.locdetailed().front_right_rpm();
     float bl_rpm = s.locdetailed().back_left_rpm();
     float br_rpm = s.locdetailed().back_right_rpm();
-    float fl_pos = s.locdetailed().front_left_pos();
+    /*float fl_pos = s.locdetailed().front_left_pos();
     float fr_pos = s.locdetailed().front_right_pos();
     float bl_pos = s.locdetailed().back_left_pos();
-    float br_pos = s.locdetailed().back_right_pos();
+    float br_pos = s.locdetailed().back_right_pos();*/
     float speed = s.locsummary().speed();
     float arm_pos = s.excsummary().arm_pos();
     float translation_pos = s.excsummary().displacement();
-    float bc_current = s.excdetailed().conveyor_motor_current();
+    //float bc_current = s.excdetailed().conveyor_motor_current();
     bool exc_ext_left = s.excdetailed().translation_left_extended();
     bool exc_ext_right = s.excdetailed().translation_right_extended();
     bool exc_ret_left = s.excdetailed().translation_left_retracted();
@@ -1033,11 +1035,11 @@ void MainWindow::handleState(QString key, QByteArray data) {
     } else {
         ui->progressBar_BackRightWheeBackwards->setValue(-br_rpm);
     }
-    rectangle1->setRotation(fl_pos);
+    /*rectangle1->setRotation(fl_pos);
     rectangle2->setRotation(-fr_pos);
     rectangle3->setRotation(-bl_pos);
     rectangle4->setRotation(br_pos);
-    ui->speedometer->setSpeed(speed);
+    ui->speedometer->setSpeed(speed);*/
     ui->speedometer->setPower((speed * 100) / 0.7F);
     ui->progressBar_ExcavationArm->setValue(arm_pos);
     ui->progressBar_ExcavationTranslation->setValue(translation_pos);
@@ -1046,7 +1048,7 @@ void MainWindow::handleState(QString key, QByteArray data) {
     ui->ledIndicator_ExcavationTranslationRetractLeft->setState(exc_ret_left);
     ui->ledIndicator_ExcavationTranslationRetractRight->setState(exc_ret_right);
     ui->speedometer_Excavation->setSpeed(translation_pos);
-    ui->speedometer_Excavation->setPower(bc_current * (100.0F/20.0F));
+    //ui->speedometer_Excavation->setPower(bc_current * (100.0F/20.0F));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *ev) {
@@ -1064,16 +1066,22 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
             handleLocomotionUp();
             break;
         case (Qt::Key_A):
-            handleA_KeyPress();
+            handleTankPivotRK(); //these are wonky make sure they are how we want them every time
+            //handleA_KeyPress();
             break;
         case (Qt::Key_S):
             handleLocomotionDown();
             break;
         case (Qt::Key_D):
+            handleTankPivotLK();
             //handleD_KeyPress();
             break;
+        case (Qt::Key_U):
+             ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() - 10);
+             //dumpConfig();
+             break;
         case (Qt::Key_I):
-            //handleLocomotionStraight();
+            ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() + 10);//handleLocomotionStraight();
             break;
         case (Qt::Key_O):
             //turnConfig();
@@ -1088,10 +1096,10 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() + 10);
             break;
         case (Qt::Key_R):
-            handleTankPivotRK();
+            //handleTankPivotRK();
             break;
         case (Qt::Key_L):
-            handleTankPivotLK();
+            //handleTankPivotLK();
             break;
         case (Qt::Key_E):
              actionTabRight();
@@ -1101,9 +1109,6 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
              break;
         case (Qt::Key_Y):
              digConfig();
-             break;
-        case (Qt::Key_U):
-             dumpConfig();
              break;
         case (Qt::Key_1):
              handleDigDeep();
@@ -1187,10 +1192,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent *ev) {
         case (Qt::Key_K):
             break;
         case (Qt::Key_R):
-            handleLocomotionStop();
+            //handleLocomotionStop();
             break;
         case (Qt::Key_L):
-            handleLocomotionStop();
+            //handleLocomotionStop();
             break;
         case (Qt::Key_E):
             break;
@@ -1311,14 +1316,14 @@ void MainWindow::on_commandLinkButton_clicked()
 void MainWindow::handleTankPivotR() {
     if (0 == m_desiredConfig) { // straight
         int leftSide = (ui->slider_LocomotionSpeed->value()); //left wheel speed
-        int rightSide = (ui->slider_UpsetSpeed->value()* (-1)); //right wheel speed
+        int rightSide = (ui->slider_UpsetSpeed->value()* (1)); //right wheel speed
         QString r = QString::number(leftSide);
         QString l = QString::number(rightSide);
         ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
-        handleFrontRightWheelSet(rightSide);
-        handleBackRightWheelSet(rightSide);
-        handleFrontLeftWheelSet(leftSide);
-        handleBackLeftWheelSet(leftSide);
+        handleFrontRightWheelSet(leftSide);
+        handleBackRightWheelSet(leftSide);
+        handleFrontLeftWheelSet(rightSide);
+        handleBackLeftWheelSet(rightSide);
 
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config, tank pivot only works in straight");
@@ -1328,14 +1333,14 @@ void MainWindow::handleTankPivotR() {
 void MainWindow::handleTankPivotL() {
     if (0 == m_desiredConfig) { // straight
         int rightSide = (ui->slider_LocomotionSpeed->value()); //right wheel speed
-        int leftSide = (ui->slider_UpsetSpeed->value()* (-1)); //left wheel speed
+        int leftSide = (ui->slider_UpsetSpeed->value()* (1)); //left wheel speed
         QString r = QString::number(leftSide);
         QString l = QString::number(rightSide);
         ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
-        handleFrontRightWheelSet(rightSide);
-        handleBackRightWheelSet(rightSide);
-        handleFrontLeftWheelSet(leftSide);
-        handleBackLeftWheelSet(leftSide);
+        handleFrontRightWheelSet(leftSide);
+        handleBackRightWheelSet(leftSide);
+        handleFrontLeftWheelSet(rightSide);
+        handleBackLeftWheelSet(rightSide);
        // msg.set_rpm(60 * (value / 100.0F));
 
     } else {
@@ -1351,10 +1356,10 @@ void MainWindow::handleTankPivotRK() {
         QString r = QString::number(leftSide);
         QString l = QString::number(rightSide);
         ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
-        handleFrontRightWheelSet(rightSide);
-        handleBackRightWheelSet(rightSide);
-        handleFrontLeftWheelSet(leftSide);
-        handleBackLeftWheelSet(leftSide);
+        handleFrontRightWheelSet(leftSide);
+        handleBackRightWheelSet(leftSide);
+        handleFrontLeftWheelSet(rightSide);
+        handleBackLeftWheelSet(rightSide);
 
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config, tank pivot only works on straight");
@@ -1368,10 +1373,10 @@ void MainWindow::handleTankPivotLK() {
         QString r = QString::number(leftSide);
         QString l = QString::number(rightSide);
         ui->consoleOutputTextBrowser->append("Right Side: " + r + "Left Side: " + l);
-        handleFrontRightWheelSet(rightSide);
-        handleBackRightWheelSet(rightSide);
-        handleFrontLeftWheelSet(leftSide);
-        handleBackLeftWheelSet(leftSide);
+        handleFrontRightWheelSet(leftSide);
+        handleBackRightWheelSet(leftSide);
+        handleFrontLeftWheelSet(rightSide);
+        handleBackLeftWheelSet(rightSide);
 
     } else {
         ui->consoleOutputTextBrowser->append("Wrong config, tank pivot only works on straight");
@@ -1739,7 +1744,7 @@ void MainWindow::handleLocalizationData(QString key, QByteArray data) {
     QString newTheta = QString::number(yaw);
     QString xNew = QString::number(x_val);
     QString yNew = QString::number(y_val);
-    ui->consoleOutputTextBrowser->append("Approach X: " + xNew + ", Approach Y: " + yNew + ", Heading: " + newTheta);
+    ui->consoleOutputTextBrowser->append("Approach X: " + x + ", Approach Y: " + y + ", Heading: " + newTheta);
     //double angle = qRadiansToDegrees(qAtan((y_val/x_val)));
     //ui->consoleOutputTextBrowser->append("Relative X: " + y + ", Relative Y: " + x +", Approach X: " + xNew + ", Approach Y: " + yNew);
     //agent->setX(x_val);
@@ -1761,5 +1766,17 @@ void MainWindow::startLoc_Thread() {
     connect(threadL, &ConsumerThread::receivedMessage, this, &MainWindow::handleLocalizationData);
     connect(threadL, SIGNAL(finished()), threadL, SLOT(deleteLater()));
     threadL->start();
+
+}
+
+void MainWindow::handleLocomotionSpeedSet(int value) {
+    ui->lcdNumber_LocomotionSpeed->display(value);
+}
+
+void MainWindow::handleTurnRight() {
+
+}
+
+void MainWindow::handleTurnLeft() {
 
 }

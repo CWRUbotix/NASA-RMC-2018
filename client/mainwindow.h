@@ -113,6 +113,8 @@ public slots:
     void handleExcavationDigSpeedSet(int value);
     void handleExcavationMoveSpeedSet(int value);
 
+    void handleLocomotionSpeedSet(int value);
+
     void handleState(QString key, QByteArray data);
 
     void handleA_KeyPress();
@@ -120,6 +122,9 @@ public slots:
 
     void handleObstacleData(QString key, QByteArray data);
     void handleLocalizationData(QString key, QByteArray data);
+
+    void handleTurnRight();
+    void handleTurnLeft();
 
     void handleLocalization(QString key, QByteArray data);
     void startLoc_Thread();
