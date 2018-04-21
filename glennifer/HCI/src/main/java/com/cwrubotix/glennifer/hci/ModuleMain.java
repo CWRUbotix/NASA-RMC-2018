@@ -403,7 +403,8 @@ public class ModuleMain {
 
         if (keys[3].equals("wheel_rpm")) {
             routeWheelRPMMessage(keys, body);
-
+        } else if(keys[3].equals("turn")) {
+            routeTurnMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -440,6 +441,39 @@ public class ModuleMain {
             targetValue *= 1.00;
         }
         queueActuation(id, targetValue);
+    }
+
+    private static void routeTurnMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
+        Messages.TurnCommand tc = Messages.TurnCommand.parseFrom(body);
+        int id0 = 0;
+        int id1 = 1;
+        int id2 = 2;
+        int id3 = 3;
+        double targetValue0 = 0;
+        double targetValue1 = 0;
+        double targetValue2 = 0;
+        double targetValue3 = 0;
+
+        //idk how to do this transformation yet
+        if(targetCurvature > 0){
+            targetValue0 = tc.getSpeed();
+            targetValue2 = tc.getSpeed();
+
+            targetValue1 = tc.getSpeed() * tc.getCurvature();
+            targetValue3 = tc.getSpeed() * tc.getCurvature();
+        }
+        else{
+            targetValue0 = tc.getSpeed() * tc.getCurvature();
+            targetValue2 = tc.getSpeed() * tc.getCurvature();
+
+            targetValue1 = tc.getSpeed();
+            targetValue3 = tc.getSpeed();
+        }
+
+        queueActuation(id0, targetValue0);
+        queueActuation(id1, targetValue1);
+        queueActuation(id2, targetValue2);
+        queueActuation(id3, targetValue3);
     }
 
     private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{

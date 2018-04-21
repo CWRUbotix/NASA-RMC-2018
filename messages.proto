@@ -105,6 +105,12 @@ message PositionControlCommand {
 	required float timeout = 2;
 }
 
+// motorcontrol.locomotion.turn
+message TurnControlCommand {
+	required float speed = 1;
+	required float curvature = 2;
+}
+
 // motorcontrol.system.stop_all
 message StopAllCommand {
 	required bool stop = 1;
