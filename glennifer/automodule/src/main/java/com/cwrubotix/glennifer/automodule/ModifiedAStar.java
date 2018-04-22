@@ -482,14 +482,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
             return found;
         }
         
-        /**
-         * Returns the obstacle within the arena that is the nearest one from this node
-         * 
-         * @return the obstacle within the arena that is the nearest one from this node
-         */
-        public Obstacle getNearestObs(){
-            return nearestObs;
-        }
 	
 	/*Setter methods*/
 
@@ -549,13 +541,5 @@ public class ModifiedAStar implements PathFindingAlgorithm {
             this.found = found;
         }
         
-        /**
-         * Sets the nearest obstacle from this node as given input
-         * 
-         * @param obs the nearest obstacle from this node
-         */
-        public void setNearestObs(Obstacle obs){
-            this.nearestObs = obs;
-        }
     }
 }

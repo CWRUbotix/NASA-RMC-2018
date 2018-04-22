@@ -17,7 +17,7 @@ public class Position extends Coordinate implements Cloneable {
      * </p>
      */
     private double heading; //declared double 'cause java.lang.Math hates float headings for trigonometry.
-    
+    private Obstacle nearestObs;
 
 
     public Position(float x_pos, float y_pos, double heading) {
@@ -31,6 +31,15 @@ public class Position extends Coordinate implements Cloneable {
     
     public double getHeading(){
         return heading;
+    }
+    
+    /**
+     * Returns the obstacle within the arena that is the nearest one from this node
+     * 
+     * @return the obstacle within the arena that is the nearest one from this node
+     */
+    public Obstacle getNearestObs(){
+        return nearestObs;
     }
     
     public void setHeading(double heading){
@@ -53,6 +62,15 @@ public class Position extends Coordinate implements Cloneable {
             return true;
         }
         return false;
+    }
+    
+    /**
+     * Sets the nearest obstacle from this node as given input
+     * 
+     * @param obs the nearest obstacle from this node
+     */
+    public void setNearestObs(Obstacle obs){
+        this.nearestObs = obs;
     }
     
     /**

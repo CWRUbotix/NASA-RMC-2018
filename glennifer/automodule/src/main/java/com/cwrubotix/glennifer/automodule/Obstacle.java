@@ -32,4 +32,9 @@ public class Obstacle extends Coordinate {
 	}
 	return false;
     }
+    
+    @Override
+    public String toString(){
+	return "(" + getX() + ", " + getY() + " r: " + getRadius() + ")";
+    }
 }
