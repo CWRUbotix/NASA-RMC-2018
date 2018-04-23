@@ -405,6 +405,8 @@ public class ModuleMain {
             routeWheelRPMMessage(keys, body);
         } else if(keys[3].equals("turn")) {
             routeTurnMessage(keys, body);
+        } else if(keys[3].equals("alternating_turn"){
+            routeAlternatingTurnMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -444,7 +446,7 @@ public class ModuleMain {
     }
 
     private static void routeTurnMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
-        Messages.TurnCommand tc = Messages.TurnCommand.parseFrom(body);
+        Messages.TurnControlCommand tc = Messages.TurnControlCommand.parseFrom(body);
         int id0 = 0;
         int id1 = 1;
         int id2 = 2;
@@ -455,7 +457,7 @@ public class ModuleMain {
         double targetValue3 = 0;
 
         //idk how to do this transformation yet
-        if(targetCurvature > 0){
+        if(tc.getCurvature() > 0){
             targetValue0 = tc.getSpeed();
             targetValue2 = tc.getSpeed();
 
@@ -474,6 +476,13 @@ public class ModuleMain {
         queueActuation(id1, targetValue1);
         queueActuation(id2, targetValue2);
         queueActuation(id3, targetValue3);
+    }
+
+    private static void routeAlternatingTurnMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException {
+        Messages.AlternatingTurnControlCommand atc = Messages.AlternatingTurnControlCommand.parseFrom(body);
+        double speed = tc.getSpeed();
+        Thread atcThread = new AlternatingTurningController(speed, hci, channel);
+        atcThread.start();
     }
 
     private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
