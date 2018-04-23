@@ -65,6 +65,9 @@
 //Motor Control Boards
 #define SABERTOOTH_0_SLCT 		(22)
 #define SABERTOOTH_1_SLCT 		(23)
+#define SABERTOOTH_ROT_M1 		(22)
+#define SABERTOOTH_ROT_M2 		(23)
+#define SABERTOOTH_TRANS_M1 	(53)
 #define ROBOCLAW_0_ADDR 		(0x80)
 #define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
@@ -75,6 +78,10 @@
 #define REAR_STARBOARD_MTR_ID 	(3)
 #define PORT_LIN_ACT_ID 		(6)
 #define STARBOARD_LIN_ACT_ID 	(7)
+#define LIN_ACT_KP 				(1.4)
+#define LIN_ACT_KI 				(0.000000001)
+#define EXC_TRANSLATION_KP 		(1.0)
+#define EXC_TRANSLATION_KI 		(0.000)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +105,7 @@ enum SensorHardware {
 	SH_I2C_BAT,		// 
 	SH_PIN_LIMIT,	// Limit switch
 	SH_PIN_POT,		// Uses an analog pin
-	SH_POT_POS, 	// For determining position using pots
+	//SH_POT_POS, 	// For determining position using pots
 	SH_LD_CELL
 };
 
@@ -112,6 +119,8 @@ typedef struct SensorInfo{
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
+	int16_t  val_at_max; 		// when this is a linear pot or similar
+	int16_t  val_at_min; 		// ^ ^ ^
 	uint32_t lastUpdateTime; 	// 
 	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
 	//HX711*   loadCell; 			// if this happens to be a load cell
@@ -154,6 +163,7 @@ typedef struct MotorInfo{
 	MCInfo*  board; 			// motor controller board info
 	SensorInfo* encoder; 		// pointer to this motor's encoder
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
+	uint8_t  whichPin = 0; 		// if it's a sabertooth
 	bool     is_reversed = false;
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
@@ -174,6 +184,7 @@ typedef struct MotorInfo{
 	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
 	uint16_t lastError; 		// for tracking the derivative
 	float    integral; 			// replaces the motor_integrals array
+	float    integral_max = 10000.0;
 	bool     is_stopped = false;// to stop if we hit a limit switch
 }MotorInfo;
 

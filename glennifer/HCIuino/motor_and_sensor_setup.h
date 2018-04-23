@@ -18,17 +18,23 @@ void setup_sensors(){
 	sensor_infos[7].hardware 		= SH_RC_ENC_VEL;
 	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
 
+
 	// port side linear actuator
 	sensor_infos[10].hardware 		= SH_PIN_POT;
+	sensor_infos[10].val_at_min 	= 86; 		// avg = 84
+	sensor_infos[10].val_at_max 	= 4057; 	// avg = 4060
 	sensor_infos[10].whichPin 		= A0;
-	
 	// starboard side linear actuator
 	sensor_infos[11].hardware 		= SH_PIN_POT;
+	sensor_infos[11].val_at_min 	= 50; 		// avg = 50
+	sensor_infos[11].val_at_max 	= 4027; 	// avg = 4030
 	sensor_infos[11].whichPin 		= A1;
-
-	// Linear Pot for Excavation Translation
+	// Excavation Translation Linear Pot
 	sensor_infos[12].hardware 		= SH_PIN_POT;
+	sensor_infos[12].val_at_min 	= 1114; 	// avg = 1111
+	sensor_infos[12].val_at_max 	= 3400; 	// avg = 3404
 	sensor_infos[12].whichPin 		= A2;
+
 
 	// LIMIT SWITCHES
 	sensor_infos[13].hardware 		= SH_PIN_LIMIT;
@@ -130,33 +136,49 @@ void setup_motors(){
 	motor_infos[4].whichMotor 						= 0;
 	motor_infos[4].hardware 						= MH_RC_VEL;
 	motor_infos[4].max_delta 						= DFLT_MAX_DELTA;
+	motor_infos[4].is_reversed 						= true;
 	motor_infos[4].board 							= & (board_infos[1]);
 
 	// port-side linear actuator
 	motor_infos[PORT_LIN_ACT_ID].whichMotor 		= 0;
 	motor_infos[PORT_LIN_ACT_ID].board 				= &(board_infos[3]);
+	motor_infos[PORT_LIN_ACT_ID].encoder 			= &(sensor_infos[10]);
 	motor_infos[PORT_LIN_ACT_ID].hardware 			= MH_ST_POS;
+	motor_infos[PORT_LIN_ACT_ID].whichPin 			= SABERTOOTH_ROT_M2;
+	motor_infos[PORT_LIN_ACT_ID].deadband 			= 175;
+	motor_infos[PORT_LIN_ACT_ID].is_reversed 		= false;
 	motor_infos[PORT_LIN_ACT_ID].minpos 			= 0;
-	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 4095;
+	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 1000;
 	motor_infos[PORT_LIN_ACT_ID].kp 				= LIN_ACT_KP;
 	motor_infos[PORT_LIN_ACT_ID].ki 				= LIN_ACT_KI;
 	// starboard-side linear actuator
 	motor_infos[STARBOARD_LIN_ACT_ID].whichMotor 	= 1;
 	motor_infos[STARBOARD_LIN_ACT_ID].board 		= &(board_infos[3]);
+	motor_infos[STARBOARD_LIN_ACT_ID].encoder 		= &(sensor_infos[11]);
 	motor_infos[STARBOARD_LIN_ACT_ID].hardware 		= MH_ST_POS;
+	motor_infos[STARBOARD_LIN_ACT_ID].whichPin 		= SABERTOOTH_ROT_M1;
+	motor_infos[STARBOARD_LIN_ACT_ID].deadband 		= 175;
+	motor_infos[STARBOARD_LIN_ACT_ID].is_reversed 	= true;
 	motor_infos[STARBOARD_LIN_ACT_ID].minpos 		= 0;
-	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 4095;
+	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 1000;
 	motor_infos[STARBOARD_LIN_ACT_ID].kp 			= LIN_ACT_KP;
 	motor_infos[STARBOARD_LIN_ACT_ID].ki 			= LIN_ACT_KI;
 	
 	// translation
 	motor_infos[8].whichMotor 						= 0;
 	motor_infos[8].board 							= &(board_infos[4]);
-	motor_infos[8].hardware 						= MH_ST_POS;
+	motor_infos[8].encoder 							= &(sensor_infos[12]);
+	motor_infos[8].is_reversed 						= true;
+	motor_infos[8].whichPin 						= SABERTOOTH_TRANS_M1;
+	motor_infos[8].hardware 						= MH_ST_PWM;
 	motor_infos[8].minpos 							= 0;
-	motor_infos[8].maxpos 							= 4095;
+	motor_infos[8].maxpos 							= 1000;
 	motor_infos[8].kp 								= EXC_TRANSLATION_KP;
 	motor_infos[8].ki 								= EXC_TRANSLATION_KI;
+
+	pinMode(SABERTOOTH_ROT_M1 ,OUTPUT);
+	pinMode(SABERTOOTH_ROT_M2 ,OUTPUT);
+	pinMode(SABERTOOTH_TRANS_M1 ,OUTPUT);
 
 }
 
