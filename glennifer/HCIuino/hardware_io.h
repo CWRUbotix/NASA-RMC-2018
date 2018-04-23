@@ -222,7 +222,11 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 		if(st->is_reversed){
 			val = val * (-1);
 		}
-		val = map(val, -500, 500, 1000, 2000);
+		val = (val >= 0 ? 
+			map(val, 0, 500, 1500 + st->deadband, 2000) : 
+			map(val, -500, 0, 1000, 1500 - st->deadband)      );
+		
+		//val = map(val, -500, 500, 1000, 2000);
 		digitalWrite(st->whichPin, HIGH);
 		delayMicroseconds(val);
 		digitalWrite(st->whichPin, LOW);
