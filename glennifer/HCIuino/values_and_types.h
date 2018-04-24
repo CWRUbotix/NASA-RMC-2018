@@ -19,6 +19,7 @@
 #define CMD_READ_SENSORS		(0x01)
 #define CMD_SET_OUTPUTS			(0x02)
 #define CMD_HCI_TEST			(0x03)
+#define CMD_SET_PID 			(0x04)
 #define RPY_HCI_TEST 			(0xA5)
 
 
@@ -35,7 +36,6 @@
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
-//#define HEADER_FIELDS			(3)
 #define SENSOR_ID_SIZE      	(1)
 #define SENSOR_DATA_SIZE 		(1)
 #define MOTOR_ID_SIZE 			(1)
@@ -43,6 +43,7 @@
 #define ANLG_READ_RES 			(12)
 #define ANLG_WRITE_RES 			(12)
 #define DFLT_MAX_DELTA 			(200)
+#define DGTL_WRITE_DELAY 		(12)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -78,10 +79,12 @@
 #define REAR_STARBOARD_MTR_ID 	(3)
 #define PORT_LIN_ACT_ID 		(6)
 #define STARBOARD_LIN_ACT_ID 	(7)
-#define LIN_ACT_KP 				(1.4)
-#define LIN_ACT_KI 				(0.000000001)
+#define LIN_ACT_KP 				(1.5)
+#define LIN_ACT_KI 				(0.00000000)
 #define EXC_TRANSLATION_KP 		(1.0)
-#define EXC_TRANSLATION_KI 		(0.000)
+#define EXC_TRANSLATION_KI 		(0.00000)
+#define KP_INC 					(0.1)
+#define KI_INC 					(0.000000001)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -175,6 +178,7 @@ typedef struct MotorInfo{
 	float    kd; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t qpps; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t deadband; 			// When hardware = MH_RC_POS
+	uint16_t margin; 			// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle

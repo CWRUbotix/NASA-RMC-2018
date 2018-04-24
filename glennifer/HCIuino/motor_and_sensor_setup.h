@@ -145,8 +145,9 @@ void setup_motors(){
 	motor_infos[PORT_LIN_ACT_ID].encoder 			= &(sensor_infos[10]);
 	motor_infos[PORT_LIN_ACT_ID].hardware 			= MH_ST_POS;
 	motor_infos[PORT_LIN_ACT_ID].whichPin 			= SABERTOOTH_ROT_M2;
-	motor_infos[PORT_LIN_ACT_ID].deadband 			= 175;
+	motor_infos[PORT_LIN_ACT_ID].deadband 			= 170;
 	motor_infos[PORT_LIN_ACT_ID].is_reversed 		= false;
+	motor_infos[PORT_LIN_ACT_ID].margin 			= 5;
 	motor_infos[PORT_LIN_ACT_ID].minpos 			= 0;
 	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 1000;
 	motor_infos[PORT_LIN_ACT_ID].kp 				= LIN_ACT_KP;
@@ -157,8 +158,9 @@ void setup_motors(){
 	motor_infos[STARBOARD_LIN_ACT_ID].encoder 		= &(sensor_infos[11]);
 	motor_infos[STARBOARD_LIN_ACT_ID].hardware 		= MH_ST_POS;
 	motor_infos[STARBOARD_LIN_ACT_ID].whichPin 		= SABERTOOTH_ROT_M1;
-	motor_infos[STARBOARD_LIN_ACT_ID].deadband 		= 175;
+	motor_infos[STARBOARD_LIN_ACT_ID].deadband 		= 170;
 	motor_infos[STARBOARD_LIN_ACT_ID].is_reversed 	= true;
+	motor_infos[STARBOARD_LIN_ACT_ID].margin 		= 5;
 	motor_infos[STARBOARD_LIN_ACT_ID].minpos 		= 0;
 	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 1000;
 	motor_infos[STARBOARD_LIN_ACT_ID].kp 			= LIN_ACT_KP;
@@ -170,6 +172,7 @@ void setup_motors(){
 	motor_infos[8].encoder 							= &(sensor_infos[12]);
 	motor_infos[8].is_reversed 						= true;
 	motor_infos[8].whichPin 						= SABERTOOTH_TRANS_M1;
+	motor_infos[8].deadband 						= 170;
 	motor_infos[8].hardware 						= MH_ST_PWM;
 	motor_infos[8].minpos 							= 0;
 	motor_infos[8].maxpos 							= 1000;

@@ -208,6 +208,9 @@ bool write_to_roboclaw(MotorInfo* motor, int newSetPt){
 	}else{
 		retval = roboclawSerial.DutyM2(address, (uint16_t) (sign*newSetPt) );
 	}
+	if(retval){
+		motor->lastUpdateTime = millis();
+	}
 	return retval;
 }
 
@@ -231,6 +234,7 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 		delayMicroseconds(val);
 		digitalWrite(st->whichPin, LOW);
 
+		st->lastUpdateTime = millis();
 		retval = true;
 	}
 
@@ -324,9 +328,16 @@ void maintain_motors(byte* cmd, bool success){
 				}else{
 					int32_t pos 	= read_enc(motor);
 					int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
-					motor->integral += (err * (time - motor->lastUpdateTime) );
-					motor->integral = ( fabs(motor->integral) > 1000 ? 1000 : motor->integral );
-					int32_t pwr 	= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
+					int32_t pwr  	= 0;
+					if(abs(err) > motor->margin){
+						float new_integ = motor->integral + (err * (time - motor->lastUpdateTime) );
+						motor->integral = ( (fabs(new_integ)*motor->ki ) > 500 ? 
+							motor->integral : 
+							new_integ );
+						pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
+					}else{
+						pwr = 0;
+					}
 					Serial3.print(i);
 					Serial3.print("\tPOS: ");
 					Serial3.print(pos);
@@ -355,9 +366,9 @@ void maintain_motors(byte* cmd, bool success){
 				break; }
 
 		}
-		if(writeSuccess){
-			motor->lastUpdateTime = millis();
-		}
+		// if(writeSuccess){
+		// 	motor->lastUpdateTime = millis();
+		// }
 
 	}
 
