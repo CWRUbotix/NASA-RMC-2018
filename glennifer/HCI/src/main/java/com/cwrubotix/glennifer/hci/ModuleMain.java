@@ -405,7 +405,7 @@ public class ModuleMain {
             routeWheelRPMMessage(keys, body);
         } else if(keys[3].equals("turn")) {
             routeTurnMessage(keys, body);
-        } else if(keys[3].equals("alternating_turn"){
+        } else if(keys[3].equals("alternating_turn")){
             routeAlternatingTurnMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
@@ -480,8 +480,9 @@ public class ModuleMain {
 
     private static void routeAlternatingTurnMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException {
         Messages.AlternatingTurnControlCommand atc = Messages.AlternatingTurnControlCommand.parseFrom(body);
-        double speed = tc.getSpeed();
-        Thread atcThread = new AlternatingTurningController(speed, hci, channel);
+        double speed = atc.getSpeed();
+        AlternatingTurningController atcontroller = new AlternatingTurningController(speed, hci);
+        Thread atcThread = new Thread(atcontroller);
         atcThread.start();
     }
 

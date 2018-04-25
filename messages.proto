@@ -111,6 +111,11 @@ message TurnControlCommand {
 	required float curvature = 2;
 }
 
+// motorcontrol.locomotion.alternating_turn
+message AlternatingTurnControlCommand {
+	required float speed = 1;
+}
+
 // motorcontrol.system.stop_all
 message StopAllCommand {
 	required bool stop = 1;
