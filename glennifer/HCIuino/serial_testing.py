@@ -9,6 +9,13 @@ HCI_TEST_SEND 		= 0x5A
 HCI_TEST_RPY 		= 0xA5
 
 #===============================================================================
+def getHex(dec):
+	tmp = hex(dec).split('x')[1]
+	while len(tmp)<4:
+		tmp = '0'+tmp
+	return tmp
+
+#===============================================================================
 def dispAvailableCOM():
 	print('='*79)
 	print("AVAILABLE COM PORTS:\n")
@@ -52,7 +59,8 @@ def setOutputs(cmdType, inputs):
 		ID  = int(inputs[2*n + 2])
 		val = inputs[2*n + 3]
 		print(val)
-		tmp = bytearray.fromhex(val)
+		# tmp = bytearray.fromhex(val)
+		tmp = bytearray.fromhex(getHex(int(val)))
 		byteArr.append(ID)
 		byteArr.append(tmp[0])
 		byteArr.append(tmp[1])
