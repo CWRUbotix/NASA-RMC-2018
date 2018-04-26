@@ -248,14 +248,13 @@ message LaunchTransit {
 
 // launch.drill
 message LaunchDrill {
-	required float current_length = 1;
-	required float current_angle = 2;
-	required float destination_length = 3;
-	required float destination_angle = 4;
-	required float load_desired = 5;
-	required bool start = 6;
-	required float time_allocation = 7;
-	required UnixTime timestamp = 8;
+	required float current_x = 1;
+	required float current_y = 2;
+	required float current_Heading = 3;
+	required float load_desired = 4;
+	required bool start = 5;
+	required float time_allocation = 6;
+	required UnixTime timestamp = 7;
 }
 
 // launch.dump
