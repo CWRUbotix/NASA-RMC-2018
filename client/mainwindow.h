@@ -76,6 +76,8 @@ public slots:
     void handleTankPivotRK();
     void handleTankPivotLK();
 
+    void handleAlternatingTurn(bool dir);
+
     void actionTabRight();
     void actionTabLeft();
 
