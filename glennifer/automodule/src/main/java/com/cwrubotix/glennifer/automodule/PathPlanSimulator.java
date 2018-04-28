@@ -1,14 +1,10 @@
-package test;
+package com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.automodule.ModifiedAStar;
-import com.cwrubotix.glennifer.automodule.Obstacle;
-import com.cwrubotix.glennifer.automodule.Position;
-import com.cwrubotix.glennifer.automodule.Path;
-import com.cwrubotix.glennifer.automodule.PathFinder;
-import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+
+import com.cwrubotix.glennifer.automodule.ModifiedAStar.AStarNode;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
@@ -223,7 +219,8 @@ public class PathPlanSimulator {
             obstacles.add(getObstacles()[i]);
         }
         while (!arrived) { //While the robot is on transit
-            log.addLast(path.getPoint(progress));
+            if(!log.getPath().contains(path.getPoint(progress)))
+        	log.addLast(path.getPoint(progress));
             obstacles.sort(Position.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
             LinkedList<Obstacle> encountered = new LinkedList<>();
             for (Obstacle obs : obstacles) {
@@ -231,7 +228,6 @@ public class PathPlanSimulator {
                 if (temp != null) {
                     if(!temp.equals(path.getPoint(progress))){
                 	currentPos = temp; // where robot is currently standing
-                	log.addLast(currentPos);
                 	finder.setCurrentPos(currentPos);
                     }
                     try{
@@ -241,6 +237,8 @@ public class PathPlanSimulator {
                 	destination = new Position(e.getX(), e.getY());
                     }
                     path = finder.getPath();
+                    if(!log.getPath().contains(currentPos))
+                	log.addLast(currentPos);
                     encountered.add(obs);
                     progress = 0;
                 }
@@ -588,6 +586,7 @@ public class PathPlanSimulator {
             result.setEditable(false);
             result.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             result.appendText("ModifiedAStar Algorithm:\n");
+            pathResult.appendText("Printing path...\n");
         }
 
         /**
@@ -609,11 +608,18 @@ public class PathPlanSimulator {
             Position previous = null;
             float dist = 0.0F, angle = 0.0F;
             for (Position pos : simulator.getPath()) {
+
         	if (previous != null) {
         	    dist += previous.getDistTo(pos);
         	    angle += Math.abs(previous.getHeading() - pos.getHeading());
         	}
-        	pathResult.appendText(pos.toString() + pos.getNearestObs() + "\n");
+        	pathResult.appendText(pos.toString());
+        	Obstacle o = null;
+        	for(Obstacle obs : simulator.getObstacles()){
+        	    if(o == null || o.getDistTo(pos) > obs.getDistTo(pos))
+        		o = obs;
+        	}
+        	pathResult.appendText(" Nearest Obstacle" + o.toString() + "\n");
         	previous = pos;
             }
             float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);

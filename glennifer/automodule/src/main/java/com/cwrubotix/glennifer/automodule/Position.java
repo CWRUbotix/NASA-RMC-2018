@@ -102,7 +102,7 @@ public class Position extends Coordinate implements Cloneable {
 
     @Override
     public String toString() {
-        return "(" + getX() + ", " + getY() + ")";
+        return "(" + String.format("%.2f", getX()) + ", " + String.format("%.2f", getY()) + ")";
     }
 
 

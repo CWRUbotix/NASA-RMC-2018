@@ -55,11 +55,13 @@ public class Path implements Iterable<Position> {
     }
 
     public void addFirst(Position point) {
-        getPath().addFirst(point);
+	if(!getPath().getFirst().equals(point))
+	    getPath().addFirst(point);
     }
 
     public void addLast(Position point) {
-        getPath().addLast(point);
+	if(!getPath().getLast().equals(point))
+	    getPath().addLast(point);
     }
 
     public Position remove(int index) {

@@ -14,6 +14,10 @@ public class PathFinder {
     private Position currentPos;
     private Position startPos;
     private Position targetPos;
+    
+    public PathFinder(Position startPos, Position targetPos){
+	this(new ModifiedAStar(), startPos, targetPos);
+    }
 
     public PathFinder(ModifiedAStar pathFindingAlgorithm, Position startPos, Position targetPos) throws PathFindingAlgorithm.AlgorithmFailureException {
         this.pathFindingAlgorithm = pathFindingAlgorithm;

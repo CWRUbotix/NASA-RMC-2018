@@ -306,7 +306,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         Path path = new Path();
         AStarNode ptr = end;
         while (!ptr.equals(start)) {
-            findNearestObs(ptr);
             path.addFirst(ptr);
             ptr = ptr.getPrevious();
         }
@@ -332,26 +331,12 @@ public class ModifiedAStar implements PathFindingAlgorithm {
     }
     
     /**
-     * Finds obstacle that is nearest to the input and sets the node's field
-     * 
-     * @param node node to set obstacle
-     */
-    private void findNearestObs(AStarNode node){
-	Obstacle obs = null;
-	for(Obstacle o : getObstacles()){
-	    if(obs == null || obs.getDistTo(node) > o.getDistTo(node))
-		obs = o;
-	}
-	node.setNearestObs(obs);
-    }
-
-    /**
      * Class that represents the vertex of the graph in A* search
      *
      * @author Seohyun Jung
      * @see Position
      */
-    private class AStarNode extends Position {
+    public class AStarNode extends Position {
 
         /**
          * list that store neighboring vertexes
@@ -377,10 +362,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * indicator of whether this node belongs to open set during each A* search
          */
         private boolean found = false;
-        /**
-         * Stores the nearest obstacle from the node
-         */
-        private Obstacle nearestObs;
 
         /**
          * Creates AStarNode with given coordinate positions

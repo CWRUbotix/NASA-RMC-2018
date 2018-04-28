@@ -28,7 +28,8 @@ public class Obstacle extends Coordinate {
 	    Obstacle other = (Obstacle)obj;
 	    float x_diff = getX() - other.getX();
 	    float y_diff = getY() - other.getY();
-	    return x_diff <= KINECT_ERROR_BOUND && y_diff <= KINECT_ERROR_BOUND;
+	    float r_diff = getRadius() - other.getRadius();
+	    return x_diff <= KINECT_ERROR_BOUND && y_diff <= KINECT_ERROR_BOUND && r_diff <= KINECT_ERROR_BOUND;
 	}
 	return false;
     }
