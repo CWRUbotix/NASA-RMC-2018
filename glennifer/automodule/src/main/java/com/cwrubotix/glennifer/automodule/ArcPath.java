@@ -14,7 +14,7 @@ public class ArcPath{
     /** Points on the path in order*/
     private LinkedList<Position> points = new LinkedList<>();
     /** Stores coefficients for 2nd polynomial representing each arc*/
-    private HashMap<Integer, float[]> arcEqs = new HashMap<>();
+    private HashMap<Integer, double[]> arcEqs = new HashMap<>();
     /** Map between each point to nearest obstacle*/
     private HashMap<Position, Obstacle> nearestObs = new HashMap<>();
     /** List of Obstacles present in the arena*/
@@ -30,25 +30,39 @@ public class ArcPath{
 	return new Path(points);
     }
     
-    public Map<Integer, float[]> getArcs(){
+    public Map<Integer, double[]> getArcs(){
 	return arcEqs;
     }
     
-    public float[] getArc(int segment){
+    public double[] getArc(int segment){
 	return arcEqs.get(segment);
     }
     
-    public void addObstacle(Position currentPos, Obstacle obs){
+    public void addObstacle(Position currentPos, Obstacle obs) throws DestinationModified{
 	if(!obstacles.contains(obs)){
 	    obstacles.add(obs);
 	    points = astar.computePath(currentPos, obs).getPath();
-	    arcPath();
+	    Position newDest = isDestReasonable(new Path(points));
+		if(newDest == null){
+		    arcPath();
+		} else{
+		    points = astar.computePath(currentPos, newDest).getPath();
+		    arcPath();
+		    throw new DestinationModified(newDest.getX(), newDest.getY());
+		}
 	}
     }
     
-    public void newPath(Position start, Position end){
+    public void newPath(Position start, Position end) throws DestinationModified{
 	points = astar.computePath(start, end).getPath();
-	arcPath();
+	Position newDest = isDestReasonable(new Path(points));
+	if(newDest == null){
+	    arcPath();
+	} else{
+	    points = astar.computePath(start, newDest).getPath();
+	    arcPath();
+	    throw new DestinationModified(newDest.getX(), newDest.getY());
+	}
     }
     
     @Override
@@ -60,11 +74,11 @@ public class ArcPath{
 	    if(previous == null){
 		previous= pos;
 	    } else{
-		float[] coefficients = arcEqs.get(progress++);
+		double[] coefficients = arcEqs.get(progress++);
 		builder.append(previous.toString() + " -> " + pos.toString() + "\n");
-		builder.append(String.format("%.4f", coefficients[0]) + "x^2 + " 
-		+ String.format("%.4f", coefficients[1]) + "x + " 
-			+ String.format("%.4f", coefficients[2]) + "\n");
+		if(coefficients != null)
+		    builder.append(String.format("Eqn: %.4f x^3 + %.4f x^2 + %.4f x + %.4f", coefficients[0], coefficients[1], coefficients[2], coefficients[3]) + "\n");
+		previous = pos;
 	    }
 	}
 	return builder.toString();
@@ -99,27 +113,111 @@ public class ArcPath{
     }
     
     private void makeArc(Position p1, Position p2, int progress){
-	float m,t1,t2,x3,y3,a,b,c;
-	m = (p1.getY() - p2.getY()) / (p1.getX() - p2.getX());
-	t1 = getTangent(p1);
-	t2 = getTangent(p2);
-	x3 = (p1.getX() + p2.getX()) / 2;
-	y3 = (float) (p1.getY() 
-		+ t1 * (x3 - p1.getX()) 
-		+ (3 * m - 2 * t1 - t2) / (p2.getX() - p1.getX()) * Math.pow(x3 - p1.getX(), 2) 
-		+ (t1 + t2 - 2 * m) / Math.pow(p2.getX() - p1.getX(), 2) * Math.pow(x3 - p1.getX(), 3));
-	a = ((p1.getY() - y3) / (p1.getX() - x3) - (p1.getY() - p2.getY()) / (p1.getX() - p2.getX())) / (x3 - p2.getX());
-	b = (p1.getY() - p2.getY())/(p1.getX() - p2.getX()) - a * (p1.getX() + p2.getX());
-	c = p1.getY() - a * p1.getX() * p1.getX() - b * p1.getX();
+	float t1 = getTangent(p1);
+	float t2 = getTangent(p2);
+	double [][] matrix = new double[4][5];
+	matrix[0][0] = Math.pow(p1.getX(), 3);
+	matrix[0][1] = Math.pow(p1.getX(), 2);
+	matrix[0][2] = p1.getX();
+	matrix[0][3] = 1;
+	matrix[0][4] = p1.getY();
+	matrix[1][0] = Math.pow(p2.getX(), 3);
+	matrix[1][1] = Math.pow(p2.getX(), 2);
+	matrix[1][2] = p2.getX();
+	matrix[1][3] = 1;
+	matrix[1][4] = p2.getY();
+	matrix[2][0] = 3 * Math.pow(p1.getX(), 2);
+	matrix[2][1] = 2 * p1.getX();
+	matrix[2][2] = 1;
+	matrix[2][3] = 0;
+	matrix[2][4] = t1;
+	matrix[3][0] = 3 * Math.pow(p2.getX(), 2);
+	matrix[3][1] = 2 * p2.getX();
+	matrix[3][2] = 1;
+	matrix[3][3] = 0;
+	matrix[3][4] = t2;
 	
-	float[] coefficient = {a, b, c};
+	double[] coefficient = solveLinearSystem(matrix);
 	arcEqs.put(progress, coefficient);
+    }
+    
+    private double[] solveLinearSystem(double[][] matrix){
+	for(int row = 0; row < matrix.length; row ++){
+	    for(int col = 0; col < matrix[row].length; col ++){
+		if(row == col){
+		    matrix[row][row] = 1;
+		}else{
+		    matrix[row][col] /= matrix[row][row];
+		}
+	    }
+	    for(int delR = row + 1; delR < matrix.length; delR++){
+		for(int delC = 0; delC < matrix[delR].length; delC++){
+		    if(Math.abs(matrix[row][row]) >= 5e-3)
+			matrix[delR][delC] -= matrix[row][delC] * (matrix[delR][row] / matrix[row][row]);
+		}
+	    }
+	}
+	double[] ans = new double[4];
+	ans[0] = matrix[0][4];
+	ans[1] = matrix[1][4];
+	ans[2] = matrix[2][4];
+	ans[3] = matrix[3][4];
+	
+	return ans;
     }
     
     private float getTangent(Position p){
 	Obstacle o = nearestObs.get(p);
 	float m = (p.getY() - o.getY())/(p.getX() - o.getX());
 	return -1 / m;
+    }
+    
+    private Position isDestReasonable(Path path){
+	float minX = 0.0F, maxX = 0.0F;
+	
+	for(Position pos : path){
+	    if(pos.getX() < minX)
+		minX = pos.getX();
+	    if(pos.getX() > maxX)
+		maxX = pos.getX();
+	}
+	
+	if(Math.abs(maxX - path.getPath().getLast().getX()) > Position.ARENA_WIDTH() * 1 / 3){
+	    return new Position(maxX, path.getPath().getLast().getY());
+	}
+	else if(Math.abs(minX - path.getPath().getLast().getX()) > Position.ARENA_WIDTH() * 1 / 2){
+	    return new Position(minX, path.getPath().getLast().getY());
+	}
+	
+	return null;
+    }
+    
+    public static ArcPath arcPath(Path path, ArrayList<Obstacle> obstacles){
+	ArcPath a = new ArcPath(path.getPath().getFirst(), path.getPath().getLast());
+	a.points = path.getPath();
+	a.obstacles = obstacles;
+	a.arcPath();
+	System.out.println(a.toString());
+	return a;
+    }
+    
+    public class DestinationModified extends Exception{
+	private float new_dest_x;
+	private float new_dest_y;
+	
+	public DestinationModified(float new_dest_x, float new_dest_y){
+	    super();
+	    this.new_dest_x = new_dest_x;
+	    this.new_dest_y = new_dest_y;
+	}
+	
+	public float getX(){
+	    return new_dest_x;
+	}
+	
+	public float getY(){
+	    return new_dest_y;
+	}
     }
     
 }

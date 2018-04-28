@@ -2,9 +2,10 @@ package com.cwrubotix.glennifer.automodule;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 
-import com.cwrubotix.glennifer.automodule.ModifiedAStar.AStarNode;
+import com.cwrubotix.glennifer.automodule.ArcPath.DestinationModified;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
@@ -42,7 +43,7 @@ public class PathPlanSimulator {
     /**
      * Array of PathFinders that represents each algorithm
      */
-    private PathFinder finder;
+    private ArcPath finder;
     /**
      * The initial position of the robot
      */
@@ -97,7 +98,7 @@ public class PathPlanSimulator {
         this.initialPos = initialPos;
         this.destination = destination;
         generateObstacles();
-        finder = new PathFinder(new ModifiedAStar(), initialPos, destination);
+        finder = new ArcPath(initialPos, destination);
         path = finder.getPath();
     }
 
@@ -155,7 +156,7 @@ public class PathPlanSimulator {
      *
      * @return the list of the path plan algorithms
      */
-    public PathFinder getFinder() {
+    public ArcPath getFinder() {
         return finder;
     }
 
@@ -212,6 +213,7 @@ public class PathPlanSimulator {
         boolean arrived = false;
         Path log = new Path();
         Path path = finder.getPath();
+        System.out.println(finder.toString());
         Position currentPos = path.getPoint(0);
         int progress = 0;
         ArrayList<Obstacle> obstacles = new ArrayList<>(NUM_OBSTACLE); // Copying obstacles in to new list
@@ -228,15 +230,15 @@ public class PathPlanSimulator {
                 if (temp != null) {
                     if(!temp.equals(path.getPoint(progress))){
                 	currentPos = temp; // where robot is currently standing
-                	finder.setCurrentPos(currentPos);
                     }
                     try{
-                	finder.registerObstacle(obs);
+                	finder.addObstacle(currentPos, obs);
                     }
-                    catch(PathFinder.DestinationModified e){
+                    catch(ArcPath.DestinationModified e){
                 	destination = new Position(e.getX(), e.getY());
                     }
                     path = finder.getPath();
+                    System.out.println(finder.toString());
                     if(!log.getPath().contains(currentPos))
                 	log.addLast(currentPos);
                     encountered.add(obs);
@@ -256,6 +258,11 @@ public class PathPlanSimulator {
             }
         }
         log.addLast(path.getPoint(progress + 1));
+        ArrayList<Obstacle> ob = new ArrayList<>();
+        for(Obstacle obs : getObstacles()){
+            ob.add(obs);
+        }
+        ArcPath.arcPath(log, ob);
         this.path = log; //setting path field
     }
 
@@ -448,7 +455,11 @@ public class PathPlanSimulator {
                     if (!simulationRun)
                         return;
                     if (simulator.getPath() != null) {
-                	simulator.getFinder().runAlgorithm();
+                	try {
+			    simulator.getFinder().newPath(simulator.getInitialPos(), simulator.getDestination());
+			} catch (DestinationModified e1) {
+
+			}
                 	simulator.setPath(simulator.getFinder().getPath());
                     }
                     displayPaths();
@@ -613,17 +624,11 @@ public class PathPlanSimulator {
         	    dist += previous.getDistTo(pos);
         	    angle += Math.abs(previous.getHeading() - pos.getHeading());
         	}
-        	pathResult.appendText(pos.toString());
-        	Obstacle o = null;
-        	for(Obstacle obs : simulator.getObstacles()){
-        	    if(o == null || o.getDistTo(pos) > obs.getDistTo(pos))
-        		o = obs;
-        	}
-        	pathResult.appendText(" Nearest Obstacle" + o.toString() + "\n");
         	previous = pos;
             }
             float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
             result.appendText(String.format("Total Distance : %.2f m\nTotal Angle Turn: %.2f rad\nEstimate Traversal Time: %.2f s\n", dist, angle, timeTook));
+            pathResult.appendText(simulator.getFinder().toString());
         }
 
 
