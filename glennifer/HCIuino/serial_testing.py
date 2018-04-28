@@ -8,11 +8,16 @@ CMD_HCI_TEST 		= 3
 HCI_TEST_SEND 		= 0x5A
 HCI_TEST_RPY 		= 0xA5
 
+
 #===============================================================================
 def getHex(dec):
+	MAX = 65536
+	if dec < 0: dec = MAX-dec
+	
 	tmp = hex(dec).split('x')[1]
 	while len(tmp)<4:
 		tmp = '0'+tmp
+	
 	return tmp
 
 #===============================================================================

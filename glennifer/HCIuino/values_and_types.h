@@ -43,7 +43,8 @@
 #define ANLG_READ_RES 			(12)
 #define ANLG_WRITE_RES 			(12)
 #define DFLT_MAX_DELTA 			(200)
-#define DGTL_WRITE_DELAY 		(12)
+#define DGTL_WRITE_DELAY 		(2)
+#define LOW_PASS_ARRAY_SIZE 	(2)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -77,10 +78,11 @@
 #define REAR_PORT_MTR_ID 		(2)
 #define FRONT_STARBOARD_MTR_ID 	(1)
 #define REAR_STARBOARD_MTR_ID 	(3)
+#define DEP_WINCH_MOTOR_ID 		(4)
 #define PORT_LIN_ACT_ID 		(6)
 #define STARBOARD_LIN_ACT_ID 	(7)
-#define LIN_ACT_KP 				(1.5)
-#define LIN_ACT_KI 				(0.00000000)
+#define LIN_ACT_KP 				(1.7)
+#define LIN_ACT_KI 				(0.000000001)
 #define EXC_TRANSLATION_KP 		(1.0)
 #define EXC_TRANSLATION_KI 		(0.00000)
 #define KP_INC 					(0.1)
@@ -96,6 +98,8 @@
 //SENSOR STUFF
 enum SensorHardware {
 	SH_NONE,
+	SH_QUAD_VEL,
+	SH_QUAD_POS,
 	SH_BL_POT,		// BL := brushless motor
 	SH_BL_ENC_VEL, 	//
 	SH_BL_ENC_POS, 	//
@@ -122,11 +126,13 @@ typedef struct SensorInfo{
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
+	int16_t* prev_values; 		// 
 	int16_t  val_at_max; 		// when this is a linear pot or similar
 	int16_t  val_at_min; 		// ^ ^ ^
 	uint32_t lastUpdateTime; 	// 
 	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
-	//HX711*   loadCell; 			// if this happens to be a load cell
+	Encoder* quad;
+	uint32_t last_pos = 0; 		// used for encoders
 }SensorInfo;
 
 //MOTOR STUFF
@@ -178,6 +184,7 @@ typedef struct MotorInfo{
 	float    kd; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t qpps; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t deadband; 			// When hardware = MH_RC_POS
+	uint32_t center = 1500; 	// center from which to add/sub deadband
 	uint16_t margin; 			// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS

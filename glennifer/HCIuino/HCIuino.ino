@@ -28,6 +28,7 @@
 #include <ODriveArduino.h>
 #include <SabertoothSimplified.h>
 #include <RoboClaw.h>
+#include <Encoder.h>
 #include <math.h>
 
 #include "values_and_types.h"
