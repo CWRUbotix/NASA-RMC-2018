@@ -309,7 +309,16 @@ public class AutoDrillModule extends Module {
     }
     
     private class StateUpdateConsumer extends DefaultConsumer{
+	public StateUpdateConsumer(Channel channel){
+	    super(channel);
+	}
 	
+	@Override
+	public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+	    Messages.State msg = Messages.State.parseFrom(body);
+	    currentTranslation = msg.getExcDetailed().getDisplacement();
+	    bc_current = msg.getExcDetailed().getCurrent();
+	}
     }
 
     /**
@@ -336,7 +345,7 @@ public class AutoDrillModule extends Module {
     /**
      * Digging speed that we want to dig in
      */
-    private float digSpeed = 1.0F;
+    private float digSpeed = 1.0F;//TODO 26 rpm in sand, 37 rpm changes at position vector: 58 position vector
     /**
      * Records when digging command started. This gets updated every time
      * getCurrentDepthTarget is called
