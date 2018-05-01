@@ -396,6 +396,7 @@ public class ModuleMain {
     }
 
     private static void routeLocomotionMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
+        
         if(keys.length < 4) {
             System.out.println("Locomotion motor control routing key must have 4 elements");
             return;
@@ -405,8 +406,6 @@ public class ModuleMain {
             routeWheelRPMMessage(keys, body);
         } else if(keys[3].equals("turn")) {
             routeTurnMessage(keys, body);
-        } else if(keys[3].equals("alternating_turn")){
-            routeAlternatingTurnMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -478,14 +477,6 @@ public class ModuleMain {
         queueActuation(id3, targetValue3);
     }
 
-    private static void routeAlternatingTurnMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException {
-        Messages.AlternatingTurnControlCommand atc = Messages.AlternatingTurnControlCommand.parseFrom(body);
-        double speed = atc.getSpeed();
-        AlternatingTurningController atcontroller = new AlternatingTurningController(speed, hci);
-        Thread atcThread = new Thread(atcontroller);
-        atcThread.start();
-    }
-
     private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 3) {
             System.out.println("Excavation motor control routing key must have 3 elements");
@@ -494,20 +485,20 @@ public class ModuleMain {
 
         if (keys[2].equals("conveyor_translation_displacement")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id = 6;
-            double targetValue = ((pcc.getPosition() / 100.0F) * 785) + 45;
+            int id = 8;
+            double targetValue = (pcc.getPosition() * 5);
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id1 = 4;
-            int id2 = 5;
-            double targetValue = ((90- pcc.getPosition()) * 5.555) + 100 ;
+            int id1 = 6;
+            int id2 = 7;
+            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2) ;
             queueActuation(id1, targetValue);
             queueActuation(id2, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
             Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-            int id = 7;
-            double targetValue = (scc.getRpm() / 100.0F) * 32767;
+            int id = 4;
+            double targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
             queueActuation(id, targetValue);
         } else {
             System.out.println("Excavation motor control routing key has unrecognized motor");
@@ -522,8 +513,8 @@ public class ModuleMain {
         }
         if (keys[2].equals("dump_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            int id = 8;
-            double targetValue = (pcc.getPosition() / 100.0F) * 127;
+            int id = 5;
+            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2);
             queueActuation(id, targetValue);
         } else {
             System.out.println("Deposition motor control routing key has unrecognized motor");

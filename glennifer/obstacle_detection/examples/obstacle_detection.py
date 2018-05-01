@@ -46,7 +46,7 @@ def publish_obstacle_position(x,y,z,diameter):
 			body=msg.SerializeToString())
 
 save_frames = False
-num_frames = 100
+num_frames = 100000
 frame_i = 0
 #clear test frames if there are any left
 if len(sys.argv) > 1:

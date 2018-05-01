@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
 import jssc.SerialPort;
 import jssc.SerialPortException;
+import jssc.SerialPortList;
 import jssc.SerialPortTimeoutException;
 
 public class HardwareControlInterface implements Runnable {
@@ -137,29 +138,31 @@ public class HardwareControlInterface implements Runnable {
 				}
 			} catch(SerialPortException | SerialPortTimeoutException e) {
 				e.printStackTrace();
-				while (true) {
-					System.out.println("Trying again in 1 second...");
-					try {
-						Thread.sleep(1000);
-						try {
-							port.closePort();
-						} catch (SerialPortException e2) {
-							System.out.println("Closing port failed");
-						}
-						String newName = port.getPortName();
-						port = new SerialPort(newName);
-						port.openPort();
-						Thread.sleep(1000);
-						port.setParams(baud, 8, 1, 0);
-						port.setDTR(false);
-						break;
-					} catch (InterruptedException e2) {
-						return;
-					} catch (SerialPortException e2) {
-						e.printStackTrace();
-					}
+				try {
+					port.closePort();
+				} catch (SerialPortException e2) {
+					System.out.println("Closing port failed");
 				}
-
+				while (true) {
+					System.out.println("Trying all ports...");
+					for(String s:SerialPortList.getPortNames()) {
+						SerialPort sp = new SerialPort(s);
+						try {
+							sp.openPort();
+							Thread.sleep(1000);
+							sp.setParams(baud, 8, 1, 0);
+							sp.setDTR(false);
+							System.out.println("Found the arduino again: " + s);
+							port = sp;
+							break;
+						} catch (InterruptedException e2) {
+							return;
+						} catch (SerialPortException e2) {
+							e.printStackTrace();
+						}
+					}	
+					break;
+				}
 			}
 		}
 	}

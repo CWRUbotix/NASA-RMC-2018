@@ -244,9 +244,9 @@ public:
 
 		// prepare window for drawing the camera images
 		if (m_draw) {
-			cv::namedWindow(windowGreenCam, 1);
+			/*cv::namedWindow(windowGreenCam, 1);
 			cv::namedWindow(windowYellowCam, 1);
-			cv::namedWindow(windowBlueCam, 1);
+			cv::namedWindow(windowBlueCam, 1);*/
 		}
 
 		// optional: prepare serial port for communication with Arduino
