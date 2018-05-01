@@ -60,11 +60,11 @@ public slots:
     void handleDepositionDumpDump();
     void handleDepositionDumpStop();
     void handleDepositionDumpStore();
-    void handleDepositionConveyor(bool checked);
+    //void handleDepositionConveyor(bool checked);
     void handleLowerCurrent(int value);
     void handleUpperCurrent(int value);
     void handleDigSpeed(int value);
-    void handleVibrate(bool checked);
+    //void handleVibrate(bool checked);
     void handleEStop();
     void handleEUnstop();
 
@@ -116,6 +116,7 @@ public slots:
     void handleExcavationMoveSpeedSet(int value);
 
     void handleLocomotionSpeedSet(int value);
+    void handleLocomotionUpSet(int value);
 
     void handleState(QString key, QByteArray data);
 

@@ -166,8 +166,6 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleDepositionDumpStop);
     QObject::connect(ui->pushButton_DepositionDumpStore, &QPushButton::clicked,
                      this, &MainWindow::handleDepositionDumpStore);
-    QObject::connect(ui->checkBox_DepositionConveyor, &QCheckBox::stateChanged,
-                     this, &MainWindow::handleDepositionConveyor);
     QObject::connect(ui->slider_ExcavationTargetDepth, &QSlider::valueChanged,
                      this, &MainWindow::handleExcavationTargetDepthSet);
     QObject::connect(ui->slider_ExcavationDigSpeed, &QSlider::valueChanged,
@@ -186,6 +184,8 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleEUnstop);
     QObject::connect(ui->slider_LocomotionSpeed, &QSlider::valueChanged,
                      this, &MainWindow::handleLocomotionSpeedSet);
+    QObject::connect(ui->slider_UpsetSpeed, &QSlider::valueChanged,
+                     this, &MainWindow::handleLocomotionUpSet);
 
     //Add tankPivotButtonR and tankPivotButtonL
     QObject::connect(ui->tankPivotButtonR, &QPushButton::clicked,
@@ -200,8 +200,8 @@ MainWindow::MainWindow(QWidget *parent) :
     /*Drive Configuration*/
     QObject::connect(ui->pushButton_ExcavationArmDrive, &QPushButton::clicked,
                      this, &MainWindow::handleExcavationArmDrive);
-    QObject::connect(ui->checkBox_Vibrate, &QCheckBox::stateChanged,
-                     this, &MainWindow::handleVibrate);
+    //QObject::connect(ui->checkBox_Vibrate, &QCheckBox::stateChanged,
+            //         this, &MainWindow::handleVibrate);
 }
 
 MainWindow::MainWindow(QString loginStr, QWidget *parent) :
@@ -621,21 +621,21 @@ void MainWindow::handleExcavationTranslationSet(int value) {
 }
 
 void MainWindow::handleExcavationTranslationExtend() {
-    ui->slider_ExcavationTranslation->setValue(100);
+    ui->slider_ExcavationTranslation->setValue(-10);
 }
 
 void MainWindow::handleExcavationTranslationStop() {
-    ui->slider_ExcavationTranslation->setValue(50);
+    ui->slider_ExcavationTranslation->setValue(0);
 }
 
 void MainWindow::handleExcavationTranslationRetract() {
-    ui->slider_ExcavationTranslation->setValue(0);
+    ui->slider_ExcavationTranslation->setValue(50);
 }
 
 void MainWindow::handleExcavationConveyor(bool checked) {
     SpeedControlCommand msg;
     int speed = ui->slider_ExcavationConveyor->value();
-    speed = ui->checkBox_ExcavationConveyorReverse->isChecked() ? speed : -speed;
+    //speed = ui->checkBox_ExcavationConveyorReverse->isChecked() ? speed : -speed;
     speed = checked ? speed : 0;
     msg.set_rpm(speed);
     msg.set_timeout(456);
@@ -655,12 +655,30 @@ void MainWindow::handleExcavationConveyor(bool checked) {
 }
 
 void MainWindow::handleDepositionDumpSet(int value) {
-    ui->consoleOutputTextBrowser->append("Dump actuators do not have position control\n");
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.deposition.dump_pos");
+
+    free(msg_buff);
+
+    ui->lineEdit_DepositionDump->setText(QString::number(value));
+    //ui->consoleOutputTextBrowser->append("Dump actuators do not have position control\n");
 }
 
 void MainWindow::handleDepositionDumpDump() {
     PositionControlCommand msg;
-    msg.set_position(100);
+    msg.set_position(20);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -702,7 +720,7 @@ void MainWindow::handleDepositionDumpStop() {
 
 void MainWindow::handleDepositionDumpStore() {
     PositionControlCommand msg;
-    msg.set_position(-100);
+    msg.set_position(-20);
     msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
@@ -721,7 +739,7 @@ void MainWindow::handleDepositionDumpStore() {
     ui->lineEdit_DepositionDump->setText(QString::number(-100));
 }
 
-void MainWindow::handleDepositionConveyor(bool checked) {
+/*void MainWindow::handleDepositionConveyor(bool checked) {
     SpeedControlCommand msg;
     int speed = ui->slider_DepositionConveyor->value();
     speed = ui->checkBox_DepositionConveyorReverse->isChecked() ? speed : -speed;
@@ -741,7 +759,7 @@ void MainWindow::handleDepositionConveyor(bool checked) {
     ex->Publish((char*)msg_buff, msg_size, "motorcontrol.deposition.conveyor_rpm");
 
     free(msg_buff);
-}
+}*/
 
 void MainWindow::handleLowerCurrent(int value) {
     PositionControlCommand msg;
@@ -762,7 +780,7 @@ void MainWindow::handleLowerCurrent(int value) {
     free(msg_buff);
 }
 
-void MainWindow::handleVibrate(bool checked) {
+/*void MainWindow::handleVibrate(bool checked) {
     SpeedControlCommand msg;
     int speed = ui->spinBox_Vibrate->value();
     speed = checked ? speed : 0;
@@ -781,7 +799,7 @@ void MainWindow::handleVibrate(bool checked) {
     ex->Publish((char*)msg_buff, msg_size, "motorcontrol.deposition.vibration_rpm");
 
     free(msg_buff);
-}
+}*/
 
 void MainWindow::handleUpperCurrent(int value) {
     PositionControlCommand msg;
@@ -1245,7 +1263,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent *ev) {
              //DUMP retract
              break;
         case (Qt::Key_C):
-             handleDepositionConveyor(false);
+             //handleDepositionConveyor(false);
              break;
         case (Qt::Key_V):
              //extra
@@ -1313,7 +1331,8 @@ void MainWindow::on_commandLinkButton_clicked()
 }
 
 
-void MainWindow::handleTankPivotR() {
+void MainWindow::
+handleTankPivotR() {
     if (0 == m_desiredConfig) { // straight
         int leftSide = (ui->slider_LocomotionSpeed->value()); //left wheel speed
         int rightSide = (ui->slider_UpsetSpeed->value()* (1)); //right wheel speed
@@ -1669,7 +1688,7 @@ void MainWindow::dumpRetract() {
 
 void MainWindow::dumpConveyor(bool checked) {
     if(m_dumpConfig == 1) { //absolutely has to be on fully extended
-        handleDepositionConveyor(checked);
+        //handleDepositionConveyor(checked);
     }
     else
         ui->consoleOutputTextBrowser->append("It is imperative you extend deposition before running the conveyor");
@@ -1679,7 +1698,7 @@ void MainWindow::dumpConveyor(bool checked) {
 void MainWindow::inverseExcavationConveyer(bool checked) {
     if(m_digConfig == 1) {
         SpeedControlCommand msg;
-        int speed = (-1)*(ui->slider_ExcavationConveyor->value());
+        int speed = (1)*(ui->slider_ExcavationConveyor->value());
         msg.set_rpm(checked ? speed : 0);
         msg.set_timeout(456);
         int msg_size = msg.ByteSize();
@@ -1791,6 +1810,10 @@ void MainWindow::startLoc_Thread() {
 
 void MainWindow::handleLocomotionSpeedSet(int value) {
     ui->lcdNumber_LocomotionSpeed->display(value);
+}
+
+void MainWindow::handleLocomotionUpSet(int value) {
+    ui->lcdNumber_LocomotionUpsetSpeed->display(value);
 }
 
 void MainWindow::handleTurnRight() {
