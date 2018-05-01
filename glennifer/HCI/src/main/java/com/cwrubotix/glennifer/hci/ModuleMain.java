@@ -79,7 +79,11 @@ public class ModuleMain {
                 } else if (keys[1].equals("deposition")) {
                     routeDepositionMessage(keys, body);
 
-                } else if (keys[1].equals("system")){
+                } else if (keys[1].equals("looky")) {
+                    routeLookyMessage(keys, body);
+                }
+
+                else if (keys[1].equals("system")){
                     routeSystemMessage(keys, body);
 			    }
 		    };
@@ -374,11 +378,13 @@ public class ModuleMain {
         actuatorList.add(new ActuatorConfig("Front Right Drive Motor", 1));
         actuatorList.add(new ActuatorConfig("Back Left Drive Motor", 2));
         actuatorList.add(new ActuatorConfig("Back Right Drive Motor", 3));
-        actuatorList.add(new ActuatorConfig("Left Arm Actuator", 4));
-        actuatorList.add(new ActuatorConfig("Right Arm Actuator", 5));
-        actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor", 6));
-        actuatorList.add(new ActuatorConfig("Bucket Conveyor Digging Motor", 7));        
-        actuatorList.add(new ActuatorConfig("Deposition Motor", 8));
+        actuatorList.add(new ActuatorConfig("Bucket Conveyor Digging Motor", 4));
+        actuatorList.add(new ActuatorConfig("Deposition Motor", 5));
+        actuatorList.add(new ActuatorConfig("Left Arm Actuator", 6));
+        actuatorList.add(new ActuatorConfig("Right Arm Actuator", 7));
+        actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor", 8));
+        actuatorList.add(new ActuatorConfig("Left Looky Servo", 9));
+        actuatorList.add(new ActuatorConfig("Right Looky Servo", 10));
 
          // Add sensors
         for (ActuatorConfig config : actuatorList){
@@ -518,6 +524,32 @@ public class ModuleMain {
             queueActuation(id, targetValue);
         } else {
             System.out.println("Deposition motor control routing key has unrecognized motor");
+            return;
+        }
+    }
+
+    private static void routeLookyMessage(String[] keys, byty[] body) throws InvalidProtocolBufferException{
+        if(keys.length < 4) {
+            System.out.println("Looky motor control routing key must have 4 elements");
+            return;
+        }
+        if (keys[2].equals("turn")) {
+            int id;
+            if(keys[3].equals("left")){
+                id = 9;
+            }
+            else if(keys[3].equals("right")){
+                id = 10;
+            }
+            else{
+                System.out.println("Invalid looky motor side");
+                return;
+            }
+            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
+            double targetValue = pcc.getPosition();
+            queueActuation(id, targetValue);
+        } else {
+            System.out.println("Looky motor control routing key has unrecognized motor");
             return;
         }
     }

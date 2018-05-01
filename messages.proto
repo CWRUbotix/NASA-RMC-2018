@@ -100,6 +100,8 @@ message SpeedControlCommand {
 // motorcontrol.excavation.arm_pos
 // motorcontrol.excavation.conveyor_translation_displacement
 // motorcontrol.deposition.dump_pos
+// motorcontrol.looky.turn.left
+// motorcontrol.looky.turn.right
 message PositionControlCommand {
 	required float position = 1;
 	required float timeout = 2;
@@ -109,11 +111,6 @@ message PositionControlCommand {
 message TurnControlCommand {
 	required float speed = 1;
 	required float curvature = 2;
-}
-
-// motorcontrol.locomotion.alternating_turn
-message AlternatingTurnControlCommand {
-	required float speed = 1;
 }
 
 // motorcontrol.system.stop_all
