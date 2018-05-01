@@ -76,7 +76,14 @@ public slots:
     void handleTankPivotRK();
     void handleTankPivotLK();
 
-    void handleAlternatingTurn(bool dir);
+    void handleLeftLookySet(int value);
+    void handleLeftLookyForward();
+    void handleLeftLookySide();
+    void handleLeftLookyBackward();
+    void handleRightLookySet(int value);
+    void handleRightLookyForward();
+    void handleRightLookySide();
+    void handleRightLookyBackward();
 
     void actionTabRight();
     void actionTabLeft();

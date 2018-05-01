@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->lineEdit_DepositionDump, &IntEdit::valueEdited, ui->slider_DepositionDump, &QSlider::setValue);
     connect(ui->lineEdit_ExcavationArm, &IntEdit::valueEdited, ui->slider_ExcavationArm, &QSlider::setValue);
     connect(ui->lineEdit_ExcavationTranslation, &IntEdit::valueEdited, ui->slider_ExcavationTranslation, &QSlider::setValue);
+    connect(ui->lineEdit_LeftLooky, &IntEdit::valueEdited, ui->slider_LeftLooky, &QSlider::setValue);
+    connect(ui->lineEdit_RightLooky, &IntEdit::valueEdited, ui->slider_RightLooky, &QSlider::setValue);
 
     //New Sliders for Drilling
     connect(ui->pushButton_DigDeep, &QPushButton::clicked, this, &MainWindow::handleDigDeep);
@@ -87,8 +89,8 @@ MainWindow::MainWindow(QWidget *parent) :
     depositionScene->addPolygon(poly, outlinePen, redBrush);
 
     QPixmap image("UnderConstruction.jpg");
-    ui->templabel->setPixmap(image);
-    ui->templabel->setScaledContents(true);
+    //ui->templabel->setPixmap(image);
+    //ui->templabel->setScaledContents(true);
 
 
     //painter.drawEllipse(QPointF(x,y), radius, radius);
@@ -196,6 +198,24 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleTankPivotL);
     QObject::connect(ui->tankPivotButtonL, &QPushButton::released,
                      this, &MainWindow::handleLocomotionRelease);
+
+    //Looky buttons
+    QObject::connect(ui->slider_LeftLooky, &QSlider::valueChanged,
+                     this, &MainWindow::handleLeftLookySet);
+    QObject::connect(ui->pushButton_LeftLooky_Forward, &QPushButton::clicked,
+                     this, &MainWindow::handleLeftLookyForward);
+    QObject::connect(ui->pushButton_LeftLooky_Side, &QPushButton::clicked,
+                     this, &MainWindow::handleLeftLookySide);
+    QObject::connect(ui->pushButton_LeftLooky_Backward, &QPushButton::clicked,
+                     this, &MainWindow::handleLeftLookyBackward);
+    QObject::connect(ui->slider_RightLooky, &QSlider::valueChanged,
+                     this, &MainWindow::handleRightLookySet);
+    QObject::connect(ui->pushButton_RightLooky_Forward, &QPushButton::clicked,
+                     this, &MainWindow::handleRightLookyForward);
+    QObject::connect(ui->pushButton_RightLooky_Side, &QPushButton::clicked,
+                     this, &MainWindow::handleRightLookySide);
+    QObject::connect(ui->pushButton_RightLooky_Backward, &QPushButton::clicked,
+                     this, &MainWindow::handleRightLookyBackward);
 
     /*Drive Configuration*/
     QObject::connect(ui->pushButton_ExcavationArmDrive, &QPushButton::clicked,
@@ -1101,11 +1121,9 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
         case (Qt::Key_I):
             ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() + 10);//handleLocomotionStraight();
             break;
-        case (Qt::Key_O):
-            handleAlternatingTurn(false);
+        case (Qt::Key_O):     
             break;
         case (Qt::Key_P):
-            handleAlternatingTurn(true);
             break;
         case (Qt::Key_J):
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() - 10);
@@ -1402,10 +1420,10 @@ void MainWindow::handleTankPivotLK() {
     }
 }
 
-void MainWindow::handleAlternatingTurn(bool dir){
-    AlternatingTurnControlCommand msg;
-    float speed = dir ? (ui->slider_LocomotionSpeed->value()) : -(ui->slider_LocomotionSpeed->value());
-    msg.set_speed(speed);
+void MainWindow::handleLeftLookySet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
     if (!msg_buff) {
@@ -1416,10 +1434,56 @@ void MainWindow::handleAlternatingTurn(bool dir){
 
     AMQPExchange * ex = m_amqp->createExchange("amq.topic");
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.locomotion.alternating_turn");
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.looky.turn.left");
 
     free(msg_buff);
-    ui->consoleOutputTextBrowser->append("alternating turn with speed");
+
+    ui->lineEdit_LeftLooky->setText(QString::number(value));
+}
+
+void MainWindow::handleLeftLookyForward() {
+    ui->slider_LeftLooky->setValue(300);
+}
+
+void MainWindow::handleLeftLookySide() {
+    ui->slider_LeftLooky->setValue(200);
+}
+
+void MainWindow::handleLeftLookyBackward() {
+    ui->slider_LeftLooky->setValue(100);
+}
+
+void MainWindow::handleRightLookySet(int value) {
+    PositionControlCommand msg;
+    msg.set_position(value);
+    msg.set_timeout(456);
+    int msg_size = msg.ByteSize();
+    void *msg_buff = malloc(msg_size);
+    if (!msg_buff) {
+        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
+        return;
+    }
+    msg.SerializeToArray(msg_buff, msg_size);
+
+    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
+    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+    ex->Publish((char*)msg_buff, msg_size, "motorcontrol.looky.turn.right");
+
+    free(msg_buff);
+
+    ui->lineEdit_RightLooky->setText(QString::number(value));
+}
+
+void MainWindow::handleRightLookyForward() {
+    ui->slider_RightLooky->setValue(300);
+}
+
+void MainWindow::handleRightLookySide() {
+    ui->slider_RightLooky->setValue(200);
+}
+
+void MainWindow::handleRightLookyBackward() {
+    ui->slider_RightLooky->setValue(100);
 }
 
 //Tab Right
