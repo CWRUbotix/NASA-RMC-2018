@@ -59,14 +59,14 @@ def applyCameraMatrixOrientation(pt):
 	# uses same trig to rotate a vertex around a gimbal.
 	def rotatePoints(ax1, ax2, deg):
 	# math to rotate vertexes around a center point on a plane.
-	hyp = np.sqrt(pt[:, ax1] ** 2 + pt[:, ax2] ** 2) # Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!
-	d_tan = np.arctan2(pt[:, ax2], pt[:, ax1]) # Calculate the vertexes current angle (returns radians that go from -180 to 180)
+		hyp = np.sqrt(pt[:, ax1] ** 2 + pt[:, ax2] ** 2) # Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!
+		d_tan = np.arctan2(pt[:, ax2], pt[:, ax1]) # Calculate the vertexes current angle (returns radians that go from -180 to 180)
 
-	cur_angle = np.degrees(d_tan) % 360 # Convert radians to degrees and use modulo to adjust range from 0 to 360.
-	new_angle = np.radians((cur_angle + deg) % 360) # The new angle (in radians) of the vertexes after being rotated by the value of deg.
+		cur_angle = np.degrees(d_tan) % 360 # Convert radians to degrees and use modulo to adjust range from 0 to 360.
+		new_angle = np.radians((cur_angle + deg) % 360) # The new angle (in radians) of the vertexes after being rotated by the value of deg.
 
-	pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
-	pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
+		pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
+		pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
 	#rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
 	rotatePoints(0, 2, CameraPosition['elevation']) #rotate on the X&Z plane
@@ -82,7 +82,7 @@ frame_i = 0
 
 while True:
 	
-	depth_frame = np.load("test_frames/" + str(i) + ".npy")
+	depth_frame = np.load("test_frames/" + str(frame_i) + ".npy")
     	obstacles = np.zeros(depth_frame.shape)
 	img = depth_frame / 4500.
 	imgray = np.uint8(img * 255)
@@ -115,84 +115,84 @@ while True:
 	image, contours, hierarchy = cv2.findContours(unknown,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 	color = cv2.drawContours(color, contours, -1, (0,255,0), 1)
 	for cntr in contours:
-	try:
-		#calculate diamter of equivalent cirlce
-		area = cv2.contourArea(cntr)
-		equi_diameter = np.sqrt(4*area/np.pi)
+		try:
+			#calculate diamter of equivalent cirlce
+			area = cv2.contourArea(cntr)
+			equi_diameter = np.sqrt(4*area/np.pi)
 
-		#Hardcoded Diameter Range in pixels
-		LOW_DIAMETER_BOUND = 20
-		HIGH_DIAMETER_BOUND = 100
+			#Hardcoded Diameter Range in pixels
+			LOW_DIAMETER_BOUND = 20
+			HIGH_DIAMETER_BOUND = 100
 
-		HIGH_DISTANCE_BOUND = 3000
-		#Original tolerances were 20 and 150
+			HIGH_DISTANCE_BOUND = 3000
+			#Original tolerances were 20 and 150
 
-		if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
-		mask = np.zeros_like(imgray)
-		ellipse = cv2.fitEllipse(cntr)
-		x,y,obj_length,obj_height = cv2.boundingRect(cntr)
-		rect = cv2.minAreaRect(cntr)
+			if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
+				mask = np.zeros_like(imgray)
+				ellipse = cv2.fitEllipse(cntr)
+				x,y,obj_length,obj_height = cv2.boundingRect(cntr)
+				rect = cv2.minAreaRect(cntr)
 
-		equi_diameter = obj_length
+				equi_diameter = obj_length
 
-		box = cv2.boxPoints(rect)
-		box = np.int0(box)
-		mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
-		rows,cols = mask.shape
-		#shift mask down to match obstacle, not edge
-		M = np.float32([[1,0,0],[0,1,equi_diameter/4]])
-		mask = cv2.warpAffine(mask,M,(cols,rows))
-		mask = cv2.erode(mask, kernel, iterations=3)
-		img_fg = cv2.bitwise_and(depth_frame,depth_frame,mask = mask)
-		img_fg = cv2.medianBlur(img_fg,5)
-		print (img_fg.shape)
-		print (obstacles.shape)
-		obstacles = cv2.add(np.float32(img_fg), np.float32(obstacles))
-
-
-
-		# Experimenting with different blur settings
-		#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
-
-		#mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
-		non_zero_mean = np.median(img_fg[img_fg.nonzero()])
-		mean_val = non_zero_mean
-		min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
-
-		moment = cv2.moments(cntr)
-		cx = int(moment['m10']/moment['m00'])
-		cy = int(moment['m01']/moment['m00'])
-
-		if mean_val < HIGH_DISTANCE_BOUND:
-			coords = depthToPointCloudPos(cx, cy, mean_val)
-
-			mm_diameter = (equi_diameter) * (1.0 / CameraParams['fx']) * mean_val
-
-			img = cv2.ellipse(color,ellipse,(0,255,0),2)
-			cv2.drawContours(color,[box],0,(0,0,255),1)
-			cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
-			font = cv2.FONT_HERSHEY_SIMPLEX
-
-			cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
-			cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
-			cv2.putText(color, "z" + str(mean_val), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
-
-			cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
-
-	except:
-		print ("Failed to fit ellipse")
+				box = cv2.boxPoints(rect)
+				box = np.int0(box)
+				mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
+				rows,cols = mask.shape
+				#shift mask down to match obstacle, not edge
+				M = np.float32([[1,0,0],[0,1,equi_diameter/4]])
+				mask = cv2.warpAffine(mask,M,(cols,rows))
+				mask = cv2.erode(mask, kernel, iterations=3)
+				img_fg = cv2.bitwise_and(depth_frame,depth_frame,mask = mask)
+				img_fg = cv2.medianBlur(img_fg,5)
+				print (img_fg.shape)
+				print (obstacles.shape)
+				obstacles = cv2.add(np.float32(img_fg), np.float32(obstacles))
 
 
-	cv2.imshow("unknown", unknown)
-	cv2.imshow("obstacles", obstacles)
-	cv2.imshow("depth", img)
-	# Use the key 'q' to end!
-	key = cv2.waitKey(delay=1)
-	if key == ord('q'):
-		break
-	#wait to process the next frame
-	time.sleep(1)
-	frame_i += 1
+
+			# Experimenting with different blur settings
+			#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
+
+			#mean_val = cv2.mean(img_fg)[0] #returns mean value of each channel, we only want first channel
+			non_zero_mean = np.median(img_fg[img_fg.nonzero()])
+			mean_val = non_zero_mean
+			min_val, distance_to_object, min_loc, max_loc = cv2.minMaxLoc(img_fg)
+
+			moment = cv2.moments(cntr)
+			cx = int(moment['m10']/moment['m00'])
+			cy = int(moment['m01']/moment['m00'])
+
+			if mean_val < HIGH_DISTANCE_BOUND:
+				coords = depthToPointCloudPos(cx, cy, mean_val)
+
+				mm_diameter = (equi_diameter) * (1.0 / CameraParams['fx']) * mean_val
+
+				img = cv2.ellipse(color,ellipse,(0,255,0),2)
+				cv2.drawContours(color,[box],0,(0,0,255),1)
+				cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
+				font = cv2.FONT_HERSHEY_SIMPLEX
+
+				cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+				cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+				cv2.putText(color, "z" + str(mean_val), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+
+				cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+
+		except:
+			print ("Failed to fit ellipse")
+
+
+		cv2.imshow("unknown", unknown)
+		cv2.imshow("obstacles", obstacles)
+		cv2.imshow("depth", img)
+		# Use the key 'q' to end!
+		key = cv2.waitKey(delay=1)
+		if key == ord('q'):
+			break
+		#wait to process the next frame
+		time.sleep(1)
+		frame_i += 1
 
 cv2.destroyAllWindows()
 device.stop()
