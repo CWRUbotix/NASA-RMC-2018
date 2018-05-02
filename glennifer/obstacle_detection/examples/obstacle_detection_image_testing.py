@@ -116,18 +116,18 @@ while True:
 	color = cv2.drawContours(color, contours, -1, (0,255,0), 1)
 	for cntr in contours:
 	try:
-	    #calculate diamter of equivalent cirlce
-	    area = cv2.contourArea(cntr)
-	    equi_diameter = np.sqrt(4*area/np.pi)
+		#calculate diamter of equivalent cirlce
+		area = cv2.contourArea(cntr)
+		equi_diameter = np.sqrt(4*area/np.pi)
 
-	    #Hardcoded Diameter Range in pixels
-	    LOW_DIAMETER_BOUND = 20
-	    HIGH_DIAMETER_BOUND = 100
+		#Hardcoded Diameter Range in pixels
+		LOW_DIAMETER_BOUND = 20
+		HIGH_DIAMETER_BOUND = 100
 
-	    HIGH_DISTANCE_BOUND = 3000
-	    #Original tolerances were 20 and 150
+		HIGH_DISTANCE_BOUND = 3000
+		#Original tolerances were 20 and 150
 
-	    if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
+		if(equi_diameter>LOW_DIAMETER_BOUND and equi_diameter<HIGH_DIAMETER_BOUND): #range needs to be tweaked
 		mask = np.zeros_like(imgray)
 		ellipse = cv2.fitEllipse(cntr)
 		x,y,obj_length,obj_height = cv2.boundingRect(cntr)
@@ -164,23 +164,23 @@ while True:
 		cy = int(moment['m01']/moment['m00'])
 
 		if mean_val < HIGH_DISTANCE_BOUND:
-		    coords = depthToPointCloudPos(cx, cy, mean_val)
+			coords = depthToPointCloudPos(cx, cy, mean_val)
 
-		    mm_diameter = (equi_diameter) * (1.0 / CameraParams['fx']) * mean_val
+			mm_diameter = (equi_diameter) * (1.0 / CameraParams['fx']) * mean_val
 
-		    img = cv2.ellipse(color,ellipse,(0,255,0),2)
-		    cv2.drawContours(color,[box],0,(0,0,255),1)
-		    cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
-		    font = cv2.FONT_HERSHEY_SIMPLEX
+			img = cv2.ellipse(color,ellipse,(0,255,0),2)
+			cv2.drawContours(color,[box],0,(0,0,255),1)
+			cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
+			font = cv2.FONT_HERSHEY_SIMPLEX
 
-		    cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
-		    cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
-		    cv2.putText(color, "z" + str(mean_val), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+			cv2.putText(img, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
+			cv2.putText(img, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
+			cv2.putText(color, "z" + str(mean_val), (cx,cy+60), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 
-		    cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
+			cv2.putText(color,"diameter = " + str(mm_diameter), (cx,cy + 15), font, 0.4, (255, 0, 0), 1, cv2.LINE_AA)
 
 	except:
-	    print ("Failed to fit ellipse")
+		print ("Failed to fit ellipse")
 
 
 	cv2.imshow("unknown", unknown)
