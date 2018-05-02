@@ -133,9 +133,9 @@ public class AutoTransit extends Module {
 		ProgressReport report = ProgressReport.newBuilder().setDone(true)
 			.setTimestamp(instantToUnixTime(Instant.now())).build();
 		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
-	    } else if (subTarget.equals(currentPos)) {
+	    } else if (launched && subTarget.equals(currentPos)) {
 		moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
-	    } else {
+	    } else if(launched){
 		moveToPos(currentPos, subTarget);
 	    }
 	}
