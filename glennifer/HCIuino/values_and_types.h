@@ -27,7 +27,7 @@
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
 #define NUM_MOTORS 				(9)
-#define NUM_LIM_SWITCHES 		(5)
+#define NUM_LIM_SWITCHES 		(9)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
@@ -81,12 +81,14 @@
 #define DEP_WINCH_MOTOR_ID 		(4)
 #define PORT_LIN_ACT_ID 		(6)
 #define STARBOARD_LIN_ACT_ID 	(7)
-#define LIN_ACT_KP 				(1.7)
+#define LIN_ACT_KP 				(1.5)
 #define LIN_ACT_KI 				(0.000000001)
 #define EXC_TRANSLATION_KP 		(1.0)
 #define EXC_TRANSLATION_KI 		(0.00000)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
+
+#define RELAY_RISE_FALL_TIME 	(15)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +140,7 @@ typedef struct SensorInfo{
 //MOTOR STUFF
 enum MotorHardware {
 	MH_NONE,
-	MH_BL_VEL,		// if ODrive
+	MH_BL_VEL,		// if ESC
 	MH_BL_POS,		// 
 	MH_BL_BOTH,		// 
 	MH_ST_PWM, 		// if Sabertooth
@@ -153,6 +155,7 @@ enum MotorHardware {
 enum MCType{
 	MC_NONE,
 	MC_ODRIVE,
+	MC_YEP,
 	MC_SABERTOOTH,
 	MC_ROBOCLAW
 };
@@ -164,6 +167,7 @@ typedef struct MCInfo {
 	ODriveArduino* odrive; 		// if MC_ODRIVE
 	RoboClaw* roboclaw;
 	uint8_t addr; 				// used if MC_ROBOCLAW
+	ESC* esc; 					// if using the brushless controller
 }MCInfo;
 
 //MOTOR INFO
@@ -174,6 +178,7 @@ typedef struct MotorInfo{
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
 	uint8_t  whichPin = 0; 		// if it's a sabertooth
 	bool     is_reversed = false;
+	uint8_t  dir_relay_pin; 	// used to control direction
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
 	int32_t  target_vel = 0; 	//
@@ -185,6 +190,7 @@ typedef struct MotorInfo{
 	uint32_t qpps; 				// When hardware = MH_RC_POS or MC_RC_VEL
 	uint32_t deadband; 			// When hardware = MH_RC_POS
 	uint32_t center = 1500; 	// center from which to add/sub deadband
+	int16_t  max_pwr = 500; 	// for stopping out-of-sync actuation
 	uint16_t margin; 			// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
@@ -193,6 +199,7 @@ typedef struct MotorInfo{
 	uint8_t  feedbackSensorID;	//
 	float    saturation; 		//
 	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
+	uint32_t safe_dt = 200; 	// safe time to wait for the motor to stop
 	uint16_t lastError; 		// for tracking the derivative
 	float    integral; 			// replaces the motor_integrals array
 	float    integral_max = 10000.0;
@@ -215,6 +222,7 @@ SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
 MCInfo      board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
 SensorInfo* limit_switches 	[DEFAULT_BUF_LEN] 	= {}; 	// iterate thru & check for collisions
+ESC 		yep_escs 		[DEFAULT_BUF_LEN] 	= {};
 
 int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0

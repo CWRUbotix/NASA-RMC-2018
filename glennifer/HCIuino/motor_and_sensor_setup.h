@@ -24,8 +24,8 @@ void setup_sensors(){
 
 	// port side linear actuator
 	sensor_infos[10].hardware 		= SH_PIN_POT;
-	sensor_infos[10].val_at_min 	= 84; 		// avg = 84
-	sensor_infos[10].val_at_max 	= 4055; 	// avg = 4060
+	sensor_infos[10].val_at_min 	= 85; 		// avg = 84
+	sensor_infos[10].val_at_max 	= 4042; 	// avg = 4060
 	sensor_infos[10].whichPin 		= A0;
 	sensor_infos[10].prev_values 	= port_side_low_pass_arr;
 	// starboard side linear actuator
@@ -174,6 +174,13 @@ void setup_motors(){
 	motor_infos[4].is_reversed 						= true;
 	motor_infos[4].board 							= & (board_infos[1]);
 
+	// Depostion winch
+	motor_infos[5].whichMotor 						= 1;
+	motor_infos[5].hardware 						= MH_RC_VEL;
+	motor_infos[5].max_delta 						= DFLT_MAX_DELTA;
+	motor_infos[5].is_reversed 						= false;
+	motor_infos[5].board 							= & (board_infos[1]);
+
 	// port-side linear actuator
 	motor_infos[PORT_LIN_ACT_ID].whichMotor 		= 0;
 	motor_infos[PORT_LIN_ACT_ID].board 				= &(board_infos[3]);
@@ -205,10 +212,10 @@ void setup_motors(){
 	motor_infos[8].whichMotor 						= 0;
 	motor_infos[8].board 							= &(board_infos[4]);
 	motor_infos[8].encoder 							= &(sensor_infos[12]);
-	motor_infos[8].is_reversed 						= true;
+	motor_infos[8].is_reversed 						= false;
 	motor_infos[8].whichPin 						= SABERTOOTH_TRANS_M1;
-	motor_infos[8].deadband 						= 114;
-	motor_infos[8].center 							= 1487;
+	motor_infos[8].deadband 						= 60;
+	motor_infos[8].center 							= 1500;
 	motor_infos[8].hardware 						= MH_ST_PWM;
 	motor_infos[8].minpos 							= 0;
 	motor_infos[8].maxpos 							= 1000;

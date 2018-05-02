@@ -11,8 +11,8 @@ HCI_TEST_RPY 		= 0xA5
 
 #===============================================================================
 def getHex(dec):
-	MAX = 65536
-	if dec < 0: dec = MAX-dec
+	if dec < 0: 
+		dec = 65536-dec
 	
 	tmp = hex(dec).split('x')[1]
 	while len(tmp)<4:
@@ -65,7 +65,7 @@ def setOutputs(cmdType, inputs):
 		val = inputs[2*n + 3]
 		print(val)
 		# tmp = bytearray.fromhex(val)
-		tmp = bytearray.fromhex(getHex(int(val)))
+		tmp = bytearray.fromhex(getHex( int(val) ))
 		byteArr.append(ID)
 		byteArr.append(tmp[0])
 		byteArr.append(tmp[1])
@@ -92,6 +92,7 @@ def main():
 	try:
 		if len(sys.argv[1])>1:
 			opt1 = sys.argv[1]
+			print(opt1)
 			opt1Arg = sys.argv[2]
 			if (opt1[0] == '-') and (len(opt1Arg) > 1):
 				if (opt1[1] == 'b' or opt1[1] == 'B'):

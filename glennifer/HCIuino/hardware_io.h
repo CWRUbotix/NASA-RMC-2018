@@ -21,18 +21,14 @@ bool is_limit_triggered(SensorInfo* limit){
 	if(limit->hardware != SH_PIN_LIMIT){
 		return false;
 	}
-	uint8_t id 			= 0;
-	int16_t tmp 		= 0;
 	bool is_triggered 	= false;
-	FAULT_T fault 		= NO_FAULT;
 
 	if(limit->is_reversed){
 		is_triggered = !digitalRead(limit->whichPin);
 	}else{
 		is_triggered = digitalRead(limit->whichPin);
 	}
-	
-	is_triggered 			= (bool) (tmp & 1);
+
 	limit->storedVal 		= is_triggered;
 	limit->lastUpdateTime 	= millis();
 
@@ -76,7 +72,7 @@ int16_t read_pot(SensorInfo* pot){
 // Returns a full width number from the encoder
 // Used for PID, etc.
 ////////////////////////////////////////////////////////////////////////////////
-int32_t read_enc(MotorInfo* motor, uint8_t* status, bool* valid){
+int32_t read_enc(MotorInfo* motor){
 	int32_t retval = 0;
 	SensorInfo* enc = motor->encoder;
 
@@ -87,15 +83,15 @@ int32_t read_enc(MotorInfo* motor, uint8_t* status, bool* valid){
 			uint8_t which 		= motor->whichMotor;
 			RoboClaw* rc = motor->board->roboclaw;
 
-			
+			uint8_t status; bool valid;
 			retval = (which == 0 ? 
-				rc->ReadSpeedM1(address, status, valid) : 
-				rc->ReadSpeedM2(address, status, valid) );
+				rc->ReadSpeedM1(address, &status, &valid) : 
+				rc->ReadSpeedM2(address, &status, &valid) );
 			// also ReadSpeedMX(addr, ... )
 
-			Serial.print(*valid);
+			Serial.print(valid);
 			Serial.print(" ");
-		    Serial.print(*status,HEX);
+		    Serial.print(status,HEX);
 		    Serial.print(" ");
 		    Serial.print(retval);
 			Serial.print(" ");
@@ -128,9 +124,8 @@ int32_t read_enc(MotorInfo* motor, uint8_t* status, bool* valid){
 	return retval;
 }
 
-int32_t read_enc(MotorInfo* motor){
-	uint8_t status; bool valid;
-	return read_enc(motor, &status, &valid);
+int32_t read_enc(MotorInfo* motor, uint8_t* status, bool* valid){
+	return read_enc(motor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -266,13 +261,17 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 	bool retval 	= false;
 
 	if(st->whichPin != 0){
-		val = constrain(val, -500, 500);
+		val = constrain(val, -(st->max_pwr), st->max_pwr);
 		if(st->is_reversed){
 			val = val * (-1);
 		}
-		val = (val >= 0 ? 
-			map(val, 0, 500, st->center + st->deadband, 2000) : 
-			map(val, -500, 0, 1000, st->center - st->deadband)   );
+		if(val > 0){
+			val = map(val, 0, 500, st->center + st->deadband, 2000);
+		}else if( val < 0){
+			val = map(val, -500, 0, 1000, st->center - st->deadband);
+		}else{
+			val = st->center;
+		}
 		
 		//val = map(val, -500, 500, 1000, 2000);
 		digitalWrite(st->whichPin, HIGH);
@@ -287,12 +286,41 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+bool write_to_yep(MotorInfo* motor, int16_t val){
+	ESC* esc 	= motor->board->esc;
+	val 		= constraing(abs(val), 1000, 2000);
+	esc->speed(val);
+	motor->lastUpdateTime = millis();
+	return true;
+
+}
+////////////////////////////////////////////////////////////////////////////////
+bool toggle_yep_dir(MotorInfo* motor){
+	// redundancy check
+	if(motor->lastSet != 0 || (millis()-motor->lastUpdateTime) < motor->safe_dt  ){
+		return false;
+	}
+	motor->is_reversed = !motor->is_reversed;
+	if(motor->is_reversed){
+		digitalWrite(motor->dir_relay_pin, HIGH);
+		delay(RELAY_RISE_FALL_TIME);
+	}else{
+		digitalWrite(motor->dir_relay_pin, LOW);
+		delay(RELAY_RISE_FALL_TIME);
+	}
+
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 int get_motor_dir(MotorInfo* motor){
 	uint8_t type = motor->hardware;
-	if(type==MH_RC_VEL || type==MH_ST_PWM || type==MH_ST_POS || MH_BL_VEL){
+	if(type==MH_RC_VEL || type==MH_ST_PWM || type==MH_ST_POS || type==MH_BL_VEL){
 		return sign(motor->setPt);
 	}else if(type==MH_RC_POS || type==MH_ST_POS || type==MH_BL_POS){
 		return sign( motor->setPt - motor->lastSet );
+	}else{
+		return 0;
 	}
 }
 
@@ -338,12 +366,11 @@ void maintain_motors(byte* cmd, bool success){
 	// for(int i = 0; i < NUM_LIM_SWITCHES; i++){
 	// 	SensorInfo* limit = limit_switches[i];
 
-	// 	if(limit->hardware == SH_PIN_LIMIT && is_limit_triggered(limit)){
-	// 		MotorInfo* motor = &(motor_infos[limit->whichMotor]);
-	// 		int set_pt_sign = get_motor_dir(motor); //sign((int) motor->setPt);
+	// 	if(is_limit_triggered(limit)){
+	// 		MotorInfo* motor 	= &(motor_infos[limit->whichMotor]);
+	// 		int set_pt_sign 	= get_motor_dir(motor); //sign((int) motor->setPt);
 	// 		if(set_pt_sign != limit->mtr_dir_if_triggered){
 	// 			// stop the motor!!
-	// 			MotorInfo* motor 	= &(motor_infos[limit->whichMotor]);
 	// 			motor->is_stopped 	= true;
 	// 		}else{
 	// 			motor->is_stopped 	= false; 	// make sure we can now move the motor
@@ -370,37 +397,53 @@ void maintain_motors(byte* cmd, bool success){
 				}
 				break;
 			case MH_ST_POS:{
-				if(is_stopped){
-					writeSuccess 	= write_to_sabertooth(motor, 0);
-				}else{
-					int32_t pos 	= read_enc(motor);
-					//int32_t pos 	= low_pass(motor->encoder, read_enc(motor));
-					int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
-					int32_t pwr  	= 0;
-					if(abs(err) > motor->margin){
-						int32_t dt = (time - motor->lastUpdateTime);
-						float new_integ = motor->integral + (err * dt);
-						motor->integral = ( (fabs(new_integ)*motor->ki ) < 500 ? 
-							new_integ : 
-							(sign((int)new_integ)*500.0)/(motor->ki)   );
-
-						pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
-					}else{
-						pwr = 0;
+				
+				int32_t pos 	= read_enc(motor);
+				if(i == PORT_LIN_ACT_ID){
+					MotorInfo* stbd 	= &(motor_infos[STARBOARD_LIN_ACT_ID]);
+					int32_t other_pos 	= read_enc(stbd);
+					int32_t diff 		= pos - other_pos;
+					if(diff > 0){
+						motor->max_pwr = (motor->max_pwr - 1);
+						stbd->max_pwr  = constrain( (stbd->max_pwr + 1), 0, 500);
+					}else if(diff < 0){
+						stbd->max_pwr 	= (stbd->max_pwr - 1);
+						motor->max_pwr  = constrain( (motor->max_pwr + 1), 0, 500);
 					}
-					// Serial3.print(i);
-					// Serial3.print("\tPOS: ");
-					// Serial3.print(pos);
-					// Serial3.print("\tERR: ");
-					// Serial3.print(err);
-					// Serial3.print("\tINT: ");
-					// Serial3.print((int)motor->integral);
-					// Serial3.print("\tPWR: ");
-					// Serial3.println(pwr);
-					// delay(20);
-					// pwr should be between -500 and 500
-					writeSuccess  	= write_to_sabertooth(motor, pwr);
 				}
+				//int32_t pos 	= low_pass(motor->encoder, read_enc(motor));
+				int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
+				int32_t pwr  	= 0;
+				if(abs(err) > motor->margin){
+					int32_t dt = (time - motor->lastUpdateTime);
+					float new_integ = motor->integral + (err * dt);
+					motor->integral = ( (fabs(new_integ)*motor->ki ) < 500 ? 
+						new_integ : 
+						(sign((int)new_integ)*500.0)/(motor->ki)   );
+
+					pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
+				}else{
+					pwr = 0;
+				}
+				if(is_stopped){
+					pwr = 0;
+				}
+				// if(i == PORT_LIN_ACT_ID){
+				// 	pwr = pwr/2;
+				// }
+				writeSuccess  	= write_to_sabertooth(motor, pwr);
+				// Serial3.print(i);
+				// Serial3.print("\tPOS: ");
+				// Serial3.print(pos);
+				// Serial3.print("\tERR: ");
+				// Serial3.print(err);
+				// Serial3.print("\tINT: ");
+				// Serial3.print((int)motor->integral);
+				// Serial3.print("\tPWR: ");
+				// Serial3.println(pwr);
+				// delay(20);
+				// pwr should be between -500 and 500
+				
 				break;}
 			case MH_RC_VEL: {
 				if(is_stopped){
@@ -419,6 +462,21 @@ void maintain_motors(byte* cmd, bool success){
 					motor->lastSet 		= newSetPt;
 				}
 				break; }
+			case MH_BL_VEL:
+				if(is_stopped){
+					writeSuccess 		= write_to_yep(motor, 0);
+				}else{
+					// check if client is requesting a direction change
+					if(sign(motor->setPt) != sign(motor->lastSet)){
+						if( (time - motor->lastUpdateTime) >= motor->safe_dt){
+							bool success = write_to_yep()
+						}else if(motor->lastSet != 0){
+							writeSuccess = write_to_yep(motor, 0);
+							motor->lastSet = 0;
+						}
+					}
+					
+				}
 
 		}
 		// if(writeSuccess){
