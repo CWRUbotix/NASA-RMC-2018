@@ -17,15 +17,15 @@ from pylibfreenect2 import LoggerLevel
 
 
 try:
-    	from pylibfreenect2 import OpenCLPacketPipeline
-    	pipeline = OpenCLPacketPipeline()
+		from pylibfreenect2 import OpenCLPacketPipeline
+		pipeline = OpenCLPacketPipeline()
 except:
-    	try:
-       		from pylibfreenect2 import OpenGLPacketPipeline
-        	pipeline = OpenGLPacketPipeline()
-    	except:
-       		from pylibfreenect2 import CpuPacketPipeline
-        	pipeline = CpuPacketPipeline()
+		try:
+	   		from pylibfreenect2 import OpenGLPacketPipeline
+			pipeline = OpenGLPacketPipeline()
+		except:
+	   		from pylibfreenect2 import CpuPacketPipeline
+			pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
 #camera information based on the Kinect v2 hardware
@@ -43,58 +43,58 @@ CameraParams = {
 
 # Kinect's physical orientation in the real world.
 CameraPosition = {
-    "x": -3, # actual position in meters of kinect sensor relative to the viewport's center.
-    "y": 0, # actual position in meters of kinect sensor relative to the viewport's center.
-    "z": 1.7, # height in meters of actual kinect sensor from the floor.
-    "roll": 0, # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
-    "azimuth": 0, # sensor's yaw angle in degrees.
-    "elevation": 0, # sensor's pitch angle in degrees.
+	"x": -3, # actual position in meters of kinect sensor relative to the viewport's center.
+	"y": 0, # actual position in meters of kinect sensor relative to the viewport's center.
+	"z": 1.7, # height in meters of actual kinect sensor from the floor.
+	"roll": 0, # angle in degrees of sensor's roll (used for INU input - trig function for this is commented out by default).
+	"azimuth": 0, # sensor's yaw angle in degrees.
+	"elevation": 0, # sensor's pitch angle in degrees.
 }
 
 def depthMatrixToPointCloudPos(z, scale=1000):
-    #bacically this is a vectorized version of depthToPointCloudPos()
-    C, R = np.indices(z.shape)
+	#bacically this is a vectorized version of depthToPointCloudPos()
+	C, R = np.indices(z.shape)
 
-    R = np.subtract(R, CameraParams['cx'])
-    R = np.multiply(R, z)
-    R = np.divide(R, CameraParams['fx'] * scale)
+	R = np.subtract(R, CameraParams['cx'])
+	R = np.multiply(R, z)
+	R = np.divide(R, CameraParams['fx'] * scale)
 
-    C = np.subtract(C, CameraParams['cy'])
-    C = np.multiply(C, z)
-    C = np.divide(C, CameraParams['fy'] * scale)
+	C = np.subtract(C, CameraParams['cy'])
+	C = np.multiply(C, z)
+	C = np.divide(C, CameraParams['fy'] * scale)
 
-    return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
+	return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
 
 def depthToPointCloudPos(x_d, y_d, z, scale=1000):
-    # This runs in Python slowly as it is required to be called from within a loop, but it is a more intuitive example than it's vertorized alternative (Purly for example)
-    # calculate the real-world xyz vertex coordinate from the raw depth data (one vertex at a time).
-    x = (x_d - CameraParams['cx']) * z / CameraParams['fx']
-    y = (y_d - CameraParams['cy']) * z / CameraParams['fy']
+	# This runs in Python slowly as it is required to be called from within a loop, but it is a more intuitive example than it's vertorized alternative (Purly for example)
+	# calculate the real-world xyz vertex coordinate from the raw depth data (one vertex at a time).
+	x = (x_d - CameraParams['cx']) * z / CameraParams['fx']
+	y = (y_d - CameraParams['cy']) * z / CameraParams['fy']
 
-    return x / scale, y / scale, z / scale
+	return x / scale, y / scale, z / scale
 	
 def applyCameraMatrixOrientation(pt):
-    # Kinect Sensor Orientation Compensation
-    # bacically this is a vectorized version of applyCameraOrientation()
-    # uses same trig to rotate a vertex around a gimbal.
-    def rotatePoints(ax1, ax2, deg):
-        # math to rotate vertexes around a center point on a plane.
-        hyp = np.sqrt(pt[:, ax1] ** 2 + pt[:, ax2] ** 2) # Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!
-        d_tan = np.arctan2(pt[:, ax2], pt[:, ax1]) # Calculate the vertexes current angle (returns radians that go from -180 to 180)
+	# Kinect Sensor Orientation Compensation
+	# bacically this is a vectorized version of applyCameraOrientation()
+	# uses same trig to rotate a vertex around a gimbal.
+	def rotatePoints(ax1, ax2, deg):
+		# math to rotate vertexes around a center point on a plane.
+		hyp = np.sqrt(pt[:, ax1] ** 2 + pt[:, ax2] ** 2) # Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!
+		d_tan = np.arctan2(pt[:, ax2], pt[:, ax1]) # Calculate the vertexes current angle (returns radians that go from -180 to 180)
 
-        cur_angle = np.degrees(d_tan) % 360 # Convert radians to degrees and use modulo to adjust range from 0 to 360.
-        new_angle = np.radians((cur_angle + deg) % 360) # The new angle (in radians) of the vertexes after being rotated by the value of deg.
+		cur_angle = np.degrees(d_tan) % 360 # Convert radians to degrees and use modulo to adjust range from 0 to 360.
+		new_angle = np.radians((cur_angle + deg) % 360) # The new angle (in radians) of the vertexes after being rotated by the value of deg.
 
-        pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
-        pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
+		pt[:, ax1] = hyp * np.cos(new_angle) # Calculate the rotated coordinate for this axis.
+		pt[:, ax2] = hyp * np.sin(new_angle) # Calculate the rotated coordinate for this axis.
 
-    #rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
-    rotatePoints(0, 2, CameraPosition['elevation']) #rotate on the X&Z plane
-    rotatePoints(0, 1, CameraPosition['azimuth']) #rotate on the X&Y
+	#rotatePoints(1, 2, CameraPosition['roll']) #rotate on the Y&Z plane # Disabled because most tripods don't roll. If an Inertial Nav Unit is available this could be used)
+	rotatePoints(0, 2, CameraPosition['elevation']) #rotate on the X&Z plane
+	rotatePoints(0, 1, CameraPosition['azimuth']) #rotate on the X&Y
 
-    # Apply offsets for height and linear position of the sensor (from viewport's center)
-    pt[:] += np.float_([CameraPosition['x'], CameraPosition['y'], CameraPosition['z']])
-    return pt
+	# Apply offsets for height and linear position of the sensor (from viewport's center)
+	pt[:] += np.float_([CameraPosition['x'], CameraPosition['y'], CameraPosition['z']])
+	return pt
 
 #start messaging
 exchange_name = 'amq.topic'
@@ -148,7 +148,7 @@ device.start()
 
 # NOTE: must be called after device.start()
 registration = Registration(device.getIrCameraParams(),
-                            device.getColorCameraParams())
+							device.getColorCameraParams())
 
 h,w = 512, 424
 FOVX = 1.232202 #horizontal FOV in radians
@@ -221,20 +221,20 @@ while True:
 				mask = np.zeros_like(depth_frame.asarray(np.float32))
 				ellipse = cv2.fitEllipse(cntr)
 				x,y,obj_length,obj_height = cv2.boundingRect(cntr)
-                rect = cv2.minAreaRect(cntr)
-                
-                equi_diameter = obj_length
-                
-                box = cv2.boxPoints(rect)
-                box = np.int0(box)
-                mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
-                rows,cols = mask.shape
-                #shift mask down to match obstacle, not edge
-                M = np.float32([[1,0,0],[0,1,equi_diameter/4]])
-                mask = cv2.warpAffine(mask,M,(cols,rows))
-                mask = cv2.erode(mask, kernel, iterations=3)
-                img_fg = cv2.bitwise_and(depth_frame,depth_frame,mask = mask)
-                img_fg = cv2.medianBlur(img_fg,5)
+				rect = cv2.minAreaRect(cntr)
+				
+				equi_diameter = obj_length
+				
+				box = cv2.boxPoints(rect)
+				box = np.int0(box)
+				mask = cv2.ellipse(mask,ellipse,(255,255,255),-1)
+				rows,cols = mask.shape
+				#shift mask down to match obstacle, not edge
+				M = np.float32([[1,0,0],[0,1,equi_diameter/4]])
+				mask = cv2.warpAffine(mask,M,(cols,rows))
+				mask = cv2.erode(mask, kernel, iterations=3)
+				img_fg = cv2.bitwise_and(depth_frame,depth_frame,mask = mask)
+				img_fg = cv2.medianBlur(img_fg,5)
 
 				# Experimenting with different blur settings
 				#img_fg = cv2.GaussianBlur(img_fg, (5,5), 0)
@@ -252,7 +252,7 @@ while True:
 				cx = int(moment['m10']/moment['m00'])
 				cy = int(moment['m01']/moment['m00'])
 
-                # Preferred Options:
+				# Preferred Options:
 				#mm_diameter = (2 * math.tan((equi_diameter / 2.0 / w) * FOVX) * distance_to_object)
 				#(equi_diameter / w) * (2.0 * distance_to_object * math.tan(/2.0)) # ~FOV
 
@@ -271,8 +271,8 @@ while True:
 					
 					color = cv2.ellipse(color,ellipse,(0,255,0),2)
 					cv2.drawContours(color,[box],0,(0,0,255),1)
-                    cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
-                    font = cv2.FONT_HERSHEY_SIMPLEX
+					cv2.rectangle(color,(x,y),(x+obj_length,y+obj_height),(0,255,0),2)
+					font = cv2.FONT_HERSHEY_SIMPLEX
 
 					cv2.putText(color, "x" + str(coords[0]), (cx,cy+30), font, 0.4, (0, 0, 255), 1, cv2.LINE_AA)
 					cv2.putText(color, "y" + str(coords[1]), (cx,cy+45), font, 0.4, (0, 255, 0), 1, cv2.LINE_AA)
