@@ -145,6 +145,7 @@ while True:
 		break
 	#wait to process the next frame
 	time.sleep(1)
+	frame_i += 1
 
 cv2.destroyAllWindows()
 device.stop()
