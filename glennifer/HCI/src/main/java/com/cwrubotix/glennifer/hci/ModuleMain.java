@@ -528,7 +528,7 @@ public class ModuleMain {
         }
     }
 
-    private static void routeLookyMessage(String[] keys, byty[] body) throws InvalidProtocolBufferException{
+    private static void routeLookyMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
         if(keys.length < 4) {
             System.out.println("Looky motor control routing key must have 4 elements");
             return;

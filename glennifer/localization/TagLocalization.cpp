@@ -428,6 +428,8 @@ public:
 					//<< ", z=" << fcol(2)//translation(2)
 					//<< ", w=" << fcol(1) //yaw
 					<< ", Bearing=" << (pitch * 180/PI);
+
+		free(msg);
 		//<< ", roll=" << roll
 		//<< endl;
 
