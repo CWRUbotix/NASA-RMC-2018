@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Represents the ArcPath for the robot
@@ -77,7 +78,7 @@ public class ArcPath{
 		double[] coefficients = arcEqs.get(progress++);
 		builder.append(previous.toString() + " -> " + pos.toString() + "\n");
 		if(coefficients != null)
-		    builder.append(String.format("Eqn: %.4f x^3 + %.4f x^2 + %.4f x + %.4f", coefficients[0], coefficients[1], coefficients[2], coefficients[3]) + "\n");
+		    builder.append(String.format("Eqn: %.5f x^3 + %.5f x^2 + %.5f x + %.5f", coefficients[0], coefficients[1], coefficients[2], coefficients[3]) + "\n");
 		previous = pos;
 	    }
 	}
@@ -137,23 +138,41 @@ public class ArcPath{
 	matrix[3][3] = 0;
 	matrix[3][4] = t2;
 	
-	double[] coefficient = solveLinearSystem(matrix);
+	if(progress == 1){
+	    
+	}
+	
+	double[] coefficient = solveLinearSystem(matrix, p1, p2);
 	arcEqs.put(progress, coefficient);
     }
     
-    private double[] solveLinearSystem(double[][] matrix){
-	for(int row = 0; row < matrix.length; row ++){
-	    for(int col = 0; col < matrix[row].length; col ++){
-		if(row == col){
-		    matrix[row][row] = 1;
-		}else{
-		    matrix[row][col] /= matrix[row][row];
-		}
+    private double[] solveLinearSystem(double[][] matrix, Position p1, Position p2){
+	double[][] store = new double[matrix.length][matrix[0].length];
+	
+	for(int row = 0; row < matrix.length; row++){
+	    for(int col = 0; col < matrix[row].length; col++){
+		store[row][col] = matrix[row][col];
 	    }
-	    for(int delR = row + 1; delR < matrix.length; delR++){
-		for(int delC = 0; delC < matrix[delR].length; delC++){
-		    if(Math.abs(matrix[row][row]) >= 5e-3)
-			matrix[delR][delC] -= matrix[row][delC] * (matrix[delR][row] / matrix[row][row]);
+	}
+	
+	for(int row = 0; row < matrix.length; row ++){
+	    for(int r = 0; r < matrix.length; r ++){
+		System.out.println(Arrays.toString(store[r]));
+	    }
+	    if(store[row][row] == 0.0){
+		int swap = -1;
+		for(int r = row + 1; r < matrix.length; r++){
+		    if(store[r][row] != 0.0)
+			swap = r;
+		}
+		store = R3(store, row, swap);
+	    }
+	    
+	    store[row] = R2(store[row], row);
+	    
+	    for(int r = 0; r< matrix.length; r++){
+		if(r != row){
+		    store[r] = R1(store[row], store[r], store[r][row], r);
 		}
 	    }
 	}
@@ -163,6 +182,10 @@ public class ArcPath{
 	ans[2] = matrix[2][4];
 	ans[3] = matrix[3][4];
 	
+	if(Math.abs(ans[0] * Math.pow(p1.getX(), 3) + ans[1] * Math.pow(p1.getX(), 2) + ans[2] * p1.getX() + ans[3] - p1.getY()) > 1e-3
+		|| Math.abs(ans[0] * Math.pow(p2.getX(), 3) + ans[1] * Math.pow(p2.getX(), 2) + ans[2] * p2.getX() + ans[3] - p2.getY()) > 1e-3)
+	    throw new RuntimeException("Created arc is invalid.");
+	
 	return ans;
     }
     
@@ -170,6 +193,69 @@ public class ArcPath{
 	Obstacle o = nearestObs.get(p);
 	float m = (p.getY() - o.getY())/(p.getX() - o.getX());
 	return -1 / m;
+    }
+    
+    /**
+     * Applies R1 row operation on r2 by r1 with factor given
+     * with purpose to make row-th entry 0.
+     * 
+     * @param r1
+     * @param r2
+     * @return r2 after R1 operation performed.
+     */
+    private double[] R1(double[] r1, double[] r2, double factor, int row){
+	double[] result = new double[r2.length];
+	for(int i = 0; i < result.length; i ++){
+	    if(i == row){
+		result[i] = 0;
+	    }else{
+		result[i] = r2[i] - (r1[i] * factor);
+	    }
+	}	
+	return result;
+    }
+    
+    /**
+     * Applies R2 on r1 with purpose to make row-th entry 1
+     * 
+     * @param r1
+     * @param row
+     * @return r1 after R2 operation performed
+     */
+    private double[] R2(double[] r1, int row){
+	/*Copying array in*/
+	double[] result = new double[r1.length];
+	for(int i = 0; i < result.length; i ++){
+	    result[i] = r1[i];
+	}
+	
+	double factor = result[row];
+	for(int i = 0; i < r1.length; i++){
+	    if(i == row){
+		result[i] = 1;
+	    } else{
+		result[i] = result[i] / factor;
+	    }
+	}
+	
+	return result;
+    }
+    
+    private double[][] R3(double[][] matrix, int r1, int r2){
+	/*Copying the matrix in*/
+	double[][] result = new double[matrix.length][matrix[r1].length];
+	for(int row = 0; row < matrix.length; row++){
+	    for(int col = 0; col < matrix[row].length; col ++){
+		result[row][col] = matrix[row][col];
+	    }
+	}
+	
+	/*Switching rows*/
+	double[] save = matrix[r1];
+	result[r1] = result[r2];
+	result[r2] = save;
+	
+	return result;
     }
     
     private Position isDestReasonable(Path path){
@@ -197,7 +283,6 @@ public class ArcPath{
 	a.points = path.getPath();
 	a.obstacles = obstacles;
 	a.arcPath();
-	System.out.println(a.toString());
 	return a;
     }
     

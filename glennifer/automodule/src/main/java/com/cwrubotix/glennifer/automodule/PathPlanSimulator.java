@@ -2,7 +2,6 @@ package com.cwrubotix.glennifer.automodule;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 
 import com.cwrubotix.glennifer.automodule.ArcPath.DestinationModified;
@@ -213,7 +212,6 @@ public class PathPlanSimulator {
         boolean arrived = false;
         Path log = new Path();
         Path path = finder.getPath();
-        System.out.println(finder.toString());
         Position currentPos = path.getPoint(0);
         int progress = 0;
         ArrayList<Obstacle> obstacles = new ArrayList<>(NUM_OBSTACLE); // Copying obstacles in to new list
@@ -238,7 +236,6 @@ public class PathPlanSimulator {
                 	destination = new Position(e.getX(), e.getY());
                     }
                     path = finder.getPath();
-                    System.out.println(finder.toString());
                     if(!log.getPath().contains(currentPos))
                 	log.addLast(currentPos);
                     encountered.add(obs);
@@ -258,11 +255,7 @@ public class PathPlanSimulator {
             }
         }
         log.addLast(path.getPoint(progress + 1));
-        ArrayList<Obstacle> ob = new ArrayList<>();
-        for(Obstacle obs : getObstacles()){
-            ob.add(obs);
-        }
-        ArcPath.arcPath(log, ob);
+        
         this.path = log; //setting path field
     }
 
@@ -628,7 +621,11 @@ public class PathPlanSimulator {
             }
             float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
             result.appendText(String.format("Total Distance : %.2f m\nTotal Angle Turn: %.2f rad\nEstimate Traversal Time: %.2f s\n", dist, angle, timeTook));
-            pathResult.appendText(simulator.getFinder().toString());
+            ArrayList<Obstacle> ob = new ArrayList<>();
+            for(Obstacle obs : simulator.getObstacles()){
+                ob.add(obs);
+            }
+            pathResult.appendText(ArcPath.arcPath(simulator.getPath(), ob).toString());
         }
 
 

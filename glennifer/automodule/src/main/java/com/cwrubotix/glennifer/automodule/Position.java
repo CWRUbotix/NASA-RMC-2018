@@ -95,14 +95,14 @@ public class Position extends Coordinate implements Cloneable {
             Position compare = (Position) obj;
             float x_diff = compare.getX() - getX();
             float y_diff = compare.getY() - getY();
-            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5;
+            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-3;
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return String.format("(%.2f, %.2f)", getX(), getY());
+        return String.format("(%f, %f)", getX(), getY());
     }
 
 
