@@ -34,17 +34,6 @@ public class AutoTransit extends Module {
     private Connection connection;
     private Channel channel;
 
-    /*
-     * TODO LIST
-     * 
-     * 1) Create Wrapper data type for coordinate values that we receive from
-     * localization 2) Subscribe to appropriate sensor values. (location within
-     * the arena, locomotion motors) 3) Come up with path planning algorithm. 4)
-     * Come up with possible errors and handling mechanism. 5) Set up the
-     * Connection Factory
-     * 
-     */
-
     /////// MESSAGING
 
     /**
@@ -94,7 +83,7 @@ public class AutoTransit extends Module {
 		throws IOException {
 	    Messages.TransitHardStop cmd = Messages.TransitHardStop.parseFrom(body);
 	    System.err.println("AutoTransit Received Hard Stop");
-	    System.exit(1); //End the process
+	    System.exit(1); // End the process
 	}
     }
 
@@ -112,8 +101,11 @@ public class AutoTransit extends Module {
 	    // Construct obstacle data
 	    float obsXPos = cmd.getXPos();
 	    float obsYPos = cmd.getXPos();
-	    obsXPos += currentPos.getX(); // TODO Temporarily converting obstacle position relative to the tag
-	    obsYPos += currentPos.getY(); //Probably good idea to move this to the StateModule in the future.
+	    obsXPos += currentPos.getX(); // TODO Temporarily converting
+					  // obstacle position relative to the
+					  // tag
+	    obsYPos += currentPos.getY(); // Probably good idea to move this to
+					  // the StateModule in the future.
 	    float obsDiameter = cmd.getDiameter();
 	    Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
@@ -135,18 +127,16 @@ public class AutoTransit extends Module {
 	    // Updates current position
 	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 	    System.out.println("current pos:" + currentPos);
-	    if(currentPath == null ||currentPath.getPath().size() < 1){
-			launched = false;
-			ProgressReport report = ProgressReport.newBuilder()
-				.setDone(true)
-				.setTimestamp(instantToUnixTime(Instant.now()))
-				.build();
-			this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
-	    }
-	    else if(subTarget.equals(currentPos)){
-			moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
-	    } else{
-			moveToPos(currentPos, subTarget);
+	    if (launched && currentPath.getPath().size() < 1) {
+		launched = false;
+		System.out.println("Arrived at Destination, sending AutoModule report message.");
+		ProgressReport report = ProgressReport.newBuilder().setDone(true)
+			.setTimestamp(instantToUnixTime(Instant.now())).build();
+		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
+	    } else if (subTarget.equals(currentPos)) {
+		moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	    } else {
+		moveToPos(currentPos, subTarget);
 	    }
 	}
     }
@@ -166,34 +156,40 @@ public class AutoTransit extends Module {
     }
 
     private void launchNavigation(Position currentPos, Position destination) throws IOException {
-	if(launched){
+	if (launched) {
 	    AutoTransit.currentPos = currentPos;
 	    pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destination);
 	    currentPath = pathFinder.getPath();
 	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
 	}
     }
-    
-    private void launchNavigation(Position currentPos, Obstacle obs) throws IOException{
-	if(launched){
+
+    private void launchNavigation(Position currentPos, Obstacle obs) throws IOException {
+	if (launched) {
 	    pathFinder.setCurrentPos(currentPos);
 	    try {
-			pathFinder.registerObstacle(obs);
+		pathFinder.registerObstacle(obs);
 	    } catch (PathFinder.DestinationModified destinationModified) {
-	    } finally{
-			currentPath = pathFinder.getPath();
+	    } finally {
+		currentPath = pathFinder.getPath();
 	    }
-	    	moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
-		}
+	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	}
     }
 
     private void moveToPos(Position currPos, Position destPos) throws IOException {
 	// Compute angle to turn to -- clockwise is positive
-		double angleBetween = Position.angleBetween(currPos, destPos);
-		if(launched){
-	    	turnAngle(angleBetween);
-	    	driveTo(destPos);
-		}
+	double angleBetween = Position.angleBetween(currPos, destPos);
+	if (launched) {
+	    if(Math.abs(currentPos.getHeading() - angleBetween) < 0.05){
+		System.out.println("Trying to turn to face next position");
+		turnAngle(angleBetween);
+	    }
+	    else{
+		System.out.println("Moving to next position: " + destPos);
+		driveTo(destPos);
+	    }
+	}
     }
 
     private void turnAngle(double angle) throws IOException {
@@ -206,21 +202,23 @@ public class AutoTransit extends Module {
 	 */
 	// Build messages
 	SpeedControlCommand rWheelsMsg = SpeedControlCommand.newBuilder()
-							.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED)
-						    .build();
+		.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED).build();
 
 	SpeedControlCommand lWheelsMsg = SpeedControlCommand.newBuilder()
-							.setRpm(Math.signum((float) angle) * TRAVEL_SPEED)
-						    .build();
+		.setRpm(Math.signum((float) angle) * TRAVEL_SPEED).build();
 
 	// Tell wheels to start moving
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null, rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, rWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null, lWheelsMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null,
+		rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null,
+		rWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null,
+		lWheelsMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null,
+		lWheelsMsg.toByteArray());
 
-	System.out.println("Trying to turn...");
 	// Stop when angle is reached
+	/*
 	while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
 	    try {
 		Thread.sleep(100);
@@ -229,6 +227,7 @@ public class AutoTransit extends Module {
 	    }
 	}
 	System.out.println("Desired angle reached");
+	*/
     }
 
     private void driveTo(Position destPos) throws IOException {
@@ -238,23 +237,26 @@ public class AutoTransit extends Module {
 	 */
 
 	// Drive
-	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED)
-						   .build();
+	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED).build();
 
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null, driveMsg.toByteArray());
-	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null,
+		driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null,
+		driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_left.wheel_rpm", null,
+		driveMsg.toByteArray());
+	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null,
+		driveMsg.toByteArray());
 	System.out.println("Moving forward...");
 	// Stop when destination reached (within tolerance)
+	/*
 	while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
 	    try {
 		Thread.sleep(100);
 	    } catch (InterruptedException e) {
 		e.printStackTrace();
 	    }
-	}
-	System.out.println("Reached subgoal");
+	}*/
     }
 
     @Override
@@ -285,7 +287,7 @@ public class AutoTransit extends Module {
 	queueName = channel.queueDeclare().getQueue();
 	this.channel.queueBind(queueName, exchangeName, "loc.post");
 	this.channel.basicConsume(queueName, true, new LocalizationPositionConsumer(channel));
-      
+
 	System.out.println("Ready to listen to messages");
     }
 

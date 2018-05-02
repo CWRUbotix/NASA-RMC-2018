@@ -124,8 +124,8 @@ public class AutoModule extends Module {
 				.setCurXPos(startPos.getX())
 				.setCurYPos(startPos.getY())
 				.setCurHeading((float) startPos.getHeading())
-				.setDestXPos(0.0F)
-				.setDestYPos(4.50F)
+				.setDestXPos(startPos.getX()) //Temporarily set up for testing May 2nd
+				.setDestYPos(6.0F)	      //Temporarily set up for testing May 2nd
 				.setTimeAlloc(180)
 				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
