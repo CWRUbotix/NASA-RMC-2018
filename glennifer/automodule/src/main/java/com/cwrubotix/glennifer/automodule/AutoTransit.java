@@ -129,6 +129,7 @@ public class AutoTransit extends Module {
 	    System.out.println("current pos:" + currentPos);
 	    if (launched && currentPath.getPath().size() < 1) {
 		launched = false;
+		System.out.println("Arrived at Destination, sending AutoModule report message.");
 		ProgressReport report = ProgressReport.newBuilder().setDone(true)
 			.setTimestamp(instantToUnixTime(Instant.now())).build();
 		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
@@ -180,10 +181,14 @@ public class AutoTransit extends Module {
 	// Compute angle to turn to -- clockwise is positive
 	double angleBetween = Position.angleBetween(currPos, destPos);
 	if (launched) {
-	    if(Math.abs(currentPos.getHeading() - angleBetween) < 0.05)
+	    if(Math.abs(currentPos.getHeading() - angleBetween) < 0.05){
+		System.out.println("Trying to turn to face next position");
 		turnAngle(angleBetween);
-	    else
+	    }
+	    else{
+		System.out.println("Moving to next position: " + destPos);
 		driveTo(destPos);
+	    }
 	}
     }
 
@@ -212,8 +217,8 @@ public class AutoTransit extends Module {
 	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null,
 		lWheelsMsg.toByteArray());
 
-	System.out.println("Trying to turn...");
 	// Stop when angle is reached
+	/*
 	while (!(Math.abs(currentPos.getHeading() - angle) < 0.05)) {
 	    try {
 		Thread.sleep(100);
@@ -222,6 +227,7 @@ public class AutoTransit extends Module {
 	    }
 	}
 	System.out.println("Desired angle reached");
+	*/
     }
 
     private void driveTo(Position destPos) throws IOException {
@@ -243,14 +249,14 @@ public class AutoTransit extends Module {
 		driveMsg.toByteArray());
 	System.out.println("Moving forward...");
 	// Stop when destination reached (within tolerance)
+	/*
 	while (!Position.equalsWithinError(currentPos, destPos, 0.1)) {
 	    try {
 		Thread.sleep(100);
 	    } catch (InterruptedException e) {
 		e.printStackTrace();
 	    }
-	}
-	System.out.println("Reached subgoal");
+	}*/
     }
 
     @Override
