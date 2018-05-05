@@ -26,6 +26,7 @@
  * float a = 0; // getLocomotionStraightSpeed();
  * float b = 0; // getLocomotionTurnSpeed();
  * float c = 0; // getLocomotionStrafeSpeed();
+ *
  */
 
 using namespace com::cwrubotix::glennifer;
@@ -1121,9 +1122,11 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
         case (Qt::Key_I):
             ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() + 10);//handleLocomotionStraight();
             break;
-        case (Qt::Key_O):     
+        case (Qt::Key_O):
+            handleTankPivotL();
             break;
         case (Qt::Key_P):
+            handleTankPivotR();
             break;
         case (Qt::Key_J):
             ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() - 10);
