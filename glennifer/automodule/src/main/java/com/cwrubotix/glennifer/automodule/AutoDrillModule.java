@@ -75,6 +75,7 @@ public class AutoDrillModule extends Module {
 	    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
 	    targetDepth = cmd.getDepth(); // How deep we want to dig
 	    
+	    detectStall();
 	    updateMotors(); // Starts digging with given goals.
 	}
     }
@@ -193,6 +194,9 @@ public class AutoDrillModule extends Module {
 	    Messages.State msg = Messages.State.parseFrom(body);
 	    bc_trans = msg.getExcDetailed().getDisplacement();
 	    bc_current = msg.getExcDetailed().getCurrent();
+	    
+	    detectStall();
+	    updateMotors();
 	}
     }
 
@@ -253,10 +257,10 @@ public class AutoDrillModule extends Module {
 		break;
 	    case DEEP:
 		if (isStalled) {
-		    excavationConveyorRPM(getCurrentRPMTarget());
+		    excavationConveyorRPM(50);
 		    excavationTranslationControl(0);
 		} else {
-		    excavationConveyorRPM(getCurrentRPMTarget());
+		    excavationConveyorRPM(50);
 		    excavationTranslationControl(getCurrentDepthTarget());
 		}
 		break;
@@ -297,19 +301,6 @@ public class AutoDrillModule extends Module {
 	    return targetDepth;
 	
 	return calculatedDepth;
-    }
-    
-    /**
-     * 
-     */
-    private float getCurrentRPMTarget(){
-	float currentTransCM = convertMotorToCM(bc_trans);
-	if(currentTransCM >= 8.0F && currentTransCM <= 42.7F)
-	    return 26.0F;
-	else if(currentTransCM > 42.7F){
-	    return 37.0F;
-	}
-	return 20.0F;
     }
     
     private float convertCMToMotor(float cm){
