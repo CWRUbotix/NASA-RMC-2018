@@ -286,29 +286,50 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool write_to_yep(MotorInfo* motor, int16_t val){
-	ESC* esc 	= motor->board->esc;
-	val 		= constraing(abs(val), 1000, 2000);
-	esc->speed(val);
-	motor->lastUpdateTime = millis();
-	return true;
+// bool toggle_yep_dir(MotorInfo* motor){
+// 	// redundancy check
+// 	if(motor->lastSet != 0 || (millis()-motor->lastUpdateTime) < motor->safe_dt  ){
+// 		return false;
+// 	}
+// 	motor->is_reversed = !motor->is_reversed;
+// 	if(motor->is_reversed){
+// 		digitalWrite(motor->dir_relay_pin, HIGH);
+// 		delay(RELAY_RISE_FALL_TIME);
+// 	}else{
+// 		digitalWrite(motor->dir_relay_pin, LOW);
+// 		delay(RELAY_RISE_FALL_TIME);
+// 	}
 
+// 	return true;
+// }
+void reverse_yep(MotorInfo* motor){
+	motor->is_reversed = true;
+	digitalWrite(motor->dir_relay_pin, HIGH);
+	delay(RELAY_RISE_FALL_TIME);
+}
+void unreverse_yep(MotorInfo* motor){
+	motor->is_reversed = false;
+	digitalWrite(motor->dir_relay_pin, LOW);
+	delay(RELAY_RISE_FALL_TIME);
 }
 ////////////////////////////////////////////////////////////////////////////////
-bool toggle_yep_dir(MotorInfo* motor){
-	// redundancy check
-	if(motor->lastSet != 0 || (millis()-motor->lastUpdateTime) < motor->safe_dt  ){
-		return false;
+// @param int16_t val : power value between -1000 & 1000 (inclusive)
+////////////////////////////////////////////////////////////////////////////////
+bool write_to_yep(MotorInfo* motor, int16_t val){
+	if( (sign(val) < 0) && !motor->is_reversed){
+		reverse_yep(motor);
+	}else if( (sign(val) > 0) && motor->is_reversed){
+		unreverse_yep(motor);
 	}
-	motor->is_reversed = !motor->is_reversed;
-	if(motor->is_reversed){
-		digitalWrite(motor->dir_relay_pin, HIGH);
-		delay(RELAY_RISE_FALL_TIME);
-	}else{
-		digitalWrite(motor->dir_relay_pin, LOW);
-		delay(RELAY_RISE_FALL_TIME);
+	ESC* esc 	= motor->board->esc;
+	if(val == 0){
+		esc->speed(1000);
+		return true;
 	}
-
+	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
+	val 		= map(val, 0, 1000, motor->center + motor->deadband, 2000);
+	esc->speed(val);
+	motor->lastUpdateTime = millis();
 	return true;
 }
 
@@ -399,20 +420,20 @@ void maintain_motors(byte* cmd, bool success){
 			case MH_ST_POS:{
 				
 				int32_t pos 	= read_enc(motor);
+				int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
 				if(i == PORT_LIN_ACT_ID){
 					MotorInfo* stbd 	= &(motor_infos[STARBOARD_LIN_ACT_ID]);
 					int32_t other_pos 	= read_enc(stbd);
 					int32_t diff 		= pos - other_pos;
-					if(diff > 0){
-						motor->max_pwr = (motor->max_pwr - 1);
-						stbd->max_pwr  = constrain( (stbd->max_pwr + 1), 0, 500);
-					}else if(diff < 0){
-						stbd->max_pwr 	= (stbd->max_pwr - 1);
-						motor->max_pwr  = constrain( (motor->max_pwr + 1), 0, 500);
+					if( (sign(diff)+sign(err)) == 0 ){//diff > 0){
+						motor->kp = LIN_ACT_KP + KP_INC;
+						stbd->kp  = LIN_ACT_KP - KP_INC;
+					}else {
+						motor->kp = LIN_ACT_KP - KP_INC;
+						stbd->kp  = LIN_ACT_KP + KP_INC;
 					}
 				}
-				//int32_t pos 	= low_pass(motor->encoder, read_enc(motor));
-				int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
+				
 				int32_t pwr  	= 0;
 				if(abs(err) > motor->margin){
 					int32_t dt = (time - motor->lastUpdateTime);
@@ -428,21 +449,9 @@ void maintain_motors(byte* cmd, bool success){
 				if(is_stopped){
 					pwr = 0;
 				}
-				// if(i == PORT_LIN_ACT_ID){
-				// 	pwr = pwr/2;
-				// }
+				
 				writeSuccess  	= write_to_sabertooth(motor, pwr);
-				// Serial3.print(i);
-				// Serial3.print("\tPOS: ");
-				// Serial3.print(pos);
-				// Serial3.print("\tERR: ");
-				// Serial3.print(err);
-				// Serial3.print("\tINT: ");
-				// Serial3.print((int)motor->integral);
-				// Serial3.print("\tPWR: ");
-				// Serial3.println(pwr);
-				// delay(20);
-				// pwr should be between -500 and 500
+				
 				
 				break;}
 			case MH_RC_VEL: {
@@ -466,16 +475,20 @@ void maintain_motors(byte* cmd, bool success){
 				if(is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
-					// check if client is requesting a direction change
-					if(sign(motor->setPt) != sign(motor->lastSet)){
-						if( (time - motor->lastUpdateTime) >= motor->safe_dt){
-							bool success = write_to_yep()
-						}else if(motor->lastSet != 0){
-							writeSuccess = write_to_yep(motor, 0);
-							motor->lastSet = 0;
-						}
+					// if client is requesting a direction change
+					if(sign(motor->setPt) + sign(motor->lastSet) == 0){
+						// set to 0
+						writeSuccess = write_to_yep(motor, 0); 	// also updates lastUpdateTime
+						motor->lastSet = 0;
+					}else if(motor->lastSet == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
+						// write to controller (it's now safe to make a direction change)
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else if(sign(motor->lastSet) == sign(motor->setPt)){
+						// write to controller (no direction change, so no worries)
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else{
+						// DO NOTHING
 					}
-					
 				}
 
 		}

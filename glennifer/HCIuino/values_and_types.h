@@ -222,7 +222,7 @@ SensorInfo 	sensor_infos	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to SH_NONE
 MotorInfo 	motor_infos		[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to MH_NONE
 MCInfo      board_infos     [DEFAULT_BUF_LEN]   = {}; 	// Will be smaller later
 SensorInfo* limit_switches 	[DEFAULT_BUF_LEN] 	= {}; 	// iterate thru & check for collisions
-ESC 		yep_escs 		[DEFAULT_BUF_LEN] 	= {};
+ESC* 		yep_escs 		[DEFAULT_BUF_LEN] 	= {};
 
 int16_t motor_setpoints		[DEFAULT_BUF_LEN] 	= {0,0,0,0,1000,1000,1000,1000}; // All others initialized to 0
 uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0

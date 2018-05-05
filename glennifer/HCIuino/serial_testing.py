@@ -12,7 +12,7 @@ HCI_TEST_RPY 		= 0xA5
 #===============================================================================
 def getHex(dec):
 	if dec < 0: 
-		dec = 65536-dec
+		dec = 65536+dec
 	
 	tmp = hex(dec).split('x')[1]
 	while len(tmp)<4:
