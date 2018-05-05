@@ -120,15 +120,6 @@ message LocomotionControlCommandStraight {
 // subsyscommand.excavation.dig_deep
 message ExcavationControlCommandDigDeep {
 	required float depth = 1;
-	required float dig_speed = 2;
-}
-
-// subsyscommand.excavation.dig_surface
-message ExcavationControlCommandDigSurface {
-	required float depth = 1;
-	required float dig_speed = 2;
-	required float dist = 3;
-	required float drive_speed = 4;
 }
 
 // subsyscommand.excavation.dig_end
