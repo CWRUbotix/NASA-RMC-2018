@@ -77,7 +77,7 @@ public class Position extends Coordinate implements Cloneable {
             Position compare = (Position) obj;
             float x_diff = compare.getX() - getX();
             float y_diff = compare.getY() - getY();
-            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5;
+            return /*Math.abs(x_diff) < 1 &&*/ Math.abs(y_diff) < 1;
         }
         return false;
     }

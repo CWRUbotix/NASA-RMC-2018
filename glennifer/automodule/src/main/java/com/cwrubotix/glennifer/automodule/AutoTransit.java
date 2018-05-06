@@ -22,11 +22,12 @@ public class AutoTransit extends Module {
     private final float CLEARANCE_DIST = 0.3F; // Setting this to 30cm for now.
 					       // Will have to change it after
 					       // testing locomotion.
-    private final float TRAVEL_SPEED = 25.0F; // Duty cycle in unit of percent
+    private float TRAVEL_SPEED = 100.0F; // Duty cycle in unit of percent
     private static Position currentPos;
     private PathFinder pathFinder;
     private Path currentPath;
     private Position subTarget;
+    private Position destinationPos;
     private boolean launched = false;
 
     // Messaging stuff
@@ -52,10 +53,10 @@ public class AutoTransit extends Module {
 	    // Get current position
 	    Position currentPos = new Position(cmd.getCurXPos(), cmd.getCurYPos(), cmd.getCurHeading());
 
-	    Position destinationPos = new Position(cmd.getDestXPos(), cmd.getDestYPos(), 0f);
+	    destinationPos = new Position(cmd.getDestXPos(), cmd.getDestYPos(), 0f);
 	    if (!launched) {
-		launched = true;
-		launchNavigation(currentPos, destinationPos);
+			launched = true;
+			launchNavigation(currentPos, destinationPos);
 	    }
 	}
     }
@@ -127,19 +128,29 @@ public class AutoTransit extends Module {
 	    // Updates current position
 	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
 	    System.out.println("current pos:" + currentPos);
-	    if (launched && currentPath.getPath().size() < 1) {
-		launched = false;
-		System.out.println("Arrived at Destination, sending AutoModule report message.");
-		ProgressReport report = ProgressReport.newBuilder().setDone(true)
-			.setTimestamp(instantToUnixTime(Instant.now())).build();
-		this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
+	    if (currentPos.equals(destinationPos)) {
+			launched = false;
+			System.out.println("Arrived at Destination, sending AutoModule report message.");
+			TRAVEL_SPEED = 0;
+			moveToPos(destinationPos, destinationPos);
+			ProgressReport report = ProgressReport.newBuilder().setDone(true)
+				.setTimestamp(instantToUnixTime(Instant.now())).build();
+			this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
 	    } else if (launched && subTarget.equals(currentPos)) {
-		moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	    	System.out.println("have arrived at subtarget");
+	    	if(currentPath.getPath().size() > 1)
+				moveToPos(currentPath.getPath().remove(), subTarget = currentPath.getPath().getFirst());
+			else
+				moveToPos(currentPath.getPath().remove(), subTarget = destinationPos);
 	    } else if(launched){
-		moveToPos(currentPos, subTarget);
-	    }
-	}
+	    	System.out.println("going to subtarget");
+			moveToPos(currentPos, subTarget);
+	    } else {
+	    	System.out.println("not launched!");
+		}
+
     }
+	}
 
     /////// MODULE LOGIC
 
@@ -160,7 +171,7 @@ public class AutoTransit extends Module {
 	    AutoTransit.currentPos = currentPos;
 	    pathFinder = new PathFinder(new ModifiedAStar(), currentPos, destination);
 	    currentPath = pathFinder.getPath();
-	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	    moveToPos(currentPath.getPath().remove(), subTarget = currentPath.getPath().getFirst());
 	}
     }
 
@@ -173,7 +184,7 @@ public class AutoTransit extends Module {
 	    } finally {
 		currentPath = pathFinder.getPath();
 	    }
-	    moveToPos(subTarget = currentPath.getPath().remove(), currentPath.getPath().getFirst());
+	    moveToPos(currentPath.getPath().remove(), subTarget = currentPath.getPath().getFirst());
 	}
     }
 
@@ -181,14 +192,14 @@ public class AutoTransit extends Module {
 	// Compute angle to turn to -- clockwise is positive
 	double angleBetween = Position.angleBetween(currPos, destPos);
 	if (launched) {
-	    if(Math.abs(currentPos.getHeading() - angleBetween) < 0.05){
+	    /*if(Math.abs(currentPos.getHeading() - angleBetween) < 0.05){
 		System.out.println("Trying to turn to face next position");
 		turnAngle(angleBetween);
 	    }
-	    else{
+	    else{*/
 		System.out.println("Moving to next position: " + destPos);
 		driveTo(destPos);
-	    }
+	    //}
 	}
     }
 
@@ -202,10 +213,10 @@ public class AutoTransit extends Module {
 	 */
 	// Build messages
 	SpeedControlCommand rWheelsMsg = SpeedControlCommand.newBuilder()
-		.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED).build();
+		.setRpm(-Math.signum((float) angle) * TRAVEL_SPEED).setTimeout(0).build();
 
 	SpeedControlCommand lWheelsMsg = SpeedControlCommand.newBuilder()
-		.setRpm(Math.signum((float) angle) * TRAVEL_SPEED).build();
+		.setRpm(Math.signum((float) angle) * TRAVEL_SPEED).setTimeout(0).build();
 
 	// Tell wheels to start moving
 	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null,
@@ -237,8 +248,9 @@ public class AutoTransit extends Module {
 	 */
 
 	// Drive
-	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED).build();
+	SpeedControlCommand driveMsg = SpeedControlCommand.newBuilder().setRpm(TRAVEL_SPEED).setTimeout(0).build();
 
+	System.out.println(driveMsg.getRpm());
 	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.front_right.wheel_rpm", null,
 		driveMsg.toByteArray());
 	this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null,

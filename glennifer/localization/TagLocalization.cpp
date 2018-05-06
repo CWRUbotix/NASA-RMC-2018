@@ -14,7 +14,7 @@
  */
 
 /**
- * Current Implementation of AprilTags for CWRUbotix NASA RMC 2018
+ * Current Implementation of AprilTags for CWRUbotix NASA RMC 2018, initially version available from https://svn.csail.mit.edu/apriltags
  */
 
 /* Camera Calibration Inputs */
@@ -109,6 +109,9 @@ const char* user = "guest";
 const char* pass = "guest";
 const char* address = "localhost";
 
+const double greenToCenter = 0.33;
+const double yellowToCenter = -0.33;
+
 /**
  * Normalize angle to be within the interval [-pi,pi].
  */
@@ -141,9 +144,12 @@ struct camera {
 	int c_id;
 };
 
-camera greenCam = {644.12, 644.12, 319.5, 239.5, 0};
-camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
-camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
+//Using the same values to avoid inconsistensies with swapping camera ports
+camera greenCam = {644.12, 644.12, 319.5, 239.5, 1};
+camera yellowCam = {644.12, 644.12, 319.5, 239.5, 0};
+camera blueCam = {644.12, 644.12, 319.5, 239.5, 2};
+//camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
+//camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
 
 const char* windowGreenCam = "Green Cam";
 const char* windowYellowCam = "Yellow Cam";
@@ -161,7 +167,7 @@ void init_Queue() {
 	queue->Consume(AMQP_NOACK);
 }
 
-class Demo {
+class Localization {
 
 	AprilTags::TagDetector* m_tagDetector;
 	AprilTags::TagCodes m_tagCodes;
@@ -197,7 +203,7 @@ class Demo {
 public:
 
 	// default constructor
-	Demo() :
+	Localization() :
 		// default settings, most can be modified through command line options (see below)
 		m_tagDetector(NULL),
 		m_tagCodes(AprilTags::tagCodes36h11),
@@ -407,13 +413,31 @@ public:
 		double yaw, pitch, roll;
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
+		//x and y coordinates of the camera
+		double lookie = 90;
 
+		/* TODO: Get lookie angle */
+
+		//using x,y camera coords to find coordinates of robot center/wheel center
+		double cam_bearing = pitch;
+		double cam_x = ((realcoor(0)*cos(cam_bearing)) - (realcoor(2)*sin(cam_bearing)));
+		double cam_y = ((realcoor(0)*sin(cam_bearing)) + (realcoor(2)*cos(cam_bearing)));
+		double robot_x = cam_x;
+		double robot_y = cam_y;
+
+		double robot_bearing = lookie - cam_bearing; //TODO: make sure these works with negative angles and whatnot
+		robot_x = cam_x + (greenToCenter*cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
+		robot_y = cam_y + (greenToCenter*sin(robot_bearing));
+
+		//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
+		//also, try to move the exchange creation/declaration so we only do it once and not every time we call this function
 		AMQPExchange * ex = amqp.createExchange("amq.topic");
 		ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+		//
 		com::cwrubotix::glennifer::LocalizationPosition msg;
-		msg.set_x_position((float)realcoor(0));
-		msg.set_y_position((float)realcoor(2));
-		msg.set_bearing_angle((float) ((-1 * pitch) + PI));
+		msg.set_x_position((float)robot_x);
+		msg.set_y_position((float)robot_y);
+		msg.set_bearing_angle((float)robot_bearing);	//((float) ((-1 * pitch) + PI)); //THIS ANGLE MIGHT NOT CORRECTLY ADAPTED TO AUTONOMY STANDARDS
 
 		//msg.set_distance_vector((float) ((1) * (translation.norm())));
 		int msg_size = msg.ByteSize();
@@ -422,14 +446,24 @@ public:
 
 		ex->Publish((char*)msg_buff, msg_size, "loc.post");
 
-		cout << "  distance=" << translation.norm()
-            		<< "m, x=" << realcoor(0) //(translation.norm() * (sin (pitch)))
-					<< ", y=" << realcoor(2)//(translation.norm() * (cos (pitch)))
-					//<< ", z=" << fcol(2)//translation(2)
+		cout << name
+				<< " distance=" << translation.norm()
+            		<< "m, x coor = " << realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y coor = " << realcoor(2)//(translation.norm() * (cos (pitch)))
+					<< ", z coor = " << realcoor(1)
+					<< ", x cam = " << cam_x //((realcoor(0)*cos(pitch)) - (realcoor(2)*sin(pitch)))
+					<< ", y cam = " << cam_y //((realcoor(0)*sin(pitch)) + (realcoor(2)*cos(pitch)))
+					//<< ", robot x = " << robot_x
+					//<< ", robot y = " << robot_y
+					//<< " x rel = " << translation(1)
+					//<< " y rel = " << translation(0)
+					//<< " z rel = " << translation(2)
+					//<< " x norm = " << (translation.norm() * (sin (pitch)))
+					//<< " y norm = " << (translation.norm() * (cos (pitch)))
 					//<< ", w=" << fcol(1) //yaw
-					<< ", Bearing=" << (pitch * 180/PI);
+					<< ", Bearing = " << (pitch * 180/PI);
 
-		free(msg);
+		free(msg_buff);
 		//<< ", roll=" << roll
 		//<< endl;
 
@@ -532,11 +566,11 @@ public:
 
 			// capture frame
 			green_cap >> green_image;
-			cout << "communicating data..." << endl;
+			cout << "communicating green cam data..." << endl;
 			yellow_cap >> yellow_image;
-			cout << "communicating data1..." << endl;
+			cout << "communicating yellow cam data..." << endl;
 			blue_cap >> blue_image;
-			cout << "communicating data2..." << endl;
+			cout << "communicating blue data..." << endl;
 
 			processImage(green_image, green_image_gray, greenCam, windowGreenCam);
 			processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam);
@@ -562,27 +596,27 @@ public:
 
 // here is were everything begins
 int main(int argc, char* argv[]) {
-	Demo demo;
+	Localization localization;
 
 	// process command line options
 	//demo.parseOptions(argc, argv);
 
-	demo.setup();
+	localization.setup();
 
-	if (demo.isVideo()) {
+	if (localization.isVideo()) {
 		cout << "Processing video" << endl;
 
 		// setup image source, window for drawing, serial port...
-		demo.setupVideo();
+		localization.setupVideo();
 
 		// the actual processing loop where tags are detected and visualized
-		demo.loop();
+		localization.loop();
 
 	} else {
 		cout << "Processing image" << endl;
 
 		// process single image
-		demo.loadImages();
+		localization.loadImages();
 	}
 
 	return 0;

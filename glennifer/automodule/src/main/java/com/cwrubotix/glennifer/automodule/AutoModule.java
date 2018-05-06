@@ -119,6 +119,7 @@ public class AutoModule extends Module {
 			e.printStackTrace();
 		    }
 		}
+		System.out.println("launching transit");
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder()
 				.setCurXPos(startPos.getX())
@@ -131,7 +132,7 @@ public class AutoModule extends Module {
 				.build();
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
-		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
+		/*TransitSoftStop msg2 = TransitSoftStop.newBuilder()
 				.setTimeLeft(1.0F)
 				.setStop(true)
 				.setTimestamp(instantToUnixTime(Instant.now()))
@@ -145,7 +146,7 @@ public class AutoModule extends Module {
 					e.printStackTrace();
 				}
 			}
-		}, 1800000);
+		}, 1800000);*/
 		
 		currentStage = Stage.TRANSIT;
 		while(!currentStage.equals(Stage.DIGGING)){
