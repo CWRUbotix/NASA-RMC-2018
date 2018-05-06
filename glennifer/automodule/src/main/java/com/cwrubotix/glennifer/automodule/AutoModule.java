@@ -119,19 +119,20 @@ public class AutoModule extends Module {
 			e.printStackTrace();
 		    }
 		}
+		System.out.println("launching transit");
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder()
 				.setCurXPos((float) startPos.getX())
 				.setCurYPos((float) startPos.getY())
 				.setCurHeading((float) startPos.getHeading())
-				.setDestXPos(0.0F)
-				.setDestYPos(4.50F)
+				.setDestXPos(startPos.getX()) //Temporarily set up for testing May 2nd
+				.setDestYPos(6.0F)	      //Temporarily set up for testing May 2nd
 				.setTimeAlloc(180)
 				.setTimestamp(instantToUnixTime(Instant.now()))
 				.build();
 		this.channel.basicPublish(exchangeName, "launch.transit", null, msg1.toByteArray());
 
-		TransitSoftStop msg2 = TransitSoftStop.newBuilder()
+		/*TransitSoftStop msg2 = TransitSoftStop.newBuilder()
 				.setTimeLeft(1.0F)
 				.setStop(true)
 				.setTimestamp(instantToUnixTime(Instant.now()))
@@ -145,7 +146,7 @@ public class AutoModule extends Module {
 					e.printStackTrace();
 				}
 			}
-		}, 1800000);
+		}, 1800000);*/
 		
 		currentStage = Stage.TRANSIT;
 		while(!currentStage.equals(Stage.DIGGING)){
