@@ -535,18 +535,20 @@ public class ModuleMain {
         }
         if (keys[2].equals("turn")) {
             int id;
+            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
+            double targetValue = pcc.getPosition();
             if(keys[3].equals("left")){
                 id = 9;
+                targetValue -= 270;
             }
             else if(keys[3].equals("right")){
                 id = 10;
+                targetValue -= 90;
             }
             else{
                 System.out.println("Invalid looky motor side");
                 return;
             }
-            Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
-            double targetValue = pcc.getPosition();
             queueActuation(id, targetValue);
         } else {
             System.out.println("Looky motor control routing key has unrecognized motor");
