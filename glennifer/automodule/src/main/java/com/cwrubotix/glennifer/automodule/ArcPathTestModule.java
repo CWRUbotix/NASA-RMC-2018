@@ -8,6 +8,14 @@ import java.io.BufferedReader;
 import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.control.Button;
+
 import com.cwrubotix.glennifer.Messages;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -34,7 +42,7 @@ public class ArcPathTestModule extends Module{
     private int currentScheme = 0;
     private ArcPath arcPath;
     private final float DRIVE_SPEED = 75;
-    private final double rate = 0.15;
+    private final double rate = 0.015; //Random shit
     
     public ArcPathTestModule(){
 	this.exchangeName = "amq.topic";
@@ -112,7 +120,12 @@ public class ArcPathTestModule extends Module{
     }
     
     private void updateConstant(){
-	
+	double[] args = arcPath.getArc(progress);
+	double expectedY = args[0] * currentPos.getX() * currentPos.getX() * currentPos.getX() +
+			   args[1] * currentPos.getX() * currentPos.getX() +
+			   args[2] * currentPos.getX() +
+			   args[3];
+	constant = constant + (currentPos.getY() - expectedY) * rate;
     }
     
     private boolean checkProgress(){
@@ -132,13 +145,30 @@ public class ArcPathTestModule extends Module{
     }
     
     private void moveRobot(){
-	switch(direction){
-	case FORWARD:
-	    break;
-	case BACKWARD:
-	    break;
+	if(launched){
+	    System.out.println("Moving robot");
+	    Curvature k = new Curvature(arcPath.getPoints()[progress - 1].getX(), arcPath.getPoints()[progress].getX(), arcPath.getArc(progress));
+	    double factor = DRIVE_SPEED / (1 + Math.exp(constant / k.getCurvature(currentPos.getX())));
+	    float left = 0.0F, right = 0.0F;
+	    switch(k.getTurn(currentPos.getX())){
+	    case LEFT: System.out.println("Turing left...");
+		left = (float)Math.min(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
+		right = (float)Math.max(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
+		break;
+	    case RIGHT: System.out.println("Turning right...");
+		left = (float)Math.max(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
+		right = (float)Math.min(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
+		break;
+	    }
+	    switch(direction){
+	    case FORWARD: System.out.println("Going forward direction"); leftMotorControl(left); rightMotorControl(right);
+		break;
+	    case BACKWARD:System.out.println("Going backward direction"); leftMotorControl(-left); rightMotorControl(-right);
+		break;
+	    }
 	}
     }
+    
     
     private void logConstant(){
 	try{
@@ -198,14 +228,53 @@ public class ArcPathTestModule extends Module{
 	this.channel.basicConsume(queueName, true, new LocConsumer(channel));
 	
 	queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "");
+	this.channel.queueBind(queueName, exchangeName, "obstacle.position");
 	this.channel.basicConsume(queueName, true, new ObsConsumer(channel));
+	
+	System.out.println("Waiting on Localization message");
     }
     
     public static void main(String[] args){
-	ArcPathTestModule module = new ArcPathTestModule();
-	module.start();
+	Control.launchwrap(args);
+    }
+    
+    public static class Control extends Application{
+	private ArcPathTestModule module;
 	
+	@Override
+	public void start(Stage primaryStage){
+	    module = new ArcPathTestModule();
+	    module.start();
+	    HBox box = new HBox();
+	    Button start = new Button("START");
+	    Button estop = new Button("ESTOP");
+	    start.setOnAction(new EventHandler<ActionEvent>(){
+		public void handle(ActionEvent e){
+		    if(module.tagFound){
+			try{
+			    module.setUpTest();
+			}catch(IOException er){
+			    er.printStackTrace();
+			}
+			module.launched = true;
+		    }
+		}
+	    });
+	    estop.setOnAction(new EventHandler<ActionEvent>(){
+		public void handle(ActionEvent e){
+		    module.endTest();
+		}
+	    });
+	    box.getChildren().addAll(start, estop);
+	    Scene scene = new Scene(box);
+	    primaryStage.setScene(scene);
+	    primaryStage.sizeToScene();
+	    primaryStage.show();
+	}
+	
+	private static void launchwrap(String[] args){
+	    Application.launch(args);
+	}
     }
     
     private class LocConsumer extends DefaultConsumer{
@@ -219,9 +288,11 @@ public class ArcPathTestModule extends Module{
 	    currentPos = new Position(msg.getXPosition(), msg.getYPosition(), msg.getBearingAngle());
 	    if(!tagFound){
 		tagFound = true;
+		System.out.println("Found AprilTag, Ready to launch");
 	    }
 	    if(launched){
 		if(checkProgress()){
+		    System.out.println("Starting next iteration");
 		    setUpTest(++currentScheme);
 		}
 		updateConstant();
@@ -239,7 +310,7 @@ public class ArcPathTestModule extends Module{
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
 	    Messages.ObstaclePosition msg = Messages.ObstaclePosition.parseFrom(body);
 	    Obstacle obs = new Obstacle(msg.getXPosition(), msg.getYPosition(), msg.getDiameter() / 2);
-	    if(arcPath.addObstacle(currentPos, obs)){
+	    if(launched && arcPath.addObstacle(currentPos, obs)){
 		progress = 1;
 		moveRobot();
 	    }
