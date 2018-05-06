@@ -50,7 +50,7 @@ public class ArcPathTestModule extends Module{
     
     private void setUpTest() throws IOException{
 	loadScheme();
-	loadConstant();
+	//loadConstant();
 	destination = scheme[currentScheme];
 	if(currentPos.getY() < destination.getY()){
 	    direction = Direction.FORWARD;
@@ -188,6 +188,7 @@ public class ArcPathTestModule extends Module{
 	leftMotorControl(0.0F);
 	rightMotorControl(0.0F);
 	this.stop();
+	System.exit(0);
     }
     
     private void leftMotorControl(float value){
