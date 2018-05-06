@@ -111,7 +111,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 	for(int i = 0; i < 10; i++){
 	    double angle = Math.PI * i / 5;
-	    float clearance = CLEARANCE / 2 + obs.getRadius(); //Somehow algorithm works better with more clearance distance...?
+	    float clearance = (CLEARANCE + 0.1F) / 2 + obs.getRadius();
 	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
 		addNode(getNodes(), new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
@@ -237,6 +237,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                     addNode(openSet,neighbor);
                     neighbor.setFound(true);
                     neighbor.setPrevious(current);
+                    neighbor.setHeruistic(end);
                     neighbor.updateDist(current.getDist() + current.getDistTo(neighbor));
                 }
                 else if(!neighbor.isVisited()){ //If seen before, update cost.
@@ -244,6 +245,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                     if (neighbor.getDist() > tempGScore) {
                         neighbor.updateDist(tempGScore);
                         neighbor.setPrevious(current);
+                        neighbor.setHeruistic(end);
                     }
                 }
             }
@@ -285,7 +287,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      */
     private void astarSetup(AStarNode end){
 	for(AStarNode node : getNodes()){
-            node.setHeruistic(end);
             node.setVisited(false);
             node.setFound(false);
             node.updateDist(Float.POSITIVE_INFINITY);
@@ -305,6 +306,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         Path path = new Path();
         AStarNode ptr = end;
         while (!ptr.equals(start)) {
+            findNearestObs(ptr);
             path.addFirst(ptr);
             ptr = ptr.getPrevious();
         }
@@ -327,6 +329,20 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                 ((AStarNode) p).setHeading();
             }
         }
+    }
+    
+    /**
+     * Finds obstacle that is nearest to the input and sets the node's field
+     * 
+     * @param node node to set obstacle
+     */
+    private void findNearestObs(AStarNode node){
+	Obstacle obs = null;
+	for(Obstacle o : getObstacles()){
+	    if(obs == null || obs.getDistTo(node) > o.getDistTo(node))
+		obs = o;
+	}
+	node.setNearestObs(obs);
     }
 
     /**
@@ -361,6 +377,10 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * indicator of whether this node belongs to open set during each A* search
          */
         private boolean found = false;
+        /**
+         * Stores the nearest obstacle from the node
+         */
+        private Obstacle nearestObs;
 
         /**
          * Creates AStarNode with given coordinate positions
@@ -461,6 +481,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         public boolean found() {
             return found;
         }
+        
 	
 	/*Setter methods*/
 
@@ -488,7 +509,11 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * @param end the destination of the path search
          */
         public void setHeruistic(AStarNode end) {
-            this.heruistic = this.getDistTo(end);
+            if(getPrevious() !=null){
+        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end) + getHeading());
+            } else{
+        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end));
+            }
         }
 
         /**
@@ -515,5 +540,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         public void setFound(boolean found) {
             this.found = found;
         }
+        
     }
 }
