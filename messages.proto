@@ -123,11 +123,6 @@ message TurnControlCommand {
 	required float curvature = 2;
 }
 
-// motorcontrol.locomotion.alternating_turn
-message AlternatingTurnControlCommand {
-	required float speed = 1;
-}
-
 // motorcontrol.system.stop_all
 message StopAllCommand {
 	required bool stop = 1;
@@ -167,15 +162,6 @@ message LocomotionControlCommandConfigure {
 // subsyscommand.excavation.dig_deep
 message ExcavationControlCommandDigDeep {
 	required float depth = 1;
-	required float dig_speed = 2;
-}
-
-// subsyscommand.excavation.dig_surface
-message ExcavationControlCommandDigSurface {
-	required float depth = 1;
-	required float dig_speed = 2;
-	required float dist = 3;
-	required float drive_speed = 4;
 }
 
 // subsyscommand.excavation.dig_end

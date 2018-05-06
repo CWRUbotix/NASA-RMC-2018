@@ -63,7 +63,6 @@ public slots:
     //void handleDepositionConveyor(bool checked);
     void handleLowerCurrent(int value);
     void handleUpperCurrent(int value);
-    void handleDigSpeed(int value);
     //void handleVibrate(bool checked);
     void handleEStop();
     void handleEUnstop();
@@ -115,8 +114,6 @@ public slots:
     void regularExcavationConveyer(bool checked);
 
     void handleDigDeep();
-    void handleDigSurface();
-    void handleDigReverse();
     void handleDigStop();
     void handleExcavationTargetDepthSet(int value);
     void handleExcavationDigSpeedSet(int value);

@@ -49,7 +49,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //New Sliders for Drilling
     connect(ui->pushButton_DigDeep, &QPushButton::clicked, this, &MainWindow::handleDigDeep);
-    connect(ui->pushButton_DigSurface, &QPushButton::clicked, this, &MainWindow::handleDigSurface);
     connect(ui->pushButton_DigStop, &QPushButton::clicked, this, &MainWindow::handleDigStop);
     connect(ui->checkBox_BucketConveyorOn, &QCheckBox::stateChanged, this, &MainWindow::handleExcavationConveyor);
 
@@ -179,8 +178,6 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleLowerCurrent);
     QObject::connect(ui->spinBox_upperCurrent, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), // This is ugly because: http://doc.qt.io/qt-5/qspinbox.html#valueChanged
                      this, &MainWindow::handleUpperCurrent);
-    QObject::connect(ui->slider_ExcavationDigSpeed, &QSlider::valueChanged,
-                     this, &MainWindow::handleDigSpeed);
     QObject::connect(ui->pushButton_EStop, &QPushButton::clicked,
                      this, &MainWindow::handleEStop);
     QObject::connect(ui->pushButton_EUnstop, &QPushButton::clicked,
@@ -841,25 +838,6 @@ void MainWindow::handleUpperCurrent(int value) {
     free(msg_buff);
 }
 
-void MainWindow::handleDigSpeed(int value) {
-    PositionControlCommand msg;
-    msg.set_position(value / 10.0F);
-    msg.set_timeout(456);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "subsyscommand.excavation.dig_speed");
-
-    free(msg_buff);
-}
-
 void MainWindow::handleEStop() {
     StopAllCommand msg;
     msg.set_stop(true);
@@ -901,7 +879,6 @@ void MainWindow::handleEUnstop() {
 void MainWindow::handleDigDeep() {
     ExcavationControlCommandDigDeep msg;
     msg.set_depth((float)ui->slider_ExcavationTargetDepth->value());
-    msg.set_dig_speed((float)ui->slider_ExcavationDigSpeed->value() / 10);
     int msg_size = msg.ByteSize();
     void *msg_buff = malloc(msg_size);
     if (!msg_buff) {
@@ -913,47 +890,6 @@ void MainWindow::handleDigDeep() {
     AMQPExchange * ex = m_amqp->createExchange("amq.topic");
     ex->Declare("amq.topic", "topic", AMQP_DURABLE);
     ex->Publish((char*)msg_buff, msg_size, "subsyscommand.excavation.dig_deep");
-
-    free(msg_buff);
-}
-
-void MainWindow::handleDigSurface() {
-    ExcavationControlCommandDigSurface msg;
-    msg.set_depth((float)ui->slider_ExcavationTargetDepth->value());
-    msg.set_dig_speed((float)ui->slider_ExcavationDigSpeed->value() / 10);
-    msg.set_drive_speed((float)ui->slider_ExcavationMoveSpeed->value() / 100);
-    msg.set_dist(123);
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "subsyscommand.excavation.dig_surface");
-
-    free(msg_buff);
-}
-
-void MainWindow::handleDigReverse() { //same as surface but in opposite direction(negative Speed)
-    ExcavationControlCommandDigSurface msg;
-    msg.set_depth((float)ui->slider_ExcavationTargetDepth->value());
-    msg.set_dig_speed((float)ui->slider_ExcavationDigSpeed->value() / 10);
-    msg.set_drive_speed((float)((-1)*(ui->slider_ExcavationMoveSpeed->value() / 100)));
-    int msg_size = msg.ByteSize();
-    void *msg_buff = malloc(msg_size);
-    if (!msg_buff) {
-        ui->consoleOutputTextBrowser->append("Failed to allocate message buffer.\nDetails: malloc(msg_size) returned: NULL\n");
-        return;
-    }
-    msg.SerializeToArray(msg_buff, msg_size);
-
-    AMQPExchange * ex = m_amqp->createExchange("amq.topic");
-    ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-    ex->Publish((char*)msg_buff, msg_size, "subsyscommand.excavation.dig_surface");
 
     free(msg_buff);
 }
@@ -1153,13 +1089,12 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
              handleDigDeep();
              break;
         case (Qt::Key_2):
-             handleDigSurface();
+             handleDigStop();
              break;
         case (Qt::Key_3):
-             handleDigReverse();
              break;
         case (Qt::Key_4):
-             handleDigStop();
+
              break;
         case (Qt::Key_5):
              handleExcavationTranslationStop();
