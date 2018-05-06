@@ -122,10 +122,10 @@ public class AutoModule extends Module {
 		System.out.println("launching transit");
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder()
-				.setCurXPos(startPos.getX())
-				.setCurYPos(startPos.getY())
+				.setCurXPos((float) startPos.getX())
+				.setCurYPos((float) startPos.getY())
 				.setCurHeading((float) startPos.getHeading())
-				.setDestXPos(startPos.getX()) //Temporarily set up for testing May 2nd
+				.setDestXPos((float)startPos.getX()) //Temporarily set up for testing May 2nd
 				.setDestYPos(6.0F)	      //Temporarily set up for testing May 2nd
 				.setTimeAlloc(180)
 				.setTimestamp(instantToUnixTime(Instant.now()))

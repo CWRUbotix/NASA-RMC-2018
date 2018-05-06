@@ -1,11 +1,5 @@
-package test;
+package com.cwrubotix.glennifer.automodule;
 
-import com.cwrubotix.glennifer.automodule.ModifiedAStar;
-import com.cwrubotix.glennifer.automodule.Obstacle;
-import com.cwrubotix.glennifer.automodule.Position;
-import com.cwrubotix.glennifer.automodule.Path;
-import com.cwrubotix.glennifer.automodule.PathFinder;
-import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -38,6 +32,8 @@ public class PathPlanSimulator {
      * Array of Positions that represent obstacles in the arena
      */
     private Obstacle[] obstacles = new Obstacle[NUM_OBSTACLE];
+    
+    private ArrayList<Obstacle> found = new ArrayList<>(NUM_OBSTACLE);
     /**
      * Array of paths created by different algorithms.
      */
@@ -46,7 +42,7 @@ public class PathPlanSimulator {
     /**
      * Array of PathFinders that represents each algorithm
      */
-    private PathFinder finder;
+    private ArcPath finder;
     /**
      * The initial position of the robot
      */
@@ -64,29 +60,29 @@ public class PathPlanSimulator {
     /**
      * Stores Max straight speed of the robot. Unit: m/s
      */
-    private static final float MAX_STRAIGHT_SPEED = 3.32F;
+    private static final double MAX_STRAIGHT_SPEED = 3.32F;
     /**
      * Stores Max turning speed of the robot. Unit: rad/s
      */
-    private static final float MAX_TURNING_SPEED = (float) Math.PI;
+    private static final double MAX_TURNING_SPEED = Math.PI;
     /**
      * Stores maximum radius of obstacles in meters
      */
-    private static final float OBSTACLE_SIZE = 0.15F;
+    private static final double OBSTACLE_SIZE = 0.15F;
     /**
      * Stores the maximum reliable kinect range in meters
      */
-    private static final float KINECT_RANGE = 2.0F;
+    private static final double KINECT_RANGE = 2.0F;
     /**
      * Stores the y direction length of obstacle area of the arena in meters
      * <p>Actual positions in the arena : y = 1.5m ~ 4.44m</p>
      */
-    private static final float OBSTACLE_AREA_HEIGHT = 2.94F;
+    private static final double OBSTACLE_AREA_HEIGHT = 2.94F;
     /**
      * Stores the y direction length of obstacle safe area of the arena in meters
      * <p>Actual positions in the arena : y = 0.0m ~ 1.5m</p>
      */
-    private static final float SAFE_AREA_HEIGHT = 1.5F;
+    private static final double SAFE_AREA_HEIGHT = 1.5F;
 
     /**
      * Constructor for simulator
@@ -101,7 +97,7 @@ public class PathPlanSimulator {
         this.initialPos = initialPos;
         this.destination = destination;
         generateObstacles();
-        finder = new PathFinder(new ModifiedAStar(), initialPos, destination);
+        finder = new ArcPath(initialPos, destination);
         path = finder.getPath();
     }
 
@@ -131,6 +127,10 @@ public class PathPlanSimulator {
     public Obstacle[] getObstacles() {
         return obstacles;
     }
+    
+    public ArrayList<Obstacle> getFound(){
+	return found;
+    }
 
     /**
      * Returns the list of paths created during simulation
@@ -159,7 +159,7 @@ public class PathPlanSimulator {
      *
      * @return the list of the path plan algorithms
      */
-    public PathFinder getFinder() {
+    public ArcPath getFinder() {
         return finder;
     }
 
@@ -174,11 +174,11 @@ public class PathPlanSimulator {
      * @author Tyler Thieding
      */
     private void generateObstacles() {
-        float validObstacleWidthLength = Position.ARENA_WIDTH() - (OBSTACLE_SIZE * 2);
-        float validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - (OBSTACLE_SIZE * 2);
+        double validObstacleWidthLength = Position.ARENA_WIDTH() - (OBSTACLE_SIZE * 2);
+        double validObstacleHeightLength = OBSTACLE_AREA_HEIGHT - (OBSTACLE_SIZE * 2);
         for (int i = 0; i < obstacles.length; i++) {
-            float newObstacleX = (float) (OBSTACLE_SIZE + validObstacleWidthLength * Math.random() - Position.ARENA_WIDTH() / 2);
-            float newObstacleY = (float) (OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength * Math.random());
+            double newObstacleX = OBSTACLE_SIZE + validObstacleWidthLength * Math.random() - Position.ARENA_WIDTH() / 2;
+            double newObstacleY = OBSTACLE_SIZE + SAFE_AREA_HEIGHT + validObstacleHeightLength * Math.random();
             Obstacle newObstacle = new Obstacle(newObstacleX, newObstacleY, OBSTACLE_SIZE / 2);
             obstacles[i] = newObstacle;
         }
@@ -192,9 +192,9 @@ public class PathPlanSimulator {
      * @param y_pos    the new y coordinate
      * @return false if given coordinates are invalid as an obstacle.
      */
-    private boolean modifyObstacle(Obstacle obstacle, float x_pos, float y_pos) {
-        float previousX = obstacle.getX();
-        float previousY = obstacle.getY();
+    private boolean modifyObstacle(Obstacle obstacle, double x_pos, double y_pos) {
+        double previousX = obstacle.getX();
+        double previousY = obstacle.getY();
         if (y_pos > SAFE_AREA_HEIGHT && y_pos < SAFE_AREA_HEIGHT + OBSTACLE_AREA_HEIGHT) { //if inside obstacle area
             if (!obstacle.setX(x_pos) || !obstacle.setY(y_pos)) {
                 obstacle.setX(previousX);
@@ -215,6 +215,7 @@ public class PathPlanSimulator {
     private void moveRobot() {
         boolean arrived = false;
         Path log = new Path();
+        found = new ArrayList<>(NUM_OBSTACLE);
         Path path = finder.getPath();
         Position currentPos = path.getPoint(0);
         int progress = 0;
@@ -223,7 +224,8 @@ public class PathPlanSimulator {
             obstacles.add(getObstacles()[i]);
         }
         while (!arrived) { //While the robot is on transit
-            log.addLast(path.getPoint(progress));
+            if(!log.getPath().contains(path.getPoint(progress)))
+        	log.addLast(path.getPoint(progress));
             obstacles.sort(Position.getComparatorByDistTo(currentPos)); //sort the obstacles by proximity to the robot
             LinkedList<Obstacle> encountered = new LinkedList<>();
             for (Obstacle obs : obstacles) {
@@ -231,17 +233,13 @@ public class PathPlanSimulator {
                 if (temp != null) {
                     if(!temp.equals(path.getPoint(progress))){
                 	currentPos = temp; // where robot is currently standing
-                	log.addLast(currentPos);
-                	finder.setCurrentPos(currentPos);
                     }
-                    try{
-                	finder.registerObstacle(obs);
-                    }
-                    catch(PathFinder.DestinationModified e){
-                	destination = new Position(e.getX(), e.getY());
-                    }
+                    finder.addObstacle(currentPos, obs);
                     path = finder.getPath();
+                    if(!log.getPath().contains(currentPos))
+                	log.addLast(currentPos);
                     encountered.add(obs);
+                    found.add(obs);
                     progress = 0;
                 }
             }
@@ -258,6 +256,7 @@ public class PathPlanSimulator {
             }
         }
         log.addLast(path.getPoint(progress + 1));
+        
         this.path = log; //setting path field
     }
 
@@ -276,12 +275,12 @@ public class PathPlanSimulator {
 	}
         Position p1 = path.getPoint(progress); //current position
         Position p2 = path.getPoint(progress + 1); //next position
-        float x1 = p1.getX(); // current position
-        float y1 = p1.getY(); // coordinate
-        float x2 = p2.getX(); // next position
-        float y2 = p2.getY(); // coordinate
-        float cx = obs.getX();// center of the obstacle
-        float cy = obs.getY();// coordinate
+        double x1 = p1.getX(); // current position
+        double y1 = p1.getY(); // coordinate
+        double x2 = p2.getX(); // next position
+        double y2 = p2.getY(); // coordinate
+        double cx = obs.getX();// center of the obstacle
+        double cy = obs.getY();// coordinate
 		
 	/*Getting the equation of line formed by current position and next position*/
         double slope = (y2 - y1) / (x2 - x1);
@@ -299,10 +298,10 @@ public class PathPlanSimulator {
         }
 	
 	/*Solving the system of equations*/
-        float rx1 = (float) ((-b + Math.sqrt(check)) / (2 * a));
-        float ry1 = (float) (slope * rx1 + y_intercept);
-        float rx2 = (float) ((-b - Math.sqrt(check)) / (2 * a));
-        float ry2 = (float) (slope * rx2 + y_intercept);
+        double rx1 = (-b + Math.sqrt(check)) / (2 * a);
+        double ry1 = slope * rx1 + y_intercept;
+        double rx2 = (-b - Math.sqrt(check)) / (2 * a);
+        double ry2 = slope * rx2 + y_intercept;
 
         Position r1 = new Position(rx1, ry1);
         Position r2 = new Position(rx2, ry2);
@@ -450,7 +449,7 @@ public class PathPlanSimulator {
                     if (!simulationRun)
                         return;
                     if (simulator.getPath() != null) {
-                	simulator.getFinder().runAlgorithm();
+                	simulator.getFinder().newPath(simulator.getInitialPos(), simulator.getDestination());
                 	simulator.setPath(simulator.getFinder().getPath());
                     }
                     displayPaths();
@@ -485,8 +484,8 @@ public class PathPlanSimulator {
                 public void handle(MouseEvent event) {
                     if (beingModifiedObs == null)
                         return;
-                    float x = getArenaX(event.getX());
-                    float y = getArenaY(event.getY());
+                    double x = getArenaX(event.getX());
+                    double y = getArenaY(event.getY());
                     if (simulator.modifyObstacle(beingModifiedObs, x, y)) {
                         beingModifiedCir.setCenterX(getDisplayX(x));
                         beingModifiedCir.setCenterY(getDisplayY(y));
@@ -588,6 +587,7 @@ public class PathPlanSimulator {
             result.setEditable(false);
             result.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             result.appendText("ModifiedAStar Algorithm:\n");
+            pathResult.appendText("Printing path...\n");
         }
 
         /**
@@ -607,17 +607,18 @@ public class PathPlanSimulator {
         	return;
             }
             Position previous = null;
-            float dist = 0.0F, angle = 0.0F;
+            double dist = 0.0F, angle = 0.0F;
             for (Position pos : simulator.getPath()) {
+
         	if (previous != null) {
         	    dist += previous.getDistTo(pos);
         	    angle += Math.abs(previous.getHeading() - pos.getHeading());
         	}
-        	pathResult.appendText(pos.toString() + pos.getNearestObs() + "\n");
         	previous = pos;
             }
-            float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
+            double timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
             result.appendText(String.format("Total Distance : %.2f m\nTotal Angle Turn: %.2f rad\nEstimate Traversal Time: %.2f s\n", dist, angle, timeTook));
+            pathResult.appendText(ArcPath.arcPath(simulator.getPath(), simulator.getFound()).toString());
         }
 
 
@@ -628,8 +629,8 @@ public class PathPlanSimulator {
          * @param x_pos Position x-coordinate to convert
          * @return converted display x-coordinate
          */
-        private double getDisplayX(float x_pos) {
-            return (double) ((x_pos + Position.ARENA_WIDTH() / 2) * 100);
+        private double getDisplayX(double x_pos) {
+            return (x_pos + Position.ARENA_WIDTH() / 2) * 100;
         }
 
         /**
@@ -639,8 +640,8 @@ public class PathPlanSimulator {
          * @param y_pos Position y-coordinate to convert
          * @return converted display y-coordinate
          */
-        private double getDisplayY(float y_pos) {
-            return (double) (y_pos * 100);
+        private double getDisplayY(double y_pos) {
+            return y_pos * 100;
         }
 
         /**
@@ -650,8 +651,8 @@ public class PathPlanSimulator {
          * @param display_x display x-coordinate to convert
          * @return converted Position x-coordinate
          */
-        private float getArenaX(double display_x) {
-            return (float) (display_x / 100 - Position.ARENA_WIDTH() / 2);
+        private double getArenaX(double display_x) {
+            return display_x / 100 - Position.ARENA_WIDTH() / 2;
         }
 
         /**
@@ -661,8 +662,8 @@ public class PathPlanSimulator {
          * @param display_y display y-coordinate to convert
          * @return converted Position y-coordinate
          */
-        private float getArenaY(double display_y) {
-            return (float) (display_y / 100);
+        private double getArenaY(double display_y) {
+            return display_y / 100;
         }
 
         /**
