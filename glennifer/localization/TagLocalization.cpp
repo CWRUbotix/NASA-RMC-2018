@@ -430,7 +430,7 @@ public:
 		robot_y = cam_y + (greenToCenter*sin(robot_bearing));
 
 		//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
-		//also, try to move the exchange creation/declaration so we only do it once and not every time we call this function
+		//also, try to move the exchange creation/declaration so we only do it once
 		AMQPExchange * ex = amqp.createExchange("amq.topic");
 		ex->Declare("amq.topic", "topic", AMQP_DURABLE);
 		//
