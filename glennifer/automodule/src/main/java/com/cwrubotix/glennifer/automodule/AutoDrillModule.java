@@ -11,7 +11,11 @@ import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 
 import java.io.IOException;
+import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -223,6 +227,8 @@ public class AutoDrillModule extends Module {
     private float targetDepth = 100.0F;
 
     private final float MaxTranslationInCM = 77.5F;
+    
+    private double[] diggingTable;
 
     /**
      * Records whether the excavation motor is in stall
@@ -295,12 +301,12 @@ public class AutoDrillModule extends Module {
      * @return the calculated next target depth the next command should have.
      */
     private float getCurrentDepthTarget() {
-	float calculatedDepth = 0.0F;
-	
+	int index = (int)convertMotorToCM(bc_trans);
+	float calculatedDepth = (float)(index + 0.1 / (diggingTable[index + 1] - diggingTable[index]));
 	if(calculatedDepth > targetDepth)
-	    return targetDepth;
+	    return convertCMToMotor(targetDepth);
 	
-	return calculatedDepth;
+	return convertCMToMotor(calculatedDepth);
     }
     
     private float convertCMToMotor(float cm){
@@ -309,6 +315,27 @@ public class AutoDrillModule extends Module {
     
     private float convertMotorToCM(float value){
 	return value / 100 * MaxTranslationInCM;
+    }
+    
+    private void loadTable() throws IOException{
+	File table = new File("config/AutoDrillTable.txt");
+	BufferedReader reader = new BufferedReader(new FileReader(table));
+	LinkedList<Double> temp = new LinkedList<>();
+	String line = reader.readLine();
+	
+	while(line != null){
+	    temp.add(Double.parseDouble(line.split(" ")[1]));
+	    line = reader.readLine();
+	}
+	
+	reader.close();
+	Object[] t = temp.toArray();
+	double[] diggingTable = new double[t.length];
+	for(int i = 0; i < t.length; i ++){
+	    diggingTable[i] = ((Double)t[i]).doubleValue();
+	}
+	
+	this.diggingTable = diggingTable;
     }
 
     /**
@@ -395,6 +422,8 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
+	loadTable();
+	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
 	factory.setHost("localhost");
