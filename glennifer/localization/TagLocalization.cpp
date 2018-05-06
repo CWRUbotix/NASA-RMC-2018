@@ -505,6 +505,16 @@ public:
 				detections[i].draw(image);
 			}
 			//imshow(name, image); // OpenCV call
+			/*const char* frame;
+			std::vector<uchar> buffer;
+			imencode(".jpg", image, buffer);
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			int msg_size = sizeof(buffer);
+			void *msg_buff = malloc(msg_size);
+			//buffer.SerializeToArray(msg_buff, msg_size);
+
+			ex->Publish(, msg_size, name);*/
 		}
 
 		// optionally send tag information to serial port (e.g. to Arduino)
