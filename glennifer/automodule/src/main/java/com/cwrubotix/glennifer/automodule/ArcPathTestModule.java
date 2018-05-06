@@ -177,13 +177,17 @@ public class ArcPathTestModule extends Module{
 	if(launched){
 	    System.out.println("Moving robot");
 	    Position p1 = null,p2 = null;
+	    Curvature k = null;
 	    switch(direction){
 	    case FORWARD: p1 = arcPath.getPoints()[progress - 1]; p2 = arcPath.getPoints()[progress];
+	    	k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(progress));
 		break;
-	    case BACKWARD:p1 = arcPath.getPoints()[progress]; p2 = arcPath.getPoints()[progress - 1];
+	    case BACKWARD:
+		int place = arcPath.getPoints().length - progress;
+		p1 = arcPath.getPoints()[place]; p2 = arcPath.getPoints()[place - 1];
+		k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(place));
 		break;
 	    }
-	    Curvature k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(progress));
 	    double factor = DRIVE_SPEED / (1 + Math.exp(constant / k.getCurvature(currentPos.getX())));
 	    float left = 0.0F, right = 0.0F;
 	    switch(k.getTurn(currentPos.getX())){
