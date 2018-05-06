@@ -121,8 +121,8 @@ public class AutoModule extends Module {
 		}
 		// Tell transit to start for N minutes
 		LaunchTransit msg1 = LaunchTransit.newBuilder()
-				.setCurXPos(startPos.getX())
-				.setCurYPos(startPos.getY())
+				.setCurXPos((float) startPos.getX())
+				.setCurYPos((float) startPos.getY())
 				.setCurHeading((float) startPos.getHeading())
 				.setDestXPos(0.0F)
 				.setDestYPos(4.50F)

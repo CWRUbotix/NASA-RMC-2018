@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Represents the ArcPath for the robot
@@ -14,7 +13,7 @@ import java.util.Arrays;
 public class ArcPath{
     /** Points on the path in order*/
     private LinkedList<Position> points = new LinkedList<>();
-    /** Stores coefficients for 2nd polynomial representing each arc*/
+    /** Stores coefficients for 3rd polynomial representing each arc*/
     private HashMap<Integer, double[]> arcEqs = new HashMap<>();
     /** Map between each point to nearest obstacle*/
     private HashMap<Position, Obstacle> nearestObs = new HashMap<>();
@@ -39,31 +38,17 @@ public class ArcPath{
 	return arcEqs.get(segment);
     }
     
-    public void addObstacle(Position currentPos, Obstacle obs) throws DestinationModified{
+    public void addObstacle(Position currentPos, Obstacle obs){
 	if(!obstacles.contains(obs)){
 	    obstacles.add(obs);
 	    points = astar.computePath(currentPos, obs).getPath();
-	    Position newDest = isDestReasonable(new Path(points));
-		if(newDest == null){
-		    arcPath();
-		} else{
-		    points = astar.computePath(currentPos, newDest).getPath();
-		    arcPath();
-		    throw new DestinationModified(newDest.getX(), newDest.getY());
-		}
+	    arcPath();
 	}
     }
     
-    public void newPath(Position start, Position end) throws DestinationModified{
+    public void newPath(Position start, Position end){
 	points = astar.computePath(start, end).getPath();
-	Position newDest = isDestReasonable(new Path(points));
-	if(newDest == null){
-	    arcPath();
-	} else{
-	    points = astar.computePath(start, newDest).getPath();
-	    arcPath();
-	    throw new DestinationModified(newDest.getX(), newDest.getY());
-	}
+	arcPath();
     }
     
     @Override
@@ -114,8 +99,16 @@ public class ArcPath{
     }
     
     private void makeArc(Position p1, Position p2, int progress){
-	float t1 = getTangent(p1);
-	float t2 = getTangent(p2);
+	double t1, t2;
+	if(progress == 1){
+	    if(p1.getHeading() == Math.PI / 2 || p1.getHeading() == Math.PI * 3 / 2)
+		t1 = 0;
+	    else
+		t1 = -Math.tan(p1.getHeading() + Math.PI / 2);
+	}else{
+	    t1 = getTangent(p1);
+	}
+	t2 = getTangent(p2);
 	double [][] matrix = new double[4][5];
 	matrix[0][0] = Math.pow(p1.getX(), 3);
 	matrix[0][1] = Math.pow(p1.getX(), 2);
@@ -138,10 +131,6 @@ public class ArcPath{
 	matrix[3][3] = 0;
 	matrix[3][4] = t2;
 	
-	if(progress == 1){
-	    
-	}
-	
 	double[] coefficient = solveLinearSystem(matrix, p1, p2);
 	arcEqs.put(progress, coefficient);
     }
@@ -156,12 +145,9 @@ public class ArcPath{
 	}
 	
 	for(int row = 0; row < matrix.length; row ++){
-	    for(int r = 0; r < matrix.length; r ++){
-		System.out.println(Arrays.toString(store[r]));
-	    }
 	    if(store[row][row] == 0.0){
 		int swap = -1;
-		for(int r = row + 1; r < matrix.length; r++){
+		for(int r = row + 1; r < matrix.length && swap == -1; r++){
 		    if(store[r][row] != 0.0)
 			swap = r;
 		}
@@ -172,26 +158,32 @@ public class ArcPath{
 	    
 	    for(int r = 0; r< matrix.length; r++){
 		if(r != row){
-		    store[r] = R1(store[row], store[r], store[r][row], r);
+		    store[r] = R1(store[row], store[r], store[r][row], row);
 		}
 	    }
 	}
+	
 	double[] ans = new double[4];
 	ans[0] = matrix[0][4];
 	ans[1] = matrix[1][4];
 	ans[2] = matrix[2][4];
 	ans[3] = matrix[3][4];
-	
-	if(Math.abs(ans[0] * Math.pow(p1.getX(), 3) + ans[1] * Math.pow(p1.getX(), 2) + ans[2] * p1.getX() + ans[3] - p1.getY()) > 1e-3
-		|| Math.abs(ans[0] * Math.pow(p2.getX(), 3) + ans[1] * Math.pow(p2.getX(), 2) + ans[2] * p2.getX() + ans[3] - p2.getY()) > 1e-3)
-	    throw new RuntimeException("Created arc is invalid.");
-	
+
 	return ans;
     }
     
-    private float getTangent(Position p){
+    private double getTangent(Position p){
 	Obstacle o = nearestObs.get(p);
-	float m = (p.getY() - o.getY())/(p.getX() - o.getX());
+	double m;
+	if(o == null){
+	    if(p.getHeading() == Math.PI / 2 || p.getHeading() == Math.PI * 3 / 2)
+		m = 0;
+	    else
+		m = -Math.tan(p.getHeading() + Math.PI / 2);
+	} else{
+	    m = (p.getY() - o.getY())/(p.getX() - o.getX());
+
+	}
 	return -1 / m;
     }
     
@@ -230,7 +222,7 @@ public class ArcPath{
 	}
 	
 	double factor = result[row];
-	for(int i = 0; i < r1.length; i++){
+	for(int i = 0; i < result.length; i++){
 	    if(i == row){
 		result[i] = 1;
 	    } else{
@@ -257,27 +249,7 @@ public class ArcPath{
 	
 	return result;
     }
-    
-    private Position isDestReasonable(Path path){
-	float minX = 0.0F, maxX = 0.0F;
-	
-	for(Position pos : path){
-	    if(pos.getX() < minX)
-		minX = pos.getX();
-	    if(pos.getX() > maxX)
-		maxX = pos.getX();
-	}
-	
-	if(Math.abs(maxX - path.getPath().getLast().getX()) > Position.ARENA_WIDTH() * 1 / 3){
-	    return new Position(maxX, path.getPath().getLast().getY());
-	}
-	else if(Math.abs(minX - path.getPath().getLast().getX()) > Position.ARENA_WIDTH() * 1 / 2){
-	    return new Position(minX, path.getPath().getLast().getY());
-	}
-	
-	return null;
-    }
-    
+        
     public static ArcPath arcPath(Path path, ArrayList<Obstacle> obstacles){
 	ArcPath a = new ArcPath(path.getPath().getFirst(), path.getPath().getLast());
 	a.points = path.getPath();
@@ -285,24 +257,5 @@ public class ArcPath{
 	a.arcPath();
 	return a;
     }
-    
-    public class DestinationModified extends Exception{
-	private float new_dest_x;
-	private float new_dest_y;
-	
-	public DestinationModified(float new_dest_x, float new_dest_y){
-	    super();
-	    this.new_dest_x = new_dest_x;
-	    this.new_dest_y = new_dest_y;
-	}
-	
-	public float getX(){
-	    return new_dest_x;
-	}
-	
-	public float getY(){
-	    return new_dest_y;
-	}
-    }
-    
+        
 }

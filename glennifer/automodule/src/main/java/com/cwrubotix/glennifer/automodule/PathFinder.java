@@ -70,7 +70,7 @@ public class PathFinder {
     }
 
     private Position isDestReasonable(Path path){
-	float minX = 0.0F, maxX = 0.0F;
+	double minX = 0.0F, maxX = 0.0F;
 	
 	for(Position pos : path){
 	    if(pos.getX() < minX)
@@ -90,20 +90,20 @@ public class PathFinder {
     }
     
     public class DestinationModified extends Exception{
-	private float new_dest_x;
-	private float new_dest_y;
+	private double new_dest_x;
+	private double new_dest_y;
 	
-	public DestinationModified(float new_dest_x, float new_dest_y){
+	public DestinationModified(double new_dest_x, double new_dest_y){
 	    super();
 	    this.new_dest_x = new_dest_x;
 	    this.new_dest_y = new_dest_y;
 	}
 	
-	public float getX(){
+	public double getX(){
 	    return new_dest_x;
 	}
 	
-	public float getY(){
+	public double getY(){
 	    return new_dest_y;
 	}
     }

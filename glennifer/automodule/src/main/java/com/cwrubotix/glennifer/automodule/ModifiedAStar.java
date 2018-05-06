@@ -26,7 +26,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      */
     private AStarNode end;
     /**Clearance distance needed from the center of the robot*/
-    private final float CLEARANCE = 0.80F;
+    private final double CLEARANCE = 0.80F;
 
     /**
      * Returns the list of obstacles
@@ -111,10 +111,10 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 	for(int i = 0; i < 10; i++){
 	    double angle = Math.PI * i / 5;
-	    float clearance = (CLEARANCE + 0.1F) / 2 + obs.getRadius();
-	    float x_pos = (float)(obs.getX() + clearance * Math.cos(angle));
+	    double clearance = (CLEARANCE + 0.1F) / 2 + obs.getRadius();
+	    double x_pos = (obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
-		addNode(getNodes(), new AStarNode(x_pos, (float)(obs.getY() + clearance * Math.sin(angle))));
+		addNode(getNodes(), new AStarNode(x_pos, (obs.getY() + clearance * Math.sin(angle))));
 	}
     }
 
@@ -241,7 +241,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
                     neighbor.updateDist(current.getDist() + current.getDistTo(neighbor));
                 }
                 else if(!neighbor.isVisited()){ //If seen before, update cost.
-                    float tempGScore = current.getDist() + current.getDistTo(neighbor);
+                    double tempGScore = current.getDist() + current.getDistTo(neighbor);
                     if (neighbor.getDist() > tempGScore) {
                         neighbor.updateDist(tempGScore);
                         neighbor.setPrevious(current);
@@ -349,11 +349,11 @@ public class ModifiedAStar implements PathFindingAlgorithm {
         /**
          * the total distance from start point to this vertex
          */
-        private float distance;
+        private double distance;
         /**
          * the heruistic value of this vertex
          */
-        private float heruistic;
+        private double heruistic;
         /**
          * indicator of whether this node belongs to closed set during each A* search
          */
@@ -369,7 +369,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          * @param x_pos x-coordinate position of the vertex
          * @param y_pos y-coordinate position of the vertex
          */
-        public AStarNode(float x_pos, float y_pos) {
+        public AStarNode(double x_pos, double y_pos) {
             super(x_pos, y_pos);
         }
 
@@ -423,7 +423,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          *
          * @return the known shortest distance from the start node to this node
          */
-        public float getDist() {
+        public double getDist() {
             return distance;
         }
 
@@ -432,7 +432,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          *
          * @return the heruistic value of the node
          */
-        public float getHeruistic() {
+        public double getHeruistic() {
             return heruistic;
         }
 
@@ -441,7 +441,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          *
          * @return the fscore of this node
          */
-        public float getFScore() {
+        public double getFScore() {
             return getDist() + getHeruistic();
         }
 
@@ -480,7 +480,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          *
          * @param distance the known shortest distance from the start node
          */
-        public void updateDist(float distance) {
+        public void updateDist(double distance) {
             this.distance = distance;
         }
 
@@ -491,9 +491,9 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          */
         public void setHeruistic(AStarNode end) {
             if(getPrevious() !=null){
-        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end) + getHeading());
+        	this.heruistic = (this.getDistTo(end) + getHeadingTo(end) + getHeading());
             } else{
-        	this.heruistic = (float)(this.getDistTo(end) + getHeadingTo(end));
+        	this.heruistic = (this.getDistTo(end) + getHeadingTo(end));
             }
         }
 
