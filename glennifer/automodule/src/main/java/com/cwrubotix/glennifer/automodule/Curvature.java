@@ -42,11 +42,11 @@ public class Curvature {
 	    throw new IllegalArgumentException("x out of bounds");
     }
     
-    private double getFirstDeriv(double x){
+    public double getFirstDeriv(double x){
 	return firstDeriv[0] * x * x + firstDeriv[1] * x + firstDeriv[2];
     }
     
-    private double getSecondDeriv(double x){
+    public double getSecondDeriv(double x){
 	return secondDeriv[0] * x + secondDeriv[1];
     }
 }
