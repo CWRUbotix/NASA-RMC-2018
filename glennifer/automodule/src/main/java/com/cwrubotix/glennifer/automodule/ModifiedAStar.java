@@ -111,7 +111,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	
 	for(int i = 0; i < 10; i++){
 	    double angle = Math.PI * i / 5;
-	    double clearance = (CLEARANCE + 0.1F) / 2 + obs.getRadius();
+	    double clearance = (CLEARANCE + 0.3F) / 2 + obs.getRadius();
 	    double x_pos = (obs.getX() + clearance * Math.cos(angle));
 	    if(x_pos > Position.ARENA_WIDTH() / -2 + Position.WALL_CLEARANCE() && x_pos < Position.ARENA_WIDTH() / 2 - Position.WALL_CLEARANCE())
 		addNode(getNodes(), new AStarNode(x_pos, (obs.getY() + clearance * Math.sin(angle))));
@@ -122,7 +122,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
      * Reconstructs the graph making sure that no edge has an obstacle in the way
      */
     private void connectToAll() {
-
         for (AStarNode node : getNodes()) {
             node.resetConnection();
             for (AStarNode connect : getNodes()) {
@@ -179,7 +178,6 @@ public class ModifiedAStar implements PathFindingAlgorithm {
 	    return false;
 	}
 	
-
 	/*Angle between the tangent line of clearance range that intersects start node position and the line between start node and center of Obstacle*/
         double theta = Math.atan((CLEARANCE / 2 + obs.getRadius()) / Math.abs(start.getDistTo(obs)));
 	
@@ -491,7 +489,7 @@ public class ModifiedAStar implements PathFindingAlgorithm {
          */
         public void setHeruistic(AStarNode end) {
             if(getPrevious() !=null){
-        	this.heruistic = (this.getDistTo(end) + getHeadingTo(end) + getHeading());
+        	this.heruistic = (this.getDistTo(end) + getHeadingTo(end) + previous.getHeadingTo(this));
             } else{
         	this.heruistic = (this.getDistTo(end) + getHeadingTo(end));
             }
