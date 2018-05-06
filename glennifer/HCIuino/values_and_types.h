@@ -26,7 +26,7 @@
 // Sizes & Number of things
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
-#define NUM_MOTORS 				(9)
+#define NUM_MOTORS 				(11)
 #define NUM_LIM_SWITCHES 		(9)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
@@ -70,6 +70,8 @@
 #define SABERTOOTH_ROT_M1 		(22)
 #define SABERTOOTH_ROT_M2 		(23)
 #define SABERTOOTH_TRANS_M1 	(53)
+#define E_STOP_PIN 				(2)
+#define QUAD_ENC_READER_ADDR 	(0x14)
 #define ROBOCLAW_0_ADDR 		(0x80)
 #define ROBOCLAW_1_ADDR  		(0x81)
 #define ROBOCLAW_2_ADDR 		(0x82)
@@ -88,7 +90,22 @@
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
 
-#define RELAY_RISE_FALL_TIME 	(15)
+// ESC MOTOR CONTROL VALUES
+#define RELAY_RISE_FALL_TIME 	(10)
+#define PWM_PIN_ESC_1 			(40)
+#define REV_PIN_ESC_1 			(51)
+#define PWM_PIN_ESC_2 			(42)
+#define REV_PIN_ESC_2 			(49)
+#define PWM_PIN_ESC_3 			(44)
+#define REV_PIN_ESC_3 			(47)
+#define PWM_PIN_ESC_4 			(46)
+#define REV_PIN_ESC_4 			(45)
+#define PWM_PIN_ESC_5 			(48)
+#define REV_PIN_ESC_5 			(43)
+#define PWM_PIN_ESC_6     		(50)
+#define REV_PIN_ESC_6     		(41)
+#define ESC_SPEED_MIN 			(1000)
+#define ESC_SPEED_MAX 			(2000)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -134,6 +151,7 @@ typedef struct SensorInfo{
 	uint32_t lastUpdateTime; 	// 
 	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
 	Encoder* quad;
+	uint8_t  array_index;
 	uint32_t last_pos = 0; 		// used for encoders
 }SensorInfo;
 
@@ -149,6 +167,7 @@ enum MotorHardware {
 	MH_RC_VEL, 		// if RoboClaw
 	MH_RC_POS, 		//
 	MH_RC_BOTH, 	//
+	MH_LOOKY,
 	MH_ALL			// if All?
 };
 
@@ -168,6 +187,7 @@ typedef struct MCInfo {
 	RoboClaw* roboclaw;
 	uint8_t addr; 				// used if MC_ROBOCLAW
 	ESC* esc; 					// if using the brushless controller
+	uint8_t  dir_relay_pin; 	// used to control direction
 }MCInfo;
 
 //MOTOR INFO
@@ -178,7 +198,6 @@ typedef struct MotorInfo{
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
 	uint8_t  whichPin = 0; 		// if it's a sabertooth
 	bool     is_reversed = false;
-	uint8_t  dir_relay_pin; 	// used to control direction
 	uint16_t scale = 1; 		// 1 unless needed
 	int16_t  setPt = 0;			// set point for motor (rather that use an array)
 	int32_t  target_vel = 0; 	//
@@ -199,11 +218,12 @@ typedef struct MotorInfo{
 	uint8_t  feedbackSensorID;	//
 	float    saturation; 		//
 	uint32_t lastUpdateTime; 	// replaces the motor_lastUpdateTime array
-	uint32_t safe_dt = 200; 	// safe time to wait for the motor to stop
+	uint32_t safe_dt = 1000; 	// safe time to wait for the motor to stop
 	uint16_t lastError; 		// for tracking the derivative
 	float    integral; 			// replaces the motor_integrals array
 	float    integral_max = 10000.0;
 	bool     is_stopped = false;// to stop if we hit a limit switch
+	uint8_t  looky_id;
 }MotorInfo;
 
 int sign(int val){
@@ -229,18 +249,22 @@ uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
 int16_t sensor_storedVals	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to 0
 float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
+int8_t  encoder_values      [6] 				= {}; 	// for values from encoder board
 bool 	stopped 								= true;	// default status is stopped
-
+uint8_t e_stop_state 							= LOW;
+uint8_t e_stop_state_last 						= LOW;
 
 int lastTime = 0;
 int debugging[5] = {};
 
 uint32_t loops 									= 0;
 
-RoboClaw roboclawSerial(&Serial1, ROBOCLAW_TIMEOUT);
-
-// ODriveArduino odrive0(Serial1);
-// ODriveArduino odrive1(Serial2);
-// ODriveArduino odrive2(Serial3);
+// CREATE ESC OBJECTS
+ESC ESC_1 (PWM_PIN_ESC_1, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);                 // ESC_Name (ESC PIN, Minimum Value, Maximum Value, Default Speed, Arm Value)
+ESC ESC_2 (PWM_PIN_ESC_2, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);
+ESC ESC_3 (PWM_PIN_ESC_3, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);
+ESC ESC_4 (PWM_PIN_ESC_4, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);
+ESC ESC_5 (PWM_PIN_ESC_5, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);
+ESC ESC_6 (PWM_PIN_ESC_6, ESC_SPEED_MIN, ESC_SPEED_MAX, 500);
 
 #endif

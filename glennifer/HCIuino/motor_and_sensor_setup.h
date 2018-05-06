@@ -8,15 +8,19 @@ void setup_sensors(){
 	//ENCODERS
 	sensor_infos[1].hardware 		= SH_RC_ENC_VEL;
 	sensor_infos[1].whichMotor 		= FRONT_PORT_MTR_ID;
+	sensor_infos[1].array_index 	= 0;
 
 	sensor_infos[3].hardware 		= SH_RC_ENC_VEL;
 	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[3].array_index 	= 1;
 
 	sensor_infos[5].hardware 		= SH_RC_ENC_VEL;
 	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
+	sensor_infos[5].array_index 	= 2;
 
 	sensor_infos[7].hardware 		= SH_RC_ENC_VEL;
 	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
+	sensor_infos[7].array_index 	= 3;
 
 	int16_t port_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
 	int16_t stbd_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
@@ -97,65 +101,98 @@ void setup_sensors(){
 	sensor_infos[21].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[21].mtr_dir_if_triggered = -1; 
 	limit_switches[8] 				= &(sensor_infos[21]);
+
+	sensor_infos[33].hardware 		= SH_BL_CUR;
+	sensor_infos[33].whichPin  		= A3;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
 	// Motor related serial stuff
 	Serial2.begin(SABERTOOTH_BAUD);
 	SabertoothSimplified ST(Serial2); 	//
-	roboclawSerial.begin(ROBOCLAW_BAUD);
+	Herkulex.beginSerial2(115200);
+	Herkulex.initialize(); //initialize motors
+	delay(100);
 
-	board_infos[0].type 		= MC_ROBOCLAW;
-	board_infos[0].addr 		= ROBOCLAW_0_ADDR;
-	board_infos[0].roboclaw 	= & roboclawSerial;
+	board_infos[0].type 			= MC_YEP;
+	board_infos[0].esc 				= & ESC_1;
+	board_infos[0].dir_relay_pin	= REV_PIN_ESC_1;
 	
-	board_infos[1].type 		= MC_ROBOCLAW;
-	board_infos[1].addr 		= ROBOCLAW_1_ADDR;
-	board_infos[1].roboclaw 	= & roboclawSerial;
+	board_infos[1].type 			= MC_YEP;
+	board_infos[1].esc 				= & ESC_2;
+	board_infos[1].dir_relay_pin	= REV_PIN_ESC_2;
 	
-	board_infos[2].type 		= MC_ROBOCLAW;
-	board_infos[2].addr 		= ROBOCLAW_2_ADDR;
-	board_infos[2].roboclaw 	= & roboclawSerial;
+	board_infos[2].type 			= MC_YEP;
+	board_infos[2].esc 				= & ESC_3;
+	board_infos[2].dir_relay_pin	= REV_PIN_ESC_3;
 
-	board_infos[3].type 		= MC_SABERTOOTH;
-	board_infos[3].ST 			= & ST;
-	board_infos[3].selectPin 	= SABERTOOTH_1_SLCT;
+	board_infos[5].type 			= MC_YEP;
+	board_infos[5].esc 				= & ESC_4;
+	board_infos[5].dir_relay_pin	= REV_PIN_ESC_4;
 
-	board_infos[4].type 		= MC_SABERTOOTH;
-	board_infos[4].ST 			= & ST;
-	board_infos[4].selectPin 	= SABERTOOTH_0_SLCT;
+	board_infos[6].type 			= MC_YEP;
+	board_infos[6].esc 				= & ESC_5;
+	board_infos[6].dir_relay_pin	= REV_PIN_ESC_5;
+
+	board_infos[7].type 			= MC_YEP;
+	board_infos[7].esc 				= & ESC_6;
+	board_infos[7].dir_relay_pin	= REV_PIN_ESC_6;
+
+	board_infos[3].type 			= MC_SABERTOOTH;
+	board_infos[3].ST 				= & ST;
+	board_infos[3].selectPin 		= SABERTOOTH_1_SLCT;
+
+	board_infos[4].type 			= MC_SABERTOOTH;
+	board_infos[4].ST 				= & ST;
+	board_infos[4].selectPin 		= SABERTOOTH_0_SLCT;
 	
+	pinMode(REV_PIN_ESC_1, OUTPUT);
+	pinMode(REV_PIN_ESC_2, OUTPUT);
+	pinMode(REV_PIN_ESC_3, OUTPUT);
+	pinMode(REV_PIN_ESC_4, OUTPUT);
+	pinMode(REV_PIN_ESC_5, OUTPUT);
+	pinMode(REV_PIN_ESC_6, OUTPUT);
+
 	pinMode(SABERTOOTH_0_SLCT, OUTPUT);
 	pinMode(SABERTOOTH_1_SLCT, OUTPUT);
+
+	digitalWrite(REV_PIN_ESC_1, LOW);
+	digitalWrite(REV_PIN_ESC_2, LOW);
+	digitalWrite(REV_PIN_ESC_3, LOW);
+	digitalWrite(REV_PIN_ESC_4, LOW);
+	digitalWrite(REV_PIN_ESC_5, LOW);
+	digitalWrite(REV_PIN_ESC_6, LOW);
 	
 
 	// MOTORS
-
 	// DRIVE MOTORS
-	motor_infos[FRONT_PORT_MTR_ID].whichMotor		= 1;
-	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_RC_VEL;
-	motor_infos[FRONT_PORT_MTR_ID].max_delta 		= DFLT_MAX_DELTA;
-	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[2]);
+	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_BL_VEL;
+	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[1]);
+	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[FRONT_PORT_MTR_ID].center 			= 1000;
+	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 250;
 	motor_infos[FRONT_PORT_MTR_ID].encoder 			= & (sensor_infos[1]);
 
-	motor_infos[FRONT_STARBOARD_MTR_ID].whichMotor 	= 1;
-	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_RC_VEL;
-	motor_infos[FRONT_STARBOARD_MTR_ID].is_reversed = true;
-	motor_infos[FRONT_STARBOARD_MTR_ID].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[0]);
+	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
+	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[7]);
+	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 1000;
+	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
+	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[3]);
 	
-	motor_infos[REAR_PORT_MTR_ID].whichMotor 		= 0;
-	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_RC_VEL;
-	motor_infos[REAR_PORT_MTR_ID].max_delta 		= DFLT_MAX_DELTA;
-	motor_infos[REAR_PORT_MTR_ID].is_reversed 		= true;
-	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[2]);
+	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
+	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[0]);
+	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
+	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
+	motor_infos[REAR_PORT_MTR_ID].safe_dt 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[7]);
 
-	motor_infos[REAR_STARBOARD_MTR_ID].whichMotor 	= 0;
-	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_RC_VEL;
-	motor_infos[REAR_STARBOARD_MTR_ID].max_delta 	= DFLT_MAX_DELTA;
-	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[0]);
+	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
+	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[6]);
+	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 1000;
+	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
+	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[5]);
 
 	// Set Roboclaw encoder modes
@@ -168,18 +205,18 @@ void setup_motors(){
 
 	// EXCAVATION MOTORS
 	// main digging
-	motor_infos[4].whichMotor 						= 0;
-	motor_infos[4].hardware 						= MH_RC_VEL;
-	motor_infos[4].max_delta 						= DFLT_MAX_DELTA;
-	motor_infos[4].is_reversed 						= true;
-	motor_infos[4].board 							= & (board_infos[1]);
+	motor_infos[4].hardware 						= MH_BL_VEL;
+	motor_infos[4].max_pwr 							= 1000;
+	motor_infos[4].center 							= 1000;
+	motor_infos[4].deadband 						= 250;
+	motor_infos[4].board 							= & (board_infos[2]);
 
 	// Depostion winch
-	motor_infos[5].whichMotor 						= 1;
-	motor_infos[5].hardware 						= MH_RC_VEL;
-	motor_infos[5].max_delta 						= DFLT_MAX_DELTA;
-	motor_infos[5].is_reversed 						= false;
-	motor_infos[5].board 							= & (board_infos[1]);
+	motor_infos[5].hardware 						= MH_BL_VEL;
+	motor_infos[5].max_pwr 							= 1000;
+	motor_infos[5].center 							= 1000;
+	motor_infos[5].deadband 						= 250;
+	motor_infos[5].board 							= & (board_infos[3]);
 
 	// port-side linear actuator
 	motor_infos[PORT_LIN_ACT_ID].whichMotor 		= 0;
@@ -222,10 +259,37 @@ void setup_motors(){
 	motor_infos[8].kp 								= EXC_TRANSLATION_KP;
 	motor_infos[8].ki 								= EXC_TRANSLATION_KI;
 
+	motor_infos[9].hardware 						= MH_LOOKY;
+	motor_infos[9].looky_id 						= 1;
+
+	motor_infos[10].hardware 						= MH_LOOKY;
+	motor_infos[10].looky_id 						= 2;
+
 	pinMode(SABERTOOTH_ROT_M1 ,OUTPUT);
 	pinMode(SABERTOOTH_ROT_M2 ,OUTPUT);
 	pinMode(SABERTOOTH_TRANS_M1 ,OUTPUT);
 
+}
+
+void init_yeps(){
+	ESC_1.arm();                                            // Send the Arm value so the ESC will be ready to take commands
+	ESC_2.arm();
+	ESC_3.arm();
+	ESC_4.arm();
+	ESC_5.arm();
+	ESC_6.arm();
+	delay(5000);                                            // Wait for a while
+
+
+	ESC_1.speed(1000);
+	ESC_2.speed(1000);
+	ESC_3.speed(1000);
+	ESC_4.speed(1000);
+	ESC_5.speed(1000);
+	ESC_6.speed(1000);
+
+
+	delay(1250);
 }
 
 #endif

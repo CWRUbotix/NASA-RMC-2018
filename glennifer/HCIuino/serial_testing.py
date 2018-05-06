@@ -48,7 +48,7 @@ def readSensors(cmdType):
 	for i in range(0,numSens):
 		ID  = int(input("ID :\t\t\t"))
 		byteArr.append(ID)
-		#bodyLen = bodyLen+3
+		
 
 	byteArr[1] = bodyLen
 	return byteArr
@@ -138,7 +138,7 @@ def main():
 				
 			elif cmdType == CMD_READ_SENSORS:
 				byteArr = readSensors(cmdType)
-				respLen = 2 + byteArr[1]
+				respLen = 2 + 3*byteArr[1]
 				
 			elif cmdType < 0:
 				done = True
@@ -151,7 +151,9 @@ def main():
 				print("Will expect "+str(respLen)+" bytes.")
 				ser.write(byteArr)
 				resp = ser.read(respLen)
-				print("\nResponse:\t"+str(resp))
+				print("\nResponse:\t")
+				for i in range(0,respLen):
+					print(int(resp[i]))
 		#--------------------------------------------------------------------
 	
 	

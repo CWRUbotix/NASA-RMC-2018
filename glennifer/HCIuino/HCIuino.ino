@@ -30,14 +30,17 @@
 #include <RoboClaw.h>
 #include <ESC.h>
 #include <Encoder.h>
+#include <Herkulex.h>
+#include <Wire.h>
 #include <math.h>
+
+RoboClaw roboclawSerial(&Serial1, 250);
 
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
 #include "hciRead.h"
 #include "hardware_io.h"
 #include "hciAnswer.h"
-
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -49,10 +52,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 void setup(){
 	Serial.begin(HCI_BAUD); 	// Begin communication with computer
+	init_yeps();
 	setup_sensors();
 	setup_motors(); 
+	motor_infos[FRONT_PORT_MTR_ID].setPt = 0;
+
 	Serial3.begin(9600); 		// For the FTDI-USB converter debugging tool
 	
+	Wire.begin();
+
 	analogWriteResolution(ANLG_WRITE_RES);
 	analogReadResolution(ANLG_READ_RES);
 	
@@ -71,6 +79,13 @@ void loop(){
 	byte cmd[DEFAULT_BUF_LEN];				// to store message from client
 	byte rpy[DEFAULT_BUF_LEN]; 				// buffer for the response
 	bool success = false; 
+
+	e_stop_state = digitalRead(E_STOP_PIN);
+	if(e_stop_state != e_stop_state_last){
+		// we've turned on the e-stop, need to reinitialize the YEPs
+		init_yeps();
+	}
+	e_stop_state_last = e_stop_state;
 
 	long time = millis() - lastTime;
 	FAULT_T fault_code = NO_FAULT;

@@ -106,15 +106,9 @@ int32_t read_enc(MotorInfo* motor){
 			// delay(10);
 			break;}
 		case SH_QUAD_VEL:{
-			uint32_t time 	= millis();
-			uint32_t dt 	= time - enc->lastUpdateTime;
-			uint32_t pos 	= enc->quad->read();
-			int32_t  dx 	= pos - enc->last_pos; 	// change in position, can be < 0
-			int32_t  rate 	= (dx/dt);
-			retval = rate;
-			enc->last_pos 	= (int16_t) pos;
-			enc->storedVal 	= (int16_t) rate;
-			enc->lastUpdateTime = time;
+			// relies on update_quad_encoders() being called in every loop
+			enc->storedVal 	= encoder_values[enc->array_index]; 
+			retval 			= enc->storedVal;
 			break;}
 		case SH_QUAD_POS:{
 			enc->storedVal 		= enc->quad->read();
@@ -187,6 +181,18 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 		case SH_QUAD_VEL:{
 			
 			break;}
+		case SH_BL_CUR:{
+			int raw 	= analogRead(sensor->whichPin);
+			// float volts = (3.3/4095.0) * raw;
+			float amps  = (raw*3.3*100.0)/(0.028*4095.0);
+			// 0.028 V/A
+			// 5V/4095
+			// float amps 	= volts/0.028;
+			int16_t ret = (int16_t) amps;
+			sensor->storedVal = ret;
+			*val 		= ret;
+			break;
+		}
 
 	}
 	return NO_FAULT;
@@ -243,14 +249,14 @@ bool write_to_roboclaw(MotorInfo* motor, int newSetPt){
 	int16_t sign 	= (motor->is_reversed ? -1 : 1);
 	bool retval 	= false;
 
-	if(motor->whichMotor == 0){
-		retval = roboclawSerial.DutyM1(address, (uint16_t) (sign*newSetPt) );
-	}else{
-		retval = roboclawSerial.DutyM2(address, (uint16_t) (sign*newSetPt) );
-	}
-	if(retval){
-		motor->lastUpdateTime = millis();
-	}
+	// if(motor->whichMotor == 0){
+	// 	retval = roboclawSerial.DutyM1(address, (uint16_t) (sign*newSetPt) );
+	// }else{
+	// 	retval = roboclawSerial.DutyM2(address, (uint16_t) (sign*newSetPt) );
+	// }
+	// if(retval){
+	// 	motor->lastUpdateTime = millis();
+	// }
 	return retval;
 }
 
@@ -286,46 +292,34 @@ bool write_to_sabertooth(MotorInfo* st, int val){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// bool toggle_yep_dir(MotorInfo* motor){
-// 	// redundancy check
-// 	if(motor->lastSet != 0 || (millis()-motor->lastUpdateTime) < motor->safe_dt  ){
-// 		return false;
-// 	}
-// 	motor->is_reversed = !motor->is_reversed;
-// 	if(motor->is_reversed){
-// 		digitalWrite(motor->dir_relay_pin, HIGH);
-// 		delay(RELAY_RISE_FALL_TIME);
-// 	}else{
-// 		digitalWrite(motor->dir_relay_pin, LOW);
-// 		delay(RELAY_RISE_FALL_TIME);
-// 	}
-
-// 	return true;
-// }
 void reverse_yep(MotorInfo* motor){
 	motor->is_reversed = true;
-	digitalWrite(motor->dir_relay_pin, HIGH);
+	digitalWrite(motor->board->dir_relay_pin, HIGH);
 	delay(RELAY_RISE_FALL_TIME);
 }
 void unreverse_yep(MotorInfo* motor){
 	motor->is_reversed = false;
-	digitalWrite(motor->dir_relay_pin, LOW);
+	digitalWrite(motor->board->dir_relay_pin, LOW);
 	delay(RELAY_RISE_FALL_TIME);
 }
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // @param int16_t val : power value between -1000 & 1000 (inclusive)
 ////////////////////////////////////////////////////////////////////////////////
 bool write_to_yep(MotorInfo* motor, int16_t val){
-	if( (sign(val) < 0) && !motor->is_reversed){
-		reverse_yep(motor);
-	}else if( (sign(val) > 0) && motor->is_reversed){
-		unreverse_yep(motor);
-	}
 	ESC* esc 	= motor->board->esc;
 	if(val == 0){
 		esc->speed(1000);
 		return true;
 	}
+
+	if( (sign(val) < 0) && !motor->is_reversed){
+		reverse_yep(motor);
+	}else if( (sign(val) > 0) && motor->is_reversed){
+		unreverse_yep(motor);
+	}
+	
 	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
 	val 		= map(val, 0, 1000, motor->center + motor->deadband, 2000);
 	esc->speed(val);
@@ -345,6 +339,14 @@ int get_motor_dir(MotorInfo* motor){
 	}
 }
 
+void update_quad_encoders(int8_t* arr){
+	Wire.beginTransmission(QUAD_ENC_READER_ADDR); 	// begin comms w/ the slave device
+	Wire.write(1); 									// command to get some data
+	for(int i = 0; i<6; i++){
+		arr[i] = Wire.read();
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -359,6 +361,7 @@ int get_motor_dir(MotorInfo* motor){
 void maintain_motors(byte* cmd, bool success){
 
 	uint8_t type 	= cmd_type(cmd);
+	update_quad_encoders(encoder_values);
 	
 	if(success && (type == CMD_SET_OUTPUTS) ){	// here we only care if it's set outputs
 		int body_len = cmd_body_len(cmd);
@@ -486,10 +489,15 @@ void maintain_motors(byte* cmd, bool success){
 					}else if(sign(motor->lastSet) == sign(motor->setPt)){
 						// write to controller (no direction change, so no worries)
 						writeSuccess = write_to_yep(motor, motor->setPt);
-					}else{
+					}else if(motor->setPt == 0){
+						writeSuccess = write_to_yep(motor, 0);
+						motor->lastSet = 0;
 						// DO NOTHING
 					}
 				}
+			case MH_LOOKY:
+				Herkulex.moveOneAngle(motor->looky_id, constrain(motor->setPt, -159, 159), 500, 2);
+				break;
 
 		}
 		// if(writeSuccess){
