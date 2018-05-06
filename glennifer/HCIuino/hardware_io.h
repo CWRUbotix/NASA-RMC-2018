@@ -188,7 +188,7 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 			// 0.028 V/A
 			// 5V/4095
 			// float amps 	= volts/0.028;
-			int16_t ret = (int16_t) amps;
+			int16_t ret = ((int16_t) amps) - sensor->baseline;
 			sensor->storedVal = ret;
 			*val 		= ret;
 			break;
@@ -345,6 +345,15 @@ void update_quad_encoders(int8_t* arr){
 	for(int i = 0; i<6; i++){
 		arr[i] = Wire.read();
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void init_actuators(){
+	MotorInfo* port = &(motor_infos[PORT_LIN_ACT_ID]);
+	MotorInfo* stbd = &(motor_infos[STARBOARD_LIN_ACT_ID]);
+	int pos = read_enc(port);
+	port->setPt = pos;
+	stbd->setPt = pos;
 }
 
 

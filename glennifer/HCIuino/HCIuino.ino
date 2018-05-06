@@ -63,12 +63,13 @@ void setup(){
 
 	analogWriteResolution(ANLG_WRITE_RES);
 	analogReadResolution(ANLG_READ_RES);
-	
+
 	stopped = false;
-	Serial3.println("================================================================================");
-	Serial3.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
-	Serial3.println("================================================================================");
-	delay(50);
+	init_actuators();
+	// Serial3.println("================================================================================");
+	// Serial3.println("CMD STATUS | CMD TYPE | BODY LEN | RPY STATUS | RPY SIZE");
+	// Serial3.println("================================================================================");
+	// delay(50);
 }
 
 

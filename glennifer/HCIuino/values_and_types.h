@@ -28,6 +28,8 @@
 #define NUM_SENSORS 			(256)
 #define NUM_MOTORS 				(11)
 #define NUM_LIM_SWITCHES 		(9)
+#define NUM_EXC_LIMS 			(5)
+#define NUM_DEP_LIMS 			(4)
 #define HCI_BAUD 				(9600)
 #define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
@@ -114,6 +116,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+enum SubSystem{
+	LOCO_SYS,
+	EXC_SYS,
+	DEP_SYS,
+	ALL_SYS
+}
+
 //SENSOR STUFF
 enum SensorHardware {
 	SH_NONE,
@@ -144,6 +153,7 @@ typedef struct SensorInfo{
 	bool     is_reversed = false;// When hardware = SH_PIN_LIMIT
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
+	int16_t  baseline;
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
 	int16_t* prev_values; 		// 
 	int16_t  val_at_max; 		// when this is a linear pot or similar
@@ -195,6 +205,7 @@ typedef struct MotorInfo{
 	MotorHardware hardware = MH_NONE; // default is NONE
 	MCInfo*  board; 			// motor controller board info
 	SensorInfo* encoder; 		// pointer to this motor's encoder
+	uint8_t  subsys = ALL_SYS; 	// flag to set the subsystem
 	uint8_t  whichMotor; 		// motor 0 or 1 on the board?
 	uint8_t  whichPin = 0; 		// if it's a sabertooth
 	bool     is_reversed = false;
@@ -224,6 +235,7 @@ typedef struct MotorInfo{
 	float    integral_max = 10000.0;
 	bool     is_stopped = false;// to stop if we hit a limit switch
 	uint8_t  looky_id;
+	SensorInfo** limits; 		//
 }MotorInfo;
 
 int sign(int val){
@@ -249,7 +261,10 @@ uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
 int16_t sensor_storedVals	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to 0
 float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
-int8_t  encoder_values      [6] 				= {}; 	// for values from encoder board
+int8_t  encoder_values      [5] 				= {}; 	// for values from encoder board
+SensorInfo* exc_limits      [NUM_EXC_LIMS-2] 	= {};
+SensorInfo* exc_rot_limits  [2] 				= {};
+SensorInfo* dep_limits 		[NUM_DEP_LIMS] 		= {};
 bool 	stopped 								= true;	// default status is stopped
 uint8_t e_stop_state 							= LOW;
 uint8_t e_stop_state_last 						= LOW;

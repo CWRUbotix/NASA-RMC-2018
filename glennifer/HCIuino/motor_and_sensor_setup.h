@@ -53,57 +53,67 @@ void setup_sensors(){
 	sensor_infos[13].whichMotor 	= 8;
 	sensor_infos[13].mtr_dir_if_triggered = 1; 	
 	limit_switches[0] 				= &(sensor_infos[13]);
+	exc_limits[0] 					= &(sensor_infos[13]);
 	// Exc translation; upper, starboard
 	sensor_infos[14].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[14].whichPin 		= 25;
 	sensor_infos[14].whichMotor 	= 8;
 	sensor_infos[14].mtr_dir_if_triggered = -1; 
 	limit_switches[1] 				= &(sensor_infos[14]);
+	exc_limits[1] 					= &(sensor_infos[14]);
 	// Exc translation; upper, port
 	sensor_infos[15].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[15].whichPin 		= 26;
 	sensor_infos[15].whichMotor 	= 8;
 	sensor_infos[15].mtr_dir_if_triggered = -1; 
 	limit_switches[2] 				= &(sensor_infos[15]);
+	exc_limits[2] 					= &(sensor_infos[15]);
 	// Exc rotation; port
 	sensor_infos[16].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[16].whichPin 		= 27;
 	sensor_infos[16].whichMotor 	= PORT_LIN_ACT_ID;
 	sensor_infos[16].mtr_dir_if_triggered = -1; 
 	limit_switches[3] 				= &(sensor_infos[16]);
+	exc_limits[3] 					= &(sensor_infos[16]);
 	// Exc rotation; starboard
 	sensor_infos[17].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[17].whichPin 		= 28;
 	sensor_infos[17].whichMotor 	= STARBOARD_LIN_ACT_ID;
 	sensor_infos[17].mtr_dir_if_triggered = -1; 
 	limit_switches[4] 				= &(sensor_infos[17]);
+	exc_limits[4] 					= &(sensor_infos[17]);
 	// Dep: upper, starboard
 	sensor_infos[18].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[18].whichPin 		= 30;
 	sensor_infos[18].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[18].mtr_dir_if_triggered = -1; 
 	limit_switches[5] 				= &(sensor_infos[18]);
+	dep_limits[0] 					= &(sensor_infos[18]);
 	// Dep: lower, port
 	sensor_infos[19].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[19].whichPin 		= 31;
 	sensor_infos[19].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[19].mtr_dir_if_triggered = 1; 
 	limit_switches[6] 				= &(sensor_infos[19]);
+	dep_limits[1] 					= &(sensor_infos[19]);
 	// Dep: lower, starboard
 	sensor_infos[20].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[20].whichPin 		= 32;
 	sensor_infos[20].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[20].mtr_dir_if_triggered = 1; 
 	limit_switches[7] 				= &(sensor_infos[20]);
+	dep_limits[2] 					= &(sensor_infos[20]);
 	// Dep: upper, port
 	sensor_infos[21].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[21].whichPin 		= 33;
 	sensor_infos[21].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[21].mtr_dir_if_triggered = -1; 
 	limit_switches[8] 				= &(sensor_infos[21]);
+	dep_limits[3] 					= &(sensor_infos[21]);
 
 	sensor_infos[33].hardware 		= SH_BL_CUR;
 	sensor_infos[33].whichPin  		= A3;
+	sensor_infos[33].baseline 		= 5800;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
@@ -171,6 +181,7 @@ void setup_motors(){
 	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 1000;
 	motor_infos[FRONT_PORT_MTR_ID].center 			= 1000;
 	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 250;
+	motor_infos[FRONT_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[FRONT_PORT_MTR_ID].encoder 			= & (sensor_infos[1]);
 
 	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
@@ -178,6 +189,7 @@ void setup_motors(){
 	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 1000;
 	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[FRONT_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[3]);
 	
 	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
@@ -186,6 +198,7 @@ void setup_motors(){
 	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
 	motor_infos[REAR_PORT_MTR_ID].safe_dt 			= 1000;
+	motor_infos[REAR_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[7]);
 
 	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
@@ -193,15 +206,16 @@ void setup_motors(){
 	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 1000;
 	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[REAR_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[5]);
 
 	// Set Roboclaw encoder modes
-	roboclawSerial.SetM1EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
-	roboclawSerial.SetM2EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
-	roboclawSerial.SetM1EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
-	roboclawSerial.SetM2EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
-	roboclawSerial.SetM1EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
-	roboclawSerial.SetM2EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
+	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
 
 	// EXCAVATION MOTORS
 	// main digging
@@ -209,6 +223,7 @@ void setup_motors(){
 	motor_infos[4].max_pwr 							= 1000;
 	motor_infos[4].center 							= 1000;
 	motor_infos[4].deadband 						= 250;
+	motor_infos[4].subsys 							= EXC_SYS;
 	motor_infos[4].board 							= & (board_infos[2]);
 
 	// Depostion winch
@@ -216,6 +231,8 @@ void setup_motors(){
 	motor_infos[5].max_pwr 							= 1000;
 	motor_infos[5].center 							= 1000;
 	motor_infos[5].deadband 						= 250;
+	motor_infos[5].subsys 							= DEP_SYS;
+	motor_infos[5].limits 							= dep_limits; // array of pointers to limit switches
 	motor_infos[5].board 							= & (board_infos[3]);
 
 	// port-side linear actuator
@@ -229,6 +246,7 @@ void setup_motors(){
 	motor_infos[PORT_LIN_ACT_ID].margin 			= 10;
 	motor_infos[PORT_LIN_ACT_ID].minpos 			= 0;
 	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 1000;
+	motor_infos[PORT_LIN_ACT_ID].subsys 			= EXC_SYS;
 	motor_infos[PORT_LIN_ACT_ID].kp 				= LIN_ACT_KP;
 	motor_infos[PORT_LIN_ACT_ID].ki 				= LIN_ACT_KI;
 	// starboard-side linear actuator
@@ -242,6 +260,7 @@ void setup_motors(){
 	motor_infos[STARBOARD_LIN_ACT_ID].margin 		= 10;
 	motor_infos[STARBOARD_LIN_ACT_ID].minpos 		= 0;
 	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 1000;
+	motor_infos[STARBOARD_LIN_ACT_ID].subsys 		= EXC_SYS;
 	motor_infos[STARBOARD_LIN_ACT_ID].kp 			= LIN_ACT_KP;
 	motor_infos[STARBOARD_LIN_ACT_ID].ki 			= LIN_ACT_KI;
 	
@@ -256,6 +275,7 @@ void setup_motors(){
 	motor_infos[8].hardware 						= MH_ST_PWM;
 	motor_infos[8].minpos 							= 0;
 	motor_infos[8].maxpos 							= 1000;
+	motor_infos[8].subsys 							= EXC_SYS;
 	motor_infos[8].kp 								= EXC_TRANSLATION_KP;
 	motor_infos[8].ki 								= EXC_TRANSLATION_KI;
 
