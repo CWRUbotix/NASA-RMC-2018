@@ -1,11 +1,11 @@
 package test;
 
-import main.java.com.cwrubotix.glennifer.automodule.ModifiedAStar;
-import main.java.com.cwrubotix.glennifer.automodule.Obstacle;
-import main.java.com.cwrubotix.glennifer.automodule.Position;
-import main.java.com.cwrubotix.glennifer.automodule.Path;
-import main.java.com.cwrubotix.glennifer.automodule.PathFinder;
-import main.java.com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
+import com.cwrubotix.glennifer.automodule.ModifiedAStar;
+import com.cwrubotix.glennifer.automodule.Obstacle;
+import com.cwrubotix.glennifer.automodule.Position;
+import com.cwrubotix.glennifer.automodule.Path;
+import com.cwrubotix.glennifer.automodule.PathFinder;
+import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -42,6 +42,7 @@ public class PathPlanSimulator {
      * Array of paths created by different algorithms.
      */
     private Path path;
+    
     /**
      * Array of PathFinders that represents each algorithm
      */
@@ -55,7 +56,7 @@ public class PathPlanSimulator {
      */
     private Position destination;
     /**
-     * Stores errorMessages created during simulation
+     * Stores whether simulation failed
      */
     private boolean failed = false;
     
@@ -387,9 +388,9 @@ public class PathPlanSimulator {
          */
         private TextArea result = new TextArea();
         /**
-         * TextArea that displays error messages
+         * TextArea that displays Path Result
          */
-        private TextArea errorMessages = new TextArea();
+        private TextArea pathResult = new TextArea();
         /**
          * list of Group instances which each will store each path graphics
          */
@@ -457,14 +458,14 @@ public class PathPlanSimulator {
                 }
             });
 
-            errorMessages.setEditable(false);
-            errorMessages.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
+            pathResult.setEditable(false);
+            pathResult.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             VBox left = new VBox();
             left.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
             left.getChildren().addAll(result, startButton);
             VBox right = new VBox();
             right.setPrefSize(300, Position.ARENA_HEIGHT() * 100);
-            right.getChildren().addAll(errorMessages, reRunAlgorithmButton);
+            right.getChildren().addAll(pathResult, reRunAlgorithmButton);
             left.setAlignment(Pos.CENTER);
             right.setAlignment(Pos.CENTER);
             pane.setLeft(left);
@@ -612,6 +613,7 @@ public class PathPlanSimulator {
         	    dist += previous.getDistTo(pos);
         	    angle += Math.abs(previous.getHeading() - pos.getHeading());
         	}
+        	pathResult.appendText(pos.toString() + pos.getNearestObs() + "\n");
         	previous = pos;
             }
             float timeTook = dist / (PathPlanSimulator.MAX_STRAIGHT_SPEED * 0.3F) + angle / (PathPlanSimulator.MAX_TURNING_SPEED * 0.3F);
