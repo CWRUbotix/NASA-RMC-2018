@@ -108,13 +108,13 @@ public class AutoDrillModule extends Module {
 			 * We could either keep this message format and make AutoDrill to figure out motor speeds we want and send message to itself
 			 * Or keep this just for Manual Control and create make AutoDrill make decision on its own without using messages.
 			 */
-            Messages.ExcavationControlCommandDigSurface cmd = Messages.ExcavationControlCommandDigSurface.parseFrom(body);
+            /*Messages.ExcavationControlCommandDigSurface cmd = Messages.ExcavationControlCommandDigSurface.parseFrom(body);
             targetDepth = cmd.getDepth(); //How deep we want to dig
             digSpeed = cmd.getDigSpeed(); //How fast we want to dig
             targetDist = cmd.getDist();   //How far forward we want to go
             driveSpeed = cmd.getDriveSpeed(); //How fast do we want to go forward
             modeStartTime = Instant.now(); //Time stamp for when this message was received
-            updateMotors(); //Start digging with given goals
+            updateMotors(); //Start digging with given goals*/
         }
     }
 

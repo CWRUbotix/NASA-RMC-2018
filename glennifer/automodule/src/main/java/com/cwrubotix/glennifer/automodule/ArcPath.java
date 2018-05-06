@@ -30,6 +30,10 @@ public class ArcPath{
 	return new Path(points);
     }
     
+    public Position[] getPoints(){
+	return points.toArray(new Position[0]);
+    }
+    
     public Map<Integer, double[]> getArcs(){
 	return arcEqs;
     }
@@ -38,12 +42,17 @@ public class ArcPath{
 	return arcEqs.get(segment);
     }
     
-    public void addObstacle(Position currentPos, Obstacle obs){
+    public boolean addObstacle(Position currentPos, Obstacle obs){
 	if(!obstacles.contains(obs)){
 	    obstacles.add(obs);
-	    points = astar.computePath(currentPos, obs).getPath();
-	    arcPath();
-	}
+	    if(currentPos != null){
+		points = astar.computePath(currentPos, obs).getPath();
+		arcPath();
+		return true;
+	    }else{
+		return false;
+	    }
+	} return false;
     }
     
     public void newPath(Position start, Position end){
