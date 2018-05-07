@@ -31,12 +31,12 @@ public class AutoDrillModule extends Module {
      * Upper limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentUpperLimit = 20.0F;
+    private final float currentUpperLimit = 1000.0F;
     /**
      * Lower limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentLowerLimit = 8.0F;
+    private final float currentLowerLimit = 300.0F;
     
 
     /**
@@ -73,7 +73,7 @@ public class AutoDrillModule extends Module {
 	    }
 	    // Transition to dig deep
 	    currentJob = DrillJob.DEEP;
-	    excavationAngleControl(bc_angle);
+	    //excavationAngleControl(bc_angle);
 	    
 	    // Parse the incoming message to get target depth and speed we want
 	    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
@@ -135,7 +135,7 @@ public class AutoDrillModule extends Module {
 	    double heading = launch.getCurrentHeading();
 	    currentPos = new Position(x, y, heading);
 	    launched = true;
-	    excavationAngleControl(bc_angle);
+	    //excavationAngleControl(bc_angle);
 	    if(digProgress.get(currentPos) != null || MAX_TRANSLATION - digProgress.get(currentPos) < 1.0F){
 		nextPos = currentPos;
 		lastJob = currentJob;
@@ -195,10 +195,11 @@ public class AutoDrillModule extends Module {
 	
 	@Override
 	public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+	    System.out.println("handling state update message");
 	    Messages.State msg = Messages.State.parseFrom(body);
 	    bc_trans = msg.getExcDetailed().getDisplacement();
 	    bc_current = msg.getExcDetailed().getCurrent();
-	    
+	    System.out.println("current: " + bc_current);
 	    detectStall();
 	    updateMotors();
 	}
@@ -260,14 +261,14 @@ public class AutoDrillModule extends Module {
 		    excavationConveyorRPM(0);
 		    excavationTranslationControl(0.0F);
 		}
-		break;
-	    case DEEP:
+		break;	    
+		case DEEP:
 		if (isStalled) {
-		    excavationConveyorRPM(50);
-		    excavationTranslationControl(0);
+		    excavationConveyorRPM(200);
+		    excavationTranslationControl(10);
 		} else {
-		    excavationConveyorRPM(50);
-		    excavationTranslationControl(getCurrentDepthTarget());
+		    excavationConveyorRPM(200);
+		    excavationTranslationControl(-8);
 		}
 		break;
 	    case DRIVE: //TODO
@@ -324,7 +325,7 @@ public class AutoDrillModule extends Module {
 	String line = reader.readLine();
 	
 	while(line != null){
-	    temp.add(Double.parseDouble(line.split(" ")[1]));
+	    temp.add(Double.parseDouble(line.split(" ")[0]));
 	    line = reader.readLine();
 	}
 	
@@ -422,7 +423,7 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-	loadTable();
+	//loadTable();
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();

@@ -129,11 +129,17 @@ public class LocomotionState {
     }
 
     public int getWheelCount(Wheel wheel){
-        return wheelCount.get(wheel).get();
+        if (wheelCount.get(wheel).isPresent()){
+            return wheelCount.get(wheel).get();
+        }
+        return 0;
     }
 
     //
     public float getWheelRpm(Wheel wheel) {
-        return wheelRpm.get(wheel).get();
+        if (wheelRpm.get(wheel).isPresent()){
+            return wheelRpm.get(wheel).get();
+        }   
+        return 0f;
     }
 }

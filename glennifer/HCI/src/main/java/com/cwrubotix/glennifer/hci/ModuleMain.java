@@ -91,10 +91,10 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
-        generateDummyMessage();
+        //generateDummyMessage();
         try {
             while (true) {
-                System.out.println("Looping in main");
+                //System.out.println("Looping in main");
                 SensorData sensorData = hci.pollSensorUpdate();
                 generateSensorUpdateMessage(sensorData);
 
@@ -108,6 +108,8 @@ public class ModuleMain {
     private static void generateSensorUpdateMessage(SensorData sensorData) throws IOException{
         int sensorDataID =  sensorData.id;
         double value = sensorData.data;
+        System.out.println("data ID: " + sensorDataID);
+        System.out.println("value: " + value);
         long time_ms = sensorData.timestamp;
         Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
                 .setTimeInt(time_ms / 1000)
@@ -167,9 +169,9 @@ public class ModuleMain {
             }
 
             // EXCAVATION BC DIGGING CURRENT
-            case 13: {
+            case 33: {
                 Messages.CurrentUpdate msg = Messages.CurrentUpdate.newBuilder()
-                    .setCurrent((float)value / 100.0F)
+                    .setCurrent((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.conveyor_current", null, msg.toByteArray());
@@ -283,7 +285,7 @@ public class ModuleMain {
             try {
                 // Open the port
                 sp.openPort();
-                Thread.sleep(1000);
+                Thread.sleep(7000);
                 sp.setParams(baud, 8, 1, 0);
                 sp.setDTR(false);
                 // Create test packet
@@ -354,7 +356,7 @@ public class ModuleMain {
         sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit B", 10));
         sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit A", 11));
         sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit B", 12));
-        sensorList.add(new SensorConfig("Bucket Conveyor Current", 13));
+        sensorList.add(new SensorConfig("Bucket Conveyor Current", 33));
 
         //Deposition
         sensorList.add(new SensorConfig("Hopper Encoder", 14));
@@ -434,7 +436,7 @@ public class ModuleMain {
         }
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-        targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+        targetValue = (scc.getRpm() * 2);
         if(id == 0){
             targetValue *= 1.00;
         }
@@ -492,19 +494,19 @@ public class ModuleMain {
         if (keys[2].equals("conveyor_translation_displacement")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 8;
-            double targetValue = (pcc.getPosition() * 5);
+            double targetValue = pcc.getPosition() * 5;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id1 = 6;
             int id2 = 7;
-            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2) ;
+            double targetValue = pcc.getPosition() * 10;
             queueActuation(id1, targetValue);
             queueActuation(id2, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
             Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 4;
-            double targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+            double targetValue = scc.getRpm() * 2;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Excavation motor control routing key has unrecognized motor");
@@ -520,7 +522,7 @@ public class ModuleMain {
         if (keys[2].equals("dump_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 5;
-            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2);
+            double targetValue = pcc.getPosition() * 2;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Deposition motor control routing key has unrecognized motor");

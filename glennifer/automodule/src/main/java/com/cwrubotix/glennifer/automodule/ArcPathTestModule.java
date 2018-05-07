@@ -41,7 +41,7 @@ public class ArcPathTestModule extends Module{
     private int progress = 1;
     private int currentScheme = 0;
     private ArcPath arcPath;
-    private final float DRIVE_SPEED = 75;
+    private final float DRIVE_SPEED = 15;
     private final double rate = 0.015; //Random shit
     
     public ArcPathTestModule(){
@@ -134,7 +134,7 @@ public class ArcPathTestModule extends Module{
 	    Position p2 = arcPath.getPoints()[progress];
 	    if(currentPos.getY() < Math.min(p1.getY(), p2.getY()) || currentPos.getY() > Math.max(p1.getY(), p2.getY())
 		    || currentPos.getX() < Math.min(p1.getX(), p2.getX()) || currentPos.getX() > Math.max(p1.getX(), p2.getX())){
-		if(progress != arcPath.getPoints().length - 1){
+		if((progress != arcPath.getPoints().length - 1) || currentPos.equals(arcPath.getPoints()[progress])){
 		    progress++;
 		    return false;
 		} else{
