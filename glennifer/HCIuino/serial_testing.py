@@ -151,9 +151,17 @@ def main():
 				print("Will expect "+str(respLen)+" bytes.")
 				ser.write(byteArr)
 				resp = ser.read(respLen)
-				print("\nResponse:\t")
-				for i in range(0,respLen):
-					print(int(resp[i]))
+				printval = "\n === Response ===\t"
+				printval +=   "CMD\t\tNUMBER\n"
+				printval += str(int(resp[0])) + '\t\t' + str(int(resp[1])) + '\n\n'
+				length = (respLen-2)/3
+				for i in range(0,length):
+					ind = (i*3)+2
+					val = int(resp[ind+1]) * 256
+					val += int(resp[ind+2])
+					printval += str(int(resp[ind])) + '\t: ' + str(val) + '\n'
+				print(printval)
+
 		#--------------------------------------------------------------------
 	
 	
