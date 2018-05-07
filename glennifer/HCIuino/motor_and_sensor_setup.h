@@ -50,6 +50,7 @@ void setup_sensors(){
 	// Exc translation, lower
 	sensor_infos[13].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[13].whichPin 		= 24;
+	pinMode(24, INPUT_PULLUP);
 	sensor_infos[13].whichMotor 	= 8;
 	sensor_infos[13].mtr_dir_if_triggered = 1; 	
 	limit_switches[0] 				= &(sensor_infos[13]);
@@ -57,6 +58,7 @@ void setup_sensors(){
 	// Exc translation; upper, starboard
 	sensor_infos[14].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[14].whichPin 		= 25;
+	pinMode(25, INPUT_PULLUP);
 	sensor_infos[14].whichMotor 	= 8;
 	sensor_infos[14].mtr_dir_if_triggered = -1; 
 	limit_switches[1] 				= &(sensor_infos[14]);
@@ -64,6 +66,7 @@ void setup_sensors(){
 	// Exc translation; upper, port
 	sensor_infos[15].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[15].whichPin 		= 26;
+	pinMode(26, INPUT_PULLUP);
 	sensor_infos[15].whichMotor 	= 8;
 	sensor_infos[15].mtr_dir_if_triggered = -1; 
 	limit_switches[2] 				= &(sensor_infos[15]);
@@ -71,6 +74,7 @@ void setup_sensors(){
 	// Exc rotation; port
 	sensor_infos[16].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[16].whichPin 		= 27;
+	pinMode(27, INPUT_PULLUP);
 	sensor_infos[16].whichMotor 	= PORT_LIN_ACT_ID;
 	sensor_infos[16].mtr_dir_if_triggered = -1; 
 	limit_switches[3] 				= &(sensor_infos[16]);
@@ -78,6 +82,7 @@ void setup_sensors(){
 	// Exc rotation; starboard
 	sensor_infos[17].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[17].whichPin 		= 28;
+	pinMode(28, INPUT_PULLUP);
 	sensor_infos[17].whichMotor 	= STARBOARD_LIN_ACT_ID;
 	sensor_infos[17].mtr_dir_if_triggered = -1; 
 	limit_switches[4] 				= &(sensor_infos[17]);
@@ -85,6 +90,7 @@ void setup_sensors(){
 	// Dep: upper, starboard
 	sensor_infos[18].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[18].whichPin 		= 30;
+	pinMode(30, INPUT_PULLUP);
 	sensor_infos[18].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[18].mtr_dir_if_triggered = -1; 
 	limit_switches[5] 				= &(sensor_infos[18]);
@@ -92,6 +98,7 @@ void setup_sensors(){
 	// Dep: lower, port
 	sensor_infos[19].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[19].whichPin 		= 31;
+	pinMode(31, INPUT_PULLUP);
 	sensor_infos[19].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[19].mtr_dir_if_triggered = 1; 
 	limit_switches[6] 				= &(sensor_infos[19]);
@@ -99,6 +106,7 @@ void setup_sensors(){
 	// Dep: lower, starboard
 	sensor_infos[20].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[20].whichPin 		= 32;
+	pinMode(32, INPUT_PULLUP);
 	sensor_infos[20].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[20].mtr_dir_if_triggered = 1; 
 	limit_switches[7] 				= &(sensor_infos[20]);
@@ -106,6 +114,7 @@ void setup_sensors(){
 	// Dep: upper, port
 	sensor_infos[21].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[21].whichPin 		= 33;
+	pinMode(33, INPUT_PULLUP);
 	sensor_infos[21].whichMotor 	= DEP_WINCH_MOTOR_ID;
 	sensor_infos[21].mtr_dir_if_triggered = -1; 
 	limit_switches[8] 				= &(sensor_infos[21]);
