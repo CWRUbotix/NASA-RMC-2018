@@ -25,16 +25,12 @@
 //	PREPROCESSOR INCLUDES
 //
 ////////////////////////////////////////////////////////////////////////////////
-#include <ODriveArduino.h>
 #include <SabertoothSimplified.h>
-#include <RoboClaw.h>
 #include <ESC.h>
 #include <Encoder.h>
 #include <Herkulex.h>
 #include <Wire.h>
 #include <math.h>
-
-RoboClaw roboclawSerial(&Serial1, 250);
 
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"

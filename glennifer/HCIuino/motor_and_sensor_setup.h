@@ -209,14 +209,6 @@ void setup_motors(){
 	motor_infos[REAR_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[5]);
 
-	// Set Roboclaw encoder modes
-	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
-	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_0_ADDR, ENCODER_MODE);
-	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
-	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_1_ADDR, ENCODER_MODE);
-	// roboclawSerial.SetM1EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
-	// roboclawSerial.SetM2EncoderMode(ROBOCLAW_2_ADDR, ENCODER_MODE);
-
 	// EXCAVATION MOTORS
 	// main digging
 	motor_infos[4].hardware 						= MH_BL_VEL;

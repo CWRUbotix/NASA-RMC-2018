@@ -31,10 +31,7 @@
 #define NUM_EXC_LIMS 			(5)
 #define NUM_DEP_LIMS 			(4)
 #define HCI_BAUD 				(9600)
-#define ODRIVE_BAUD 			(115200)
 #define SABERTOOTH_BAUD 		(38400)
-#define ROBOCLAW_BAUD 			(38400)
-#define ROBOCLAW_TIMEOUT 		(250)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
 #define INSTRUCTION_LEN 		(3)
@@ -74,9 +71,6 @@
 #define SABERTOOTH_TRANS_M1 	(53)
 #define E_STOP_PIN 				(2)
 #define QUAD_ENC_READER_ADDR 	(0x14)
-#define ROBOCLAW_0_ADDR 		(0x80)
-#define ROBOCLAW_1_ADDR  		(0x81)
-#define ROBOCLAW_2_ADDR 		(0x82)
 #define ENCODER_MODE 			((uint8_t) 128)
 #define FRONT_PORT_MTR_ID 		(0)
 #define REAR_PORT_MTR_ID 		(2)
@@ -160,7 +154,6 @@ typedef struct SensorInfo{
 	int16_t  val_at_min; 		// ^ ^ ^
 	uint32_t lastUpdateTime; 	// 
 	int8_t   mtr_dir_if_triggered = 0; // will be set to either 1 or -1 if being used
-	Encoder* quad;
 	uint8_t  array_index;
 	uint32_t last_pos = 0; 		// used for encoders
 }SensorInfo;
@@ -183,19 +176,15 @@ enum MotorHardware {
 
 enum MCType{
 	MC_NONE,
-	MC_ODRIVE,
 	MC_YEP,
-	MC_SABERTOOTH,
-	MC_ROBOCLAW
+	MC_SABERTOOTH
 };
 
 typedef struct MCInfo {
 	MCType type = MC_NONE; 		// default is NONE
 	SabertoothSimplified* ST; 	// the sabertooth board object if applicable
 	uint8_t selectPin; 			// slave select pin
-	ODriveArduino* odrive; 		// if MC_ODRIVE
-	RoboClaw* roboclaw;
-	uint8_t addr; 				// used if MC_ROBOCLAW
+	uint8_t addr; 				// 
 	ESC* esc; 					// if using the brushless controller
 	uint8_t  dir_relay_pin; 	// used to control direction
 }MCInfo;

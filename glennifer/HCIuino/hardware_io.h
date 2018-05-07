@@ -78,24 +78,7 @@ int32_t read_enc(MotorInfo* motor){
 
 	switch(enc->hardware){
 		case SH_RC_ENC_VEL:{
-			MotorInfo* motor 	= & motor_infos[enc->whichMotor];
-			uint8_t address 	= motor->board->addr;
-			uint8_t which 		= motor->whichMotor;
-			RoboClaw* rc = motor->board->roboclaw;
-
-			uint8_t status; bool valid;
-			retval = (which == 0 ? 
-				rc->ReadSpeedM1(address, &status, &valid) : 
-				rc->ReadSpeedM2(address, &status, &valid) );
-			// also ReadSpeedMX(addr, ... )
-
-			Serial.print(valid);
-			Serial.print(" ");
-		    Serial.print(status,HEX);
-		    Serial.print(" ");
-		    Serial.print(retval);
-			Serial.print(" ");
-			delay(30);
+			// do nothing
 			break;}
 		case SH_PIN_POT:{
 			int16_t raw = read_pot(enc);
@@ -245,19 +228,7 @@ int16_t ramp_up_better(MotorInfo* motor, int16_t newSetPt){
 
 ////////////////////////////////////////////////////////////////////////////////
 bool write_to_roboclaw(MotorInfo* motor, int newSetPt){
-	uint8_t address	= (uint8_t) motor->board->addr;
-	int16_t sign 	= (motor->is_reversed ? -1 : 1);
-	bool retval 	= false;
-
-	// if(motor->whichMotor == 0){
-	// 	retval = roboclawSerial.DutyM1(address, (uint16_t) (sign*newSetPt) );
-	// }else{
-	// 	retval = roboclawSerial.DutyM2(address, (uint16_t) (sign*newSetPt) );
-	// }
-	// if(retval){
-	// 	motor->lastUpdateTime = millis();
-	// }
-	return retval;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
