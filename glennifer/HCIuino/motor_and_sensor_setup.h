@@ -78,7 +78,7 @@ void setup_sensors(){
 	sensor_infos[16].whichMotor 	= PORT_LIN_ACT_ID;
 	sensor_infos[16].mtr_dir_if_triggered = -1; 
 	limit_switches[3] 				= &(sensor_infos[16]);
-	exc_limits[3] 					= &(sensor_infos[16]);
+	exc_rot_limits[0] 				= &(sensor_infos[16]);
 	// Exc rotation; starboard
 	sensor_infos[17].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[17].whichPin 		= 28;
@@ -86,7 +86,7 @@ void setup_sensors(){
 	sensor_infos[17].whichMotor 	= STARBOARD_LIN_ACT_ID;
 	sensor_infos[17].mtr_dir_if_triggered = -1; 
 	limit_switches[4] 				= &(sensor_infos[17]);
-	exc_limits[4] 					= &(sensor_infos[17]);
+	exc_rot_limits[1] 				= &(sensor_infos[17]);
 	// Dep: upper, starboard
 	sensor_infos[18].hardware 		= SH_PIN_LIMIT;
 	sensor_infos[18].whichPin 		= 30;
@@ -234,6 +234,7 @@ void setup_motors(){
 	motor_infos[5].deadband 						= 250;
 	motor_infos[5].subsys 							= DEP_SYS;
 	motor_infos[5].limits 							= dep_limits; // array of pointers to limit switches
+	motor_infos[5].num_limits 						= NUM_DEP_LIMS;
 	motor_infos[5].board 							= & (board_infos[3]);
 
 	// port-side linear actuator
@@ -248,6 +249,8 @@ void setup_motors(){
 	motor_infos[PORT_LIN_ACT_ID].minpos 			= 0;
 	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 1000;
 	motor_infos[PORT_LIN_ACT_ID].subsys 			= EXC_SYS;
+	motor_infos[PORT_LIN_ACT_ID].limits 			= exc_rot_limits;
+	motor_infos[PORT_LIN_ACT_ID].num_limits 		= NUM_EXC_ROT_LIMS;
 	motor_infos[PORT_LIN_ACT_ID].kp 				= LIN_ACT_KP;
 	motor_infos[PORT_LIN_ACT_ID].ki 				= LIN_ACT_KI;
 	// starboard-side linear actuator
@@ -262,6 +265,8 @@ void setup_motors(){
 	motor_infos[STARBOARD_LIN_ACT_ID].minpos 		= 0;
 	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 1000;
 	motor_infos[STARBOARD_LIN_ACT_ID].subsys 		= EXC_SYS;
+	motor_infos[STARBOARD_LIN_ACT_ID].limits 		= exc_rot_limits;
+	motor_infos[STARBOARD_LIN_ACT_ID].num_limits 	= NUM_EXC_ROT_LIMS;
 	motor_infos[STARBOARD_LIN_ACT_ID].kp 			= LIN_ACT_KP;
 	motor_infos[STARBOARD_LIN_ACT_ID].ki 			= LIN_ACT_KI;
 	
@@ -277,6 +282,8 @@ void setup_motors(){
 	motor_infos[8].minpos 							= 0;
 	motor_infos[8].maxpos 							= 1000;
 	motor_infos[8].subsys 							= EXC_SYS;
+	motor_infos[8].limits 							= exc_limits;
+	motor_infos[8].num_limits 						= NUM_EXC_LIMS;
 	motor_infos[8].kp 								= EXC_TRANSLATION_KP;
 	motor_infos[8].ki 								= EXC_TRANSLATION_KI;
 

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-//					HCIuino.h
+//					HCIuino.ino
 //
 // 		This is the main source file for the HCI microcontroller board. 
 // 		It is designed for use on an Arduino Due.

@@ -123,7 +123,6 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 
 	rpy_set_len(rpy, bodyLen); 	// we only want to consider body length
 	size 	= RPY_HEADER_SIZE + bodyLen;
-	debugging[4] = size;
 
 	retval 	= Serial.write(rpy, size); 	// Actually write to the client
 	

@@ -28,7 +28,8 @@
 #define NUM_SENSORS 			(256)
 #define NUM_MOTORS 				(11)
 #define NUM_LIM_SWITCHES 		(9)
-#define NUM_EXC_LIMS 			(5)
+#define NUM_EXC_LIMS 			(3)
+#define NUM_EXC_ROT_LIMS 		(2)
 #define NUM_DEP_LIMS 			(4)
 #define HCI_BAUD 				(9600)
 #define SABERTOOTH_BAUD 		(38400)
@@ -115,7 +116,7 @@ enum SubSystem{
 	EXC_SYS,
 	DEP_SYS,
 	ALL_SYS
-}
+};
 
 //SENSOR STUFF
 enum SensorHardware {
@@ -224,7 +225,8 @@ typedef struct MotorInfo{
 	float    integral_max = 10000.0;
 	bool     is_stopped = false;// to stop if we hit a limit switch
 	uint8_t  looky_id;
-	SensorInfo** limits; 		//
+	SensorInfo** limits; 		// points to array that holds limit switches
+	uint8_t  num_limits; 		// number of limit switches in the above array
 }MotorInfo;
 
 int sign(int val){
@@ -251,15 +253,14 @@ int16_t sensor_storedVals	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to 0
 float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int8_t  encoder_values      [5] 				= {}; 	// for values from encoder board
-SensorInfo* exc_limits      [NUM_EXC_LIMS-2] 	= {};
-SensorInfo* exc_rot_limits  [2] 				= {};
+SensorInfo* exc_limits      [NUM_EXC_LIMS] 		= {};
+SensorInfo* exc_rot_limits  [NUM_EXC_ROT_LIMS] 	= {};
 SensorInfo* dep_limits 		[NUM_DEP_LIMS] 		= {};
 bool 	stopped 								= true;	// default status is stopped
 uint8_t e_stop_state 							= LOW;
 uint8_t e_stop_state_last 						= LOW;
 
 int lastTime = 0;
-int debugging[5] = {};
 
 uint32_t loops 									= 0;
 

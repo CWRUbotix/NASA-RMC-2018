@@ -16,6 +16,7 @@ int16_t low_pass(SensorInfo* sensor, int16_t raw_val){
 ////////////////////////////////////////////////////////////////////////////////
 // @param 	limit 	: a pointer to the SensorInfo struct for a limit switch
 // @return 	true	: if limit switch is triggered
+//  A digital LOW = PRESSED
 ////////////////////////////////////////////////////////////////////////////////
 bool is_limit_triggered(SensorInfo* limit){
 	if(limit->hardware != SH_PIN_LIMIT){
@@ -24,9 +25,11 @@ bool is_limit_triggered(SensorInfo* limit){
 	bool is_triggered 	= false;
 
 	if(limit->is_reversed){
-		is_triggered = !digitalRead(limit->whichPin);
-	}else{
+		// if digitalRead gives HIGH, then we must return TRUE
 		is_triggered = digitalRead(limit->whichPin);
+	}else{
+		// if digitalRead gives LOW, then we must return TRUE
+		is_triggered = !digitalRead(limit->whichPin);
 	}
 
 	limit->storedVal 		= is_triggered;
@@ -88,15 +91,8 @@ int32_t read_enc(MotorInfo* motor){
 			// Serial3.println(retval);
 			// delay(10);
 			break;}
-		case SH_QUAD_VEL:{
-			// relies on update_quad_encoders() being called in every loop
-			enc->storedVal 	= encoder_values[enc->array_index]; 
-			retval 			= enc->storedVal;
-			break;}
-		case SH_QUAD_POS:{
-			enc->storedVal 		= enc->quad->read();
-			enc->lastUpdateTime = millis();
-			break;}
+		case SH_QUAD_VEL:
+			break;
 	}
 	return retval;
 }
@@ -142,19 +138,15 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 		case SH_BL_ENC_VEL: {
 			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
 			// MCInfo* board 			= motor->board;
-			ODriveArduino* odv1 	= (motor->board->odrive);
-			readVal 				= (uint16_t) ( odv1->GetParameter(motor->whichMotor , odv1->PARAM_ENC_VEL)); // returns a float
-			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
-			*val 					= sensor->storedVal;
+			// sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
+			// *val 					= sensor->storedVal;
 			break;}
 
 		case SH_BL_ENC_POS: {
 			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
 			// MCInfo* board 			= motor->board;
-			ODriveArduino* odv2 	= (motor->board->odrive);
-			readVal 				= (uint16_t) ( odv2->GetParameter(motor->whichMotor , odv2->PARAM_ENC_POS)); // returns a float
-			sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
-			*val 					= sensor->storedVal;
+			// sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
+			// *val 					= sensor->storedVal;
 			break; }
 
 		case SH_LD_CELL: {
