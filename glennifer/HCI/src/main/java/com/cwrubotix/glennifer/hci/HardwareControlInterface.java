@@ -253,41 +253,37 @@ public class HardwareControlInterface implements Runnable {
 		byte[] data = new byte[ids.length];
 		// Generate data array for request
 		// Each sensor ID is 2 bytes
-		/*for(int i = 0; i < ids.length; i++) {
+		for(int i = 0; i < ids.length; i++) {
 			data[i] = (byte)(ids[i].intValue());
-		}*/
-		data[0] = (byte)33;
+		}
 		// Send message, prepares it as per the interface
 		sendMessage(new SerialPacket(COMMAND_READ_SENSORS,data));
 		// Get the response
 		SerialPacket response = readMessage();
 		long t = System.currentTimeMillis();
 		if(response.command != COMMAND_READ_SENSORS) {
-			System.out.println("Invalid read sensors response - lifely failed to read sensors");
+			System.out.println("Invalid read sensors response - likely failed to read sensors");
 			return false;
 		}
 		// Parse the response
 		for(int i = 0; i < response.data.length/3; i++) {
-			System.out.println((int)response.data[3*i+0]);
-			System.out.println((int)response.data[3*i+1]);
-			System.out.println((int)response.data[3*i+2]);
 			// Parse the sensor IDs
 			int sens = (int)response.data[3*i+0];
 			// Parse the sensor values
 			int dat = ((int)response.data[3*i+1]) << 8 | (0xFF & response.data[3*i+2]);
 			if (dat != -32768) {
 				// If the sensor is not in the hashmap, ignore it
-				/*if(!sensors.containsKey(sens)) {
+				if(!sensors.containsKey(sens)) {
 					System.out.println("Sensor not loaded (ID = " + sens + ")");
 					continue;
-				}*/
+				}
 				// Get the sensor
-				//Sensor s = sensors.get(sens);
+				Sensor s = sensors.get(sens);
 				// Update it with the data
-				/*boolean different = s.updateRaw(dat);
+				boolean different = s.updateRaw(dat);
 				if (different) {
 					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
-				}*/
+				}
 				sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 			}
 		}
