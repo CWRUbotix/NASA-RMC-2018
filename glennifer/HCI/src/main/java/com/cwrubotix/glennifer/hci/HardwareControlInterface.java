@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
 import jssc.SerialPort;
 import jssc.SerialPortException;
+import jssc.SerialPortList;
 import jssc.SerialPortTimeoutException;
 
 public class HardwareControlInterface implements Runnable {
@@ -108,7 +109,7 @@ public class HardwareControlInterface implements Runnable {
 		while(true) {
 			try {
 				// Read sensors
-				// readSensors(); //TODO
+				 readSensors(); //TODO
 				// Update actuator data
 				for(int id:actuators.keySet()) {
 					actuators.get(id).update();
@@ -137,29 +138,31 @@ public class HardwareControlInterface implements Runnable {
 				}
 			} catch(SerialPortException | SerialPortTimeoutException e) {
 				e.printStackTrace();
-				while (true) {
-					System.out.println("Trying again in 1 second...");
-					try {
-						Thread.sleep(1000);
-						try {
-							port.closePort();
-						} catch (SerialPortException e2) {
-							System.out.println("Closing port failed");
-						}
-						String newName = port.getPortName();
-						port = new SerialPort(newName);
-						port.openPort();
-						Thread.sleep(1000);
-						port.setParams(baud, 8, 1, 0);
-						port.setDTR(false);
-						break;
-					} catch (InterruptedException e2) {
-						return;
-					} catch (SerialPortException e2) {
-						e.printStackTrace();
-					}
+				try {
+					port.closePort();
+				} catch (SerialPortException e2) {
+					System.out.println("Closing port failed");
 				}
-
+				while (true) {
+					System.out.println("Trying all ports...");
+					for(String s:SerialPortList.getPortNames()) {
+						SerialPort sp = new SerialPort(s);
+						try {
+							sp.openPort();
+							Thread.sleep(7000);
+							sp.setParams(baud, 8, 1, 0);
+							sp.setDTR(false);
+							System.out.println("Found the arduino again: " + s);
+							port = sp;
+							break;
+						} catch (InterruptedException e2) {
+							return;
+						} catch (SerialPortException e2) {
+							e.printStackTrace();
+						}
+					}	
+					break;
+				}
 			}
 		}
 	}
@@ -226,55 +229,66 @@ public class HardwareControlInterface implements Runnable {
 		// Get the response
 		SerialPacket response = readMessage();
 		if(response.command != COMMAND_SET_OUTPUTS) {
-			System.out.println("Failed to set outputs");
+			System.out.println("Invalid set outputs response - likely failed to set outputs");
 			return false;
+		}
+		else {
+			/*System.out.print("Set outputs response: ");
+			for (byte dataByte : response.data) {
+				System.out.print(dataByte);
+				System.out.print(" ");
+			}*/
 		}
 		return true;
 	}
 	
 	private boolean readSensors() throws SerialPortException, SerialPortTimeoutException {
 		if(sensors.isEmpty()) {
+			System.out.println("Sensor list is empty");
 			return true;
 		}
 		// Get list of sensor IDs
 		Integer[] ids = sensors.keySet().toArray(new Integer[sensors.keySet().size()]);
 		// Allocate byte array for the data in the request
-		byte[] data = new byte[ids.length*2];
+		byte[] data = new byte[ids.length];
 		// Generate data array for request
 		// Each sensor ID is 2 bytes
-		for(int i = 0; i < ids.length; i++) {
-			data[2*i] = (byte)(ids[i].intValue()>>8);
-			data[2*i+1] = (byte)ids[i].intValue();
-		}
+		/*for(int i = 0; i < ids.length; i++) {
+			data[i] = (byte)(ids[i].intValue());
+		}*/
+		data[0] = (byte)33;
 		// Send message, prepares it as per the interface
 		sendMessage(new SerialPacket(COMMAND_READ_SENSORS,data));
 		// Get the response
 		SerialPacket response = readMessage();
 		long t = System.currentTimeMillis();
 		if(response.command != COMMAND_READ_SENSORS) {
-			System.out.println("Failed to read sensors");
+			System.out.println("Invalid read sensors response - lifely failed to read sensors");
 			return false;
 		}
 		// Parse the response
-		for(int i = 0; i < response.data.length/4; i++) {
-
+		for(int i = 0; i < response.data.length/3; i++) {
+			System.out.println((int)response.data[3*i+0]);
+			System.out.println((int)response.data[3*i+1]);
+			System.out.println((int)response.data[3*i+2]);
 			// Parse the sensor IDs
-			int sens = ((int)response.data[4*i+0]) << 8 | (0xFF & response.data[4*i+1]);
+			int sens = (int)response.data[3*i+0];
 			// Parse the sensor values
-			int dat = ((int)response.data[4*i+2]) << 8 | (0xFF & response.data[4*i+3]);
+			int dat = ((int)response.data[3*i+1]) << 8 | (0xFF & response.data[3*i+2]);
 			if (dat != -32768) {
 				// If the sensor is not in the hashmap, ignore it
-				if(!sensors.containsKey(sens)) {
+				/*if(!sensors.containsKey(sens)) {
 					System.out.println("Sensor not loaded (ID = " + sens + ")");
 					continue;
-				}
+				}*/
 				// Get the sensor
-				Sensor s = sensors.get(sens);
+				//Sensor s = sensors.get(sens);
 				// Update it with the data
-				boolean different = s.updateRaw(dat);
+				/*boolean different = s.updateRaw(dat);
 				if (different) {
 					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
-				}
+				}*/
+				sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 			}
 		}
 		return true;

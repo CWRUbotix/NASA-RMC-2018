@@ -34,6 +34,10 @@ third-party/
 /glennifer/robot_state/config/
 /glennifer/motor_dispatch/src/python/config/
 
+#ObstacleDetection test files
+/glennifer/obstacle_detection/examples/test_frames/*
+*.bmp
+
 # IntelliJ user settings
 workspace.xml
 tasks.xml

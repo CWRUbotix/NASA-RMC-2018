@@ -14,9 +14,24 @@
  */
 
 /**
- * Current Implementation of AprilTags for CWRUbotix NASA RMC 2018
+ * Current Implementation of AprilTags for CWRUbotix NASA RMC 2018, initially version available from https://svn.csail.mit.edu/apriltags
  */
 
+/* Camera Calibration Inputs */
+/*double fx = 602.4;
+double fy = 602.4;
+double cx = 319.5;
+double cy = 239.5;
+double k1 = 0.25524;
+    F <<
+      1, 0,  0,
+double k2 = -10.998;
+double p1 = 0.0;
+double p2 = 0.0;
+double k3 = 125.0015;
+
+cv::Mat cameraMatrix = (cv::Mat1d(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
 
 using namespace std;
 
@@ -31,6 +46,7 @@ using namespace std;
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
 #include "messages.pb.h"
+#include <string>
 
 //#include "utils.h"
 
@@ -94,6 +110,9 @@ const char* user = "guest";
 const char* pass = "guest";
 const char* address = "localhost";
 
+const double greenToCenter = 0.33;
+const double yellowToCenter = -0.33;
+
 /**
  * Normalize angle to be within the interval [-pi,pi].
  */
@@ -106,22 +125,6 @@ inline double standardRad(double t) {
 	return t;
 }
 
-//#include "CamCalibration.cpp"
-
-/* Camera Calibration Inputs */
-/*double fx = 602.4;
-double fy = 602.4;
-double cx = 319.5;
-double cy = 239.5;
-double k1 = 0.25524;
-double k2 = -10.998;
-double p1 = 0.0;
-double p2 = 0.0;
-double k3 = 125.0015;
-
-cv::Mat cameraMatrix = (cv::Mat1d(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
-cv::Mat distortionCoefficients = (cv::Mat1d(1, 5) << k1, k2, p1, p2, k3);*/
-
 /**
  * Convert rotation matrix to Euler angles
  */
@@ -133,16 +136,29 @@ void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double
 	roll  = standardRad(atan2((double)(wRo(0,2)*s - wRo(1,2)*c), (double)(-wRo(0,1)*s + wRo(1,1)*c)));
 }
 
+//Camera Structure
+struct camera {
+	double c_fx;	//camera focal length for green cam
+	double c_fy;
+	double c_px;	//camera principal length for green cam
+	double c_py;
+	int c_id;
+};
+
+//Using the same values to avoid inconsistensies with swapping camera ports
+camera greenCam = {644.12, 644.12, 319.5, 239.5, 1};
+camera yellowCam = {644.12, 644.12, 319.5, 239.5, 0};
+camera blueCam = {644.12, 644.12, 319.5, 239.5, 2};
+//camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
+//camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
+
+const char* windowGreenCam = "Green Cam";
+const char* windowYellowCam = "Yellow Cam";
+const char* windowBlueCam = "Blue Cam";
 
 AMQP amqp("guest:guest@localhost");
 const char* topic = "locs";
 AMQPQueue *queue = amqp.createQueue(topic);
-
-		//this should be set in methods or somewhere appropriate
-		//all is here for ease of access during testing
-
-		//similar code to ConsumerThread::run()
-		//so, should check dor fuplicate topic threads???
 
 //Initializes AMQP queue etc
 void init_Queue() {
@@ -152,7 +168,7 @@ void init_Queue() {
 	queue->Consume(AMQP_NOACK);
 }
 
-class Demo {
+class Localization {
 
 	AprilTags::TagDetector* m_tagDetector;
 	AprilTags::TagCodes m_tagCodes;
@@ -174,9 +190,6 @@ class Demo {
 	list<string> m_imgNames;
 
 	cv::VideoCapture m_cap;
-	cv::VideoCapture m_cap1;
-
-	/*cv::VideoCapture m_cap2;*/
 
 	int m_exposure;
 	int m_gain;
@@ -184,16 +197,14 @@ class Demo {
 
 	Serial m_serial;
 
-	bool procPort = false;
-	bool procStarboard = false;
-	bool procStern = false;
-
-	double tag_vctr_one = 0.0121;
+	cv::VideoCapture green_cap;
+	cv::VideoCapture yellow_cap;
+	cv::VideoCapture blue_cap;
 
 public:
 
 	// default constructor
-	Demo() :
+	Localization() :
 		// default settings, most can be modified through command line options (see below)
 		m_tagDetector(NULL),
 		m_tagCodes(AprilTags::tagCodes36h11),
@@ -202,19 +213,19 @@ public:
 		m_arduino(false),
 		m_timing(false),
 
-		m_width(640), //640
-		m_height(480), //480
-		m_tagSize(0.165), //0.165
-		m_fx(644.12),	//600 approximate, 644.12 second good calibration
-		m_fy(644.12),	//600 approximate, 644.12 second good calibration
-		m_px(319.5),	//m_width/2  //same 399.5 //319.5
-		m_py(239.5),	//m_height/2  //with these values 299.5 //239.5
+		m_width(640),
+		m_height(480),
+		m_tagSize(0.165),
+		m_fx(644.12),
+		m_fy(644.12),
+		m_px(319.5),
+		m_py(239.5),
 
 		m_exposure(-1),
 		m_gain(-1),
 		m_brightness(-1),
 
-		m_deviceId(0) //0
+		m_deviceId(0)
 {}
 
 	// changing the tag family
@@ -235,15 +246,14 @@ public:
 		}
 	}
 
-	// parse command line options to change default behavior
-
 	void setup() {
 		m_tagDetector = new AprilTags::TagDetector(m_tagCodes);
 
 		// prepare window for drawing the camera images
 		if (m_draw) {
-			cv::namedWindow(windowName, 1);
-			cv::namedWindow(windowName1, 1);
+			/*cv::namedWindow(windowGreenCam, 1);
+			cv::namedWindow(windowYellowCam, 1);
+			cv::namedWindow(windowBlueCam, 1);*/
 		}
 
 		// optional: prepare serial port for communication with Arduino
@@ -254,144 +264,134 @@ public:
 
 	void setupVideo() {
 
+#ifdef EXPOSURE_CONTROL
+		// manually setting camera exposure settings; OpenCV/v4l1 doesn't
+		// support exposure control; so here we manually use v4l2 before
+		// opening the device via OpenCV; confirmed to work with Logitech
+		// C270; try exposure=20, gain=100, brightness=150
 
-		AMQP amqp("guest:guest@localhost");
+		string video_str_green = "/dev/video0";
+		video_str_green[10] = '0' + greenCam.c_id;
+		int deviceGreen = v4l2_open(video_str_green.c_str(), O_RDWR | O_NONBLOCK);
 
-		//AMQPExchange * ex = amqp.createExchange("amqp.topic");
-		//ex->Declare("amqp.topic", "topic", AMQP_DURABLE);
+		string video_str_yellow = "/dev/video1";
+		video_str_yellow[10] = '1' + yellowCam.c_id;
+		int deviceYellow = v4l2_open(video_str_yellow.c_str(), O_RDWR | O_NONBLOCK);
 
-		//AMQPQueue * qu2 = amqp.createQueue("q2");
-		//qu2->Declare();
-		//qu2->Bind( "e", "");
+		string video_str_blue = "/dev/video3";
+		video_str_blue[10] = '1' + blueCam.c_id;
+		int deviceBlue = v4l2_open(video_str_blue.c_str(), O_RDWR | O_NONBLOCK);
 
-		#ifdef EXPOSURE_CONTROL
-			// manually setting camera exposure settings; OpenCV/v4l1 doesn't
-			// support exposure control; so here we manually use v4l2 before
-			// opening the device via OpenCV; confirmed to work with Logitech
-			// C270; try exposure=20, gain=100, brightness=150
+		if (m_exposure >= 0) {
+			// not sure why, but v4l2_set_control() does not work for
+			// V4L2_CID_EXPOSURE_AUTO...
+			struct v4l2_control c_green;
+			c_green.id = V4L2_CID_EXPOSURE_AUTO;
+			c_green.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceGreen, VIDIOC_S_CTRL, &c_green) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceGreen, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceGreen);
 
-			string video_str = "/dev/video0";
-			video_str[10] = '0' + m_deviceId;
-			int device = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		if (m_exposure >= 0) {
+			struct v4l2_control c_yellow;
+			c_yellow.id = V4L2_CID_EXPOSURE_AUTO;
+			c_yellow.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceYellow, VIDIOC_S_CTRL, &c_yellow) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceYellow, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceYellow);
 
-			//set up other cameras
-			string video_str1 = "/dev/video1";
-			video_str1[10] = '1' + m_deviceId;
-			string video_str2 = "/dev/video2";
-			video_str2[10] = '2' + m_deviceId;
-			int device1 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
-			int device2 = v4l2_open(video_str.c_str(), O_RDWR | O_NONBLOCK);
+		if (m_exposure >= 0) {
+			struct v4l2_control c_blue;
+			c_blue.id = V4L2_CID_EXPOSURE_AUTO;
+			c_blue.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
+			if (v4l2_ioctl(deviceBlue, VIDIOC_S_CTRL, &c_blue) != 0) {
+				cout << "Failed to set... " << strerror(errno) << endl;
+			}
+			cout << "exposure: " << m_exposure << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
+		}
+		if (m_gain >= 0) {
+			cout << "gain: " << m_gain << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_GAIN, m_gain*256);
+		}
+		if (m_brightness >= 0) {
+			cout << "brightness: " << m_brightness << endl;
+			v4l2_set_control(deviceBlue, V4L2_CID_BRIGHTNESS, m_brightness*256);
+		}
+		v4l2_close(deviceBlue);
 
-			if (m_exposure >= 0) {
-				// not sure why, but v4l2_set_control() does not work for
-				// V4L2_CID_EXPOSURE_AUTO...
-				struct v4l2_control c;
-				c.id = V4L2_CID_EXPOSURE_AUTO;
-				c.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-				if (v4l2_ioctl(device, VIDIOC_S_CTRL, &c) != 0) {
-					cout << "Failed to set... " << strerror(errno) << endl;
-				}
-				cout << "exposure: " << m_exposure << endl;
-				v4l2_set_control(device, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-			}
-			if (m_gain >= 0) {
-				cout << "gain: " << m_gain << endl;
-				v4l2_set_control(device, V4L2_CID_GAIN, m_gain*256);
-			}
-			if (m_brightness >= 0) {
-				cout << "brightness: " << m_brightness << endl;
-				v4l2_set_control(device, V4L2_CID_BRIGHTNESS, m_brightness*256);
-			}
-			v4l2_close(device);
-
-			//if statements for the other cameras
-			if (m_exposure >= 0) {
-				struct v4l2_control c1;
-				c1.id = V4L2_CID_EXPOSURE_AUTO;
-				c1.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-				if (v4l2_ioctl(device1, VIDIOC_S_CTRL, &c1) != 0) {
-					cout << "Failed to set... " << strerror(errno) << endl;
-				}
-				cout << "exposure: " << m_exposure << endl;
-				v4l2_set_control(device1, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-			}
-			if (m_gain >= 0) {
-				cout << "gain: " << m_gain << endl;
-				v4l2_set_control(device1, V4L2_CID_GAIN, m_gain*256);
-			}
-			if (m_brightness >= 0) {
-				cout << "brightness: " << m_brightness << endl;
-				v4l2_set_control(device1, V4L2_CID_BRIGHTNESS, m_brightness*256);
-			}
-			v4l2_close(device1);
-			/*if (m_exposure >= 0) {
-				struct v4l2_control c2;
-				c2.id = V4L2_CID_EXPOSURE_AUTO;
-				c2.value = 1; // 1=manual, 3=auto; V4L2_EXPOSURE_AUTO fails...
-				if (v4l2_ioctl(device2, VIDIOC_S_CTRL, &c2) != 0) {
-				  cout << "Failed to set... " << strerror(errno) << endl;
-				}
-				cout << "exposure: " << m_exposure << endl;
-				v4l2_set_control(device2, V4L2_CID_EXPOSURE_ABSOLUTE, m_exposure*6);
-			}
-			if (m_gain >= 0) {
-					cout << "gain: " << m_gain << endl;
-					v4l2_set_control(device2, V4L2_CID_GAIN, m_gain*256);
-			}
-			if (m_brightness >= 0) {
-					cout << "brightness: " << m_brightness << endl;
-					v4l2_set_control(device2, V4L2_CID_BRIGHTNESS, m_brightness*256);
-			}
-			v4l2_close(device2);*/
-
-		#endif
+#endif
 
 		// find and open a USB camera (built in laptop camera, web cam etc)
-		m_cap = cv::VideoCapture(m_deviceId);
-		if(!m_cap.isOpened()) {
-			cerr << "ERROR: Can't find video device " << m_deviceId << "\n";
+		green_cap = cv::VideoCapture(greenCam.c_id);
+		if(!green_cap.isOpened()) {
+			cerr << "ERROR: Can't find Green Camera" << "\n";
 			exit(1);
 		}
-		m_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
-		m_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
-		//m_cap.set(CV_CAP_PROP_FPS, 5);
-		cout << "Camera successfully opened (ignore error messages above...)" << endl;
-		cout << "Actual resolution: "
-				<< m_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
-				<< m_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
 
-		//set up other cameras
-		m_cap1 = cv::VideoCapture(1);
-		if(!m_cap1.isOpened()) {
-			cerr << "ERROR: Can't find video device " << 1 << "\n"; //change to deviceId_One if possible
+		green_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		green_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
+
+		cout << "Green Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< green_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< green_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
+
+		yellow_cap = cv::VideoCapture(yellowCam.c_id);
+		if(!yellow_cap.isOpened()) {
+			cerr << "ERROR: Can't find Yellow Camera" << "\n";
 			exit(1);
 		}
-		m_cap1.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
-		m_cap1.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
-		//m_cap1.set(CV_CAP_PROP_FPS, 5);
-		cout << "Camera successfully opened (ignore error messages above...)" << endl;
-		cout << "Actual resolution: "
-				<< m_cap1.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
-				<< m_cap1.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
+		yellow_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		yellow_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
 
-		/*m_cap2 = cv::VideoCapture(2);
-            if(!m_cap2.isOpened()) {
-          cerr << "ERROR: Can't find video device " << 2 );<< "\n";
-          exit(1);
-        }
-        m_cap2.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
-        m_cap2.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
-        cout << "Camera successfully opened (ignore error messages above...)" << endl;
-        cout << "Actual resolution: "
-             << m_cap2.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
-             << m_cap2.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;*/
+		cout << "Yellow Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< yellow_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< yellow_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
+
+		blue_cap = cv::VideoCapture(blueCam.c_id);
+		if(!blue_cap.isOpened()) {
+			cerr << "ERROR: Can't find Blue Camera" << "\n";
+			exit(1);
+		}
+		blue_cap.set(CV_CAP_PROP_FRAME_WIDTH, m_width);
+		blue_cap.set(CV_CAP_PROP_FRAME_HEIGHT, m_height);
+
+		cout << "Blue Camera successfully opened (ignore error messages above...)" << endl;
+		cout << "Actual resolution: "
+				<< blue_cap.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+				<< blue_cap.get(CV_CAP_PROP_FRAME_HEIGHT) << endl;
 
 	}
 
-
-	void print_detection(AprilTags::TagDetection& detection) const {
-		//cout << "  Id: " << detection.id
-		//		<< " (Hamming: " << detection.hammingDistance << ")";
+	void print_detection(AprilTags::TagDetection& detection, camera camera, string name, double lookie_angle, bool send) const {
+		cout << "  Id: " << detection.id
+				<< " (Hamming: " << detection.hammingDistance << ")";
 
 		// recovering the relative pose of a tag:
 
@@ -401,8 +401,9 @@ public:
 
 		Eigen::Vector3d translation;
 		Eigen::Matrix3d rotation;
-		detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-				translation, rotation);
+		Eigen::Vector4d realcoor;
+		detection.getRelativeTranslationRotation(m_tagSize, camera.c_fx, camera.c_fy, camera.c_px, camera.c_py, translation, rotation, realcoor);
+
 
 		Eigen::Matrix3d F;
 		F <<
@@ -413,63 +414,58 @@ public:
 		double yaw, pitch, roll;
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
-		//double a, b, c;
-		//a = yaw; b = pitch; c = roll;
-		//a = pitch; b = roll; c = yaw;
-		//a = roll; b = yaw; c = pitch;
-		//a = yaw; b = roll; c = pitch;
-		//a = roll; b = pitch; c = yaw;
-		//a = pitch; b = yaw; c = roll;
+		//x and y coordinates of the camera
+		double lookie = lookie_angle;
 
+		//using x,y camera coords to find coordinates of robot center/wheel center
+		double cam_bearing = pitch;
+		double cam_x = ((realcoor(0)*cos(cam_bearing)) - (realcoor(2)*sin(cam_bearing)));
+		double cam_y = ((realcoor(0)*sin(cam_bearing)) + (realcoor(2)*cos(cam_bearing)));
+		double robot_x = cam_x;
+		double robot_y = cam_y;
 
-		//Testing the creation of a vector for the standardization.
-		/*Eigen::Quaterniond q;
-	    // Abbreviations for the various angular functions
-		double cy = cos(a * 0.5);
-		double sy = sin(a * 0.5);
-		double cr = cos(c * 0.5);
-		double sr = sin(c * 0.5);
-		double cp = cos(b * 0.5);
-		double sp = sin(b * 0.5);
+		double robot_bearing = lookie - cam_bearing; //TODO: make sure these works with negative angles and whatnot
+		robot_x = cam_x + (greenToCenter*cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
+		robot_y = cam_y + (greenToCenter*sin(robot_bearing));
 
-		q.w() = (cy * cr * cp + sy * sr * sp);
-		q.x() = (cy * sr * cp - sy * cr * sp);
-		q.y() = (cy * cr * sp + sy * sr * cp);
-		q.z() = (sy * cr * cp - cy * sr * sp);*/
+		//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
+		//also, try to move the exchange creation/declaration so we only do it once
+		if (!(name.compare("Blue Cam")) == 0 && send) {
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			//
+			com::cwrubotix::glennifer::LocalizationPosition msg;
+			msg.set_x_position((float)robot_x);
+			msg.set_y_position((float)robot_y);
+			msg.set_bearing_angle((float)robot_bearing);	//((float) ((-1 * pitch) + PI)); //THIS ANGLE MIGHT NOT CORRECTLY ADAPTED TO AUTONOMY STANDARDS
 
-		//testing new localization triangulation with tag 9
-		if (detection.id == 9) {
-			double centre = sqrt((translation.norm()*translation.norm()) + tag_vctr_one);
-			cout << "Distance to Centre: " << centre;
-			cout << "Distance to Tag: " << translation.norm();
-			cout << endl;
+			int msg_size = msg.ByteSize();
+			void *msg_buff = malloc(msg_size);
+			msg.SerializeToArray(msg_buff, msg_size);
+
+			ex->Publish((char*)msg_buff, msg_size, "loc.post");
+
+			cout << name
+					<< " distance=" << translation.norm()
+						<< "m, x coor = " << robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
+						<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
+						//<< ", z coor = " << realcoor(1)
+						//<< ", x cam = " << cam_x //((realcoor(0)*cos(pitch)) - (realcoor(2)*sin(pitch)))
+						//<< ", y cam = " << cam_y //((realcoor(0)*sin(pitch)) + (realcoor(2)*cos(pitch)))
+						//<< ", robot x = " << robot_x
+						//<< ", robot y = " << robot_y
+						//<< " x rel = " << translation(1)
+						//<< " y rel = " << translation(0)
+						//<< " z rel = " << translation(2)
+						//<< " x norm = " << (translation.norm() * (sin (pitch)))
+						//<< " y norm = " << (translation.norm() * (cos (pitch)))
+						//<< ", w=" << fcol(1) //yaw
+						<< ", Bearing = " << (robot_bearing * 180/PI);
+
+			free(msg_buff);
 		}
-
-		//Outputting the vector components to the AprilTag
-		/*cout << "  distance=" << translation.norm()
-        		 << "m, x=" << translation(0)
-				 << ", y=" << translation(1)
-				 << ", z=" << translation(2)
-				 << ", yaw(x)=" << yaw
-				 << ", pitch(z)=" << pitch
-				 << ", roll(y)=" << roll;
-		cout   << endl; //added ; cout to fix eclipse bug*/
-
-		//Q components
-		/*cout << "    qw=" << q.w()
-				<< ", qx=" << q.x()
-				<< ", qy=" << q.y()
-				<< ", qz=" << q.z();
-		cout << endl;*/
-
-		//AMQP
-
-		//AMQPExchange * ex = amqp.createExchange("amq.topic");
-		//ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-	   //char msg [50];
-		//sprintf(msg,"%d",(int)translation.norm());
-		//ex->Publish(msg, sizeof(msg), "localization");
-
+		//<< ", roll=" << roll
+		//<< endl;
 
 		// Also note that for SLAM/multi-view application it is better to
 		// use reprojection error of corner points, because the noise in
@@ -477,27 +473,7 @@ public:
 		// for suitable factors.
 	}
 
-	//From wikipedia, this is for testing. again, ask chad
-	//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-	Eigen::Quaterniond toQuaternion(double pitch, double roll, double yaw)
-	{
-		Eigen::Quaterniond q;
-	    // Abbreviations for the various angular functions
-		double cy = cos(yaw * 0.5);
-		double sy = sin(yaw * 0.5);
-		double cr = cos(roll * 0.5);
-		double sr = sin(roll * 0.5);
-		double cp = cos(pitch * 0.5);
-		double sp = sin(pitch * 0.5);
-
-		q.w() = cy * cr * cp + sy * sr * sp;
-		q.x() = cy * sr * cp - sy * cr * sp;
-		q.y() = cy * cr * sp + sy * sr * cp;
-		q.z() = sy * cr * cp - cy * sr * sp;
-		return q;
-	}
-
-	bool processImage(cv::Mat& image, cv::Mat& image_gray) {
+	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name, double angle, bool send) {
 		// alternative way is to grab, then retrieve; allows for
 		// multiple grab when processing below frame rate - v4l keeps a
 		// number of frames buffered, which can lead to significant lag
@@ -505,8 +481,8 @@ public:
 		//      m_cap.retrieve(image);
 
 		// detect April tags (requires a gray scale image)
-		cv::Mat temp = image.clone();
-		//cv::undistort(temp, image,cameraMatrix, distortionCoefficients);
+		bool tag_Detected = false;
+
 		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
 		double t0;
 		if (m_timing) {
@@ -518,76 +494,13 @@ public:
 			cout << "Extracting tags took " << dt << " seconds." << endl;
 		}
 
+		if(detections.size() > 0) {
+			tag_Detected = true;
+		}
 		// print out each detection
-		cout << detections.size() << " Camera 1 tags detected:" << endl;
-		bool ret = false;
-		cout << "detections.size: "<< detections.size() << endl;
-		for (int i=0; i<detections.size(); i++){
-			print_detection(detections[i]); //previously commented out
-			ret = true;
-		}
-
-		// show the current image including any detections
-		if (m_draw) {
-			for (int i=0; i<detections.size(); i++) {
-				// also highlight in the image
-				detections[i].draw(image);
-			}
-			imshow(windowName, image); // OpenCV call
-		}
-
-		// optionally send tag information to serial port (e.g. to Arduino)
-		if (m_arduino) {
-			if (detections.size() > 0) {
-				// only the first detected tag is sent out for now
-				Eigen::Vector3d translation;
-				Eigen::Matrix3d rotation;
-				detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-						translation, rotation);
-				m_serial.print(detections[0].id);
-				m_serial.print(",");
-				// m_serial.print(translation(0));
-				m_serial.print(",");
-				//m_serial.print(translation(1));
-				m_serial.print(",");
-				// m_serial.print(translation(2));
-				m_serial.print("\n");
-			} else {
-				// no tag detected: tag ID = -1
-				m_serial.print("-1,0.0,0.0,0.0\n");
-			}
-		}
-
-
-		return ret;
-	}
-
-
-	void processImage2(cv::Mat& image, cv::Mat& image_gray) {
-		// alternative way is to grab, then retrieve; allows for
-		// multiple grab when processing below frame rate - v4l keeps a
-		// number of frames buffered, which can lead to significant lag
-		//      m_cap.grab();
-		//      m_cap.retrieve(image);
-
-		// detect April tags (requires a gray scale image)
-		cv::Mat temp = image.clone();
-		//cv::undistort(temp, image,cameraMatrix, distortionCoefficients);
-		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
-		double t0;
-		if (m_timing) {
-			t0 = tic();
-		}
-		vector<AprilTags::TagDetection> detections = m_tagDetector->extractTags(image_gray);
-		if (m_timing) {
-			double dt = tic()-t0;
-			cout << "Extracting tags took " << dt << " seconds." << endl;
-		}
-
-		// print out each detection
-		cout << detections.size() << " Camera 2 tags detected:" << endl;
+		cout << detections.size() << " tags detected:" << endl;
 		for (int i=0; i<detections.size(); i++) {
-			print_detection(detections[i]);
+			print_detection(detections[i], camera, name, angle, send);
 		}
 
 		// show the current image including any detections
@@ -596,7 +509,17 @@ public:
 				// also highlight in the image
 				detections[i].draw(image);
 			}
-			imshow(windowName1, image); // OpenCV call
+			//imshow(name, image); // OpenCV call
+			/*const char* frame;
+			std::vector<uchar> buffer;
+			imencode(".jpg", image, buffer);
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			int msg_size = sizeof(buffer);
+			void *msg_buff = malloc(msg_size);
+			//buffer.SerializeToArray(msg_buff, msg_size);
+
+			ex->Publish(, msg_size, name);*/
 		}
 
 		// optionally send tag information to serial port (e.g. to Arduino)
@@ -605,34 +528,51 @@ public:
 				// only the first detected tag is sent out for now
 				Eigen::Vector3d translation;
 				Eigen::Matrix3d rotation;
-				detections[0].getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py,
-						translation, rotation);
+				Eigen::Vector4d realcoor;
+				detections[0].getRelativeTranslationRotation(m_tagSize, camera.c_fx, camera.c_fy, camera.c_px, camera.c_py,
+						translation, rotation, realcoor);
 				m_serial.print(detections[0].id);
 				m_serial.print(",");
-				// m_serial.print(translation(0));
+				m_serial.print(translation(0));
 				m_serial.print(",");
-				//m_serial.print(translation(1));
+				m_serial.print(translation(1));
 				m_serial.print(",");
-				// m_serial.print(translation(2));
+				m_serial.print(translation(2));
+
 				m_serial.print("\n");
 			} else {
 				// no tag detected: tag ID = -1
 				m_serial.print("-1,0.0,0.0,0.0\n");
 			}
 		}
+
+		return tag_Detected;
 	}
 
+	void handleLookie(double angle, string key) {
+		AMQPExchange * ex = amqp.createExchange("amq.topic");
+		ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+		//
+		com::cwrubotix::glennifer::PositionControlCommand msg;
+		msg.set_position((float)angle);
+		msg.set_timeout(0.0F);
+
+		int msg_size = msg.ByteSize();
+		void *msg_buff = malloc(msg_size);
+		msg.SerializeToArray(msg_buff, msg_size);
+		ex->Publish((char*)msg_buff, msg_size, key);
+	}
 
 	// Load and process a single image
 	void loadImages() {
 		cv::Mat image;
 		cv::Mat image_gray;
 
-		for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
-			image = cv::imread(*it); // load image with opencv
-			processImage(image, image_gray);
-			while (cv::waitKey(100) == -1) {}
-		}
+		/*for (list<string>::iterator it=m_imgNames.begin(); it!=m_imgNames.end(); it++) {
+      image = cv::imread(*it); // load image with opencv
+      processImage(image, image_gray);
+      while (cv::waitKey(100) == -1) {}
+    }*/
 	}
 
 	// Video or image processing?
@@ -642,62 +582,107 @@ public:
 
 	// The processing loop where images are retrieved, tags detected,
 	// and information about detections generated
-	int rand = 1900;
 	void loop() {
 
-		//procPort = true;
+		cv::Mat green_image;
+		cv::Mat green_image_gray;
+		cv::Mat yellow_image;
+		cv::Mat yellow_image_gray;
+		cv::Mat blue_image;
+		cv::Mat blue_image_gray;
 
-		cv::Mat image;
-		cv::Mat image_gray;
+		bool green_detect = false;
+		bool yellow_detect = false;
+		bool blue_detect = false;
 
-		cv::Mat image1;
-		cv::Mat image_gray1;
+		double green_lookie = 90.0;
+		double yellow_lookie = 270.0;
+
+		bool restart_green = true;
+		bool restart_yellow = true;
+
+		double sleep_time = 0.25;
 
 		int frame = 0;
 		double last_t = tic();
-		//double time_last_located = tic();
 		while (true) {
 
-			m_cap >> image;
-			cout << "communicating data..." << endl;
-			m_cap1 >> image1;
-			cout << "communicating data1..." << endl;
-			processImage(image, image_gray);
-			processImage2(image1, image_gray1);
-			//processing the port camera
-		/*	if(procPort){
-				// capture frame
-				m_cap >> image;
-				bool result = processImage(image, image_gray);
-				if(result){
-					cout << "communicating data..." << endl;
-					time_last_located = tic();
-				}
+			// capture frame
+			green_cap >> green_image;
+			cout << "communicating green cam data..." << endl;
+			yellow_cap >> yellow_image;
+			cout << "communicating yellow cam data..." << endl;
+			blue_cap >> blue_image;
+			cout << "communicating blue data..." << endl;
 
-				m_cap1 >> image;
-				result = processImage(image, image_gray);
-				if(result){
-					cout << "communicating data1..." << endl;
-					time_last_located = tic();
+			green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, false);
+			yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, false);
+			blue_detect = processImage(blue_image, blue_image_gray, blueCam, windowBlueCam, 0, false);
+
+			if(!green_detect) {
+				if(green_lookie == 250.0) {
+					//go to 90 - 1
+					sleep_time = 5;
+					restart_green = false;
+					green_lookie = 91.0;
+					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+				}
+				if(green_lookie < 250.0 && !restart_green ) {
+					sleep_time = 0.25;
+					//decrement by one
+					green_lookie--;
+					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+				}
+				if(green_lookie < 250.0 && restart_green ) {
+					sleep_time = 0.25;
+					//increment by one
+					green_lookie++;
+					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+				}
+				if(green_lookie == 0.0) {
+					sleep_time = 0.25;
+					restart_green = true;
+					green_lookie++;
+					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 				}
 			}
 
-			//checking time with last seen apriltag
-			if(tic() - time_last_located >= 5.0){
-				//cout << "Time Alloted without detection, turning on all cameras" << endl;
-				if(!procPort){
-					procPort = true;
+			if(green_detect) {
+				green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, true);
+			}
+
+			if(!yellow_detect) {
+				if(yellow_detect == 110.0) {
+					//go to 270 + 1
+					sleep_time = 5;
+					restart_yellow = false;
+					yellow_lookie = 271.0;
+					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+				}
+				if(yellow_detect < 360.0 && !restart_yellow ) {
+					sleep_time = 0.25;
+					//increment by one
+					yellow_lookie++;
+					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+				}
+				if(yellow_detect < 360.0 && restart_yellow ) {
+					sleep_time = 0.25;
+					//decrement by one
+					yellow_lookie--;
+					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+				}
+				if(yellow_detect == 360.0) {
+					sleep_time = 0.25;
+					restart_yellow = true;
+					yellow_lookie--;
+					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 				}
 			}
 
-			//Check to make sure at-least one camera is set to process
-			if(!procPort){
-				cout << "No Camera's Running, turning all on" << endl;
-				procPort = true;
+			if(yellow_detect && !green_detect) {
+				yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, true);
 			}
 
-
-			//sleep(2);
 			// print out the frame rate at which image frames are being processed
 			frame++;
 			if (frame % 10 == 0) {
@@ -706,60 +691,41 @@ public:
 				last_t = t;
 			}
 
-			//processing other frames without worrying about the rate above
-			 m_cap1 >> image1;
-			 processImage2(image1, image_gray1);
-
-		//	m_cap2 >> image;
-      	 // processImage(image, image_gray);*/
-
-
-			AMQPExchange * ex = amqp.createExchange("amq.topic");
-			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
-			char msg [50];
-			sprintf(msg,"%d",rand);
-			ex->Publish(msg, sizeof(msg), "loc.post");
-			rand++;
-			//sleep(3);
-
 			// exit if any key is pressed
-			if (cv::waitKey(10) >= 0) break;
+			if (cv::waitKey(1) >= 0) break;
+			//sleep(1.5);
 
 		}
 	}
 
 }; // Demo
 
+
 // here is were everything begins
 int main(int argc, char* argv[]) {
-
-
-
-	Demo demo;
-
-	/* Camera Calibration */
-
+	Localization localization;
 
 	// process command line options
+	//demo.parseOptions(argc, argv);
 
-	demo.setup();
+	localization.setup();
 
-	if (demo.isVideo()) {
+	if (localization.isVideo()) {
 		cout << "Processing video" << endl;
 
 		// setup image source, window for drawing, serial port...
-		demo.setupVideo();
+		localization.setupVideo();
 
 		// the actual processing loop where tags are detected and visualized
-		demo.loop();
+		localization.loop();
 
 	} else {
 		cout << "Processing image" << endl;
 
 		// process single image
-		demo.loadImages();
-
+		localization.loadImages();
 	}
 
 	return 0;
 }
+

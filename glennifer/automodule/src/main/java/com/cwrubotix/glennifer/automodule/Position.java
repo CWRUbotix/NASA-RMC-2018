@@ -16,16 +16,16 @@ public class Position extends Coordinate implements Cloneable {
      * Range : [0, 2PI) unit in radians.
      * </p>
      */
-    private double heading; //declared double 'cause java.lang.Math hates float headings for trigonometry.
-    
+    private double heading;
+    private Obstacle nearestObs;
 
 
-    public Position(float x_pos, float y_pos, double heading) {
+    public Position(double x_pos, double y_pos, double heading) {
         super(x_pos, y_pos);
         this.heading = heading;
     }
     
-    public Position(float x_pos, float y_pos){
+    public Position(double x_pos, double y_pos){
         this(x_pos, y_pos, 0.0);
     }
     
@@ -33,11 +33,20 @@ public class Position extends Coordinate implements Cloneable {
         return heading;
     }
     
+    /**
+     * Returns the obstacle within the arena that is the nearest one from this node
+     * 
+     * @return the obstacle within the arena that is the nearest one from this node
+     */
+    public Obstacle getNearestObs(){
+        return nearestObs;
+    }
+    
     public void setHeading(double heading){
         this.heading = heading;
     }
     
-    public boolean setX(float x_pos) {
+    public boolean setX(double x_pos) {
         //checking whether input is within the arena
         if (x_pos < (ARENA_WIDTH() / 2) - WALL_CLEARANCE() && x_pos > (ARENA_WIDTH() / -2) + WALL_CLEARANCE()) {
             super.setX(x_pos);
@@ -46,7 +55,7 @@ public class Position extends Coordinate implements Cloneable {
         return false;
     }
     
-    public boolean setY(float y_pos) {
+    public boolean setY(double y_pos) {
         //checking whether input is within the arena
         if (y_pos > WALL_CLEARANCE() && y_pos < ARENA_HEIGHT() - WALL_CLEARANCE()) {
             super.setY(y_pos);
@@ -56,18 +65,27 @@ public class Position extends Coordinate implements Cloneable {
     }
     
     /**
+     * Sets the nearest obstacle from this node as given input
+     * 
+     * @param obs the nearest obstacle from this node
+     */
+    public void setNearestObs(Obstacle obs){
+        this.nearestObs = obs;
+    }
+    
+    /**
      * Returns heading the robot need to be in order to face position b
      *
      * @param p the destination
      * @return angle the robot need to be in order to face position b
      */
     public double getHeadingTo(Coordinate p){
-   	float x_diff = p.getX() - getX();
-   	float y_diff = p.getY() - getY();
+   	double x_diff = p.getX() - getX();
+   	double y_diff = p.getY() - getY();
    	if (x_diff < 0) {
-   	    return Math.PI + Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
+   	    return Math.PI + Math.PI / 2 - Math.atan(y_diff / x_diff);
    	} else {
-   	    return Math.PI / 2 - Math.atan((double) (y_diff / x_diff));
+   	    return Math.PI / 2 - Math.atan(y_diff / x_diff);
    	}
     }
 
@@ -75,16 +93,16 @@ public class Position extends Coordinate implements Cloneable {
     public boolean equals(Object obj) {
         if (obj instanceof Position) {
             Position compare = (Position) obj;
-            float x_diff = compare.getX() - getX();
-            float y_diff = compare.getY() - getY();
-            return Math.abs(x_diff) < 1e-5 && Math.abs(y_diff) < 1e-5;
+            double x_diff = compare.getX() - getX();
+            double y_diff = compare.getY() - getY();
+            return Math.abs(x_diff) < 75e-3 && Math.abs(y_diff) < 75e-3;
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return "(" + getX() + ", " + getY() + ")";
+        return String.format("(%f, %f)", getX(), getY());
     }
 
 
@@ -98,7 +116,7 @@ public class Position extends Coordinate implements Cloneable {
      */
     @Override
     public int hashCode() {
-        int hash = Float.floatToRawIntBits(getX()) ^ Float.floatToRawIntBits(getY());
+        int hash = Long.hashCode(Double.doubleToRawLongBits(getX()) ^ Double.doubleToRawLongBits(getY()));
         return hash;
     }
 

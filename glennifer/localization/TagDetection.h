@@ -84,7 +84,7 @@ struct TagDetection {
   //! Recover rotation matrix and translation vector of April tag relative to camera.
   // Result is in object frame (x forward, y left, z up)
   void getRelativeTranslationRotation(double tag_size, double fx, double fy, double px, double py,
-                                      Eigen::Vector3d& trans, Eigen::Matrix3d& rot) const;
+                                      Eigen::Vector3d& trans, Eigen::Matrix3d& rot, Eigen::Vector4d& fcol) const;
 
   //! Draw the detection within the supplied image, including boarders and tag ID.
   void draw(cv::Mat& image) const;

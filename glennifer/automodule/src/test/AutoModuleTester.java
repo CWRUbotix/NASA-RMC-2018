@@ -215,6 +215,12 @@ public class AutoModuleTester extends Module{
 	    } else{
 		switchState(State.TRANSIT_B);
 	    }
+	    
+	    Messages.LocalizationPosition pos = Messages.LocalizationPosition.newBuilder()
+		    									  .setXPosition(0.0F)
+		    									  .setYPosition(0.0F)
+		    									  .setBearingAngle(3.0)
+		    									  .build();
 	}
 	
     }

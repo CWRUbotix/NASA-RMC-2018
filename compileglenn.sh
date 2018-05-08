@@ -13,13 +13,13 @@ cp -r config glennifer/automodule
 
 # compile the things
 cd glennifer/HCI
-mvn package
+sudo mvn package
 cd ..
 
 cd robot_state
-mvn package
+sudo mvn package #dunno why this one needs sudo but it does
 cd ..
 
 cd automodule
-mvn package
+sudo mvn package
 cd ..

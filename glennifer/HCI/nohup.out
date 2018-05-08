@@ -1,0 +1,11 @@
+90
+-91
+Found the arduino
+Found arduino at /dev/ttyACM0
+sent wheel rpm message
+Looping in main
+Queueing Actuation for Motor ID: 0, Target value: -1000.0
+0
+-4
+24
+Error: Could not find or load main class com.cwrubotix.glennifer.hci.ModuleMain
