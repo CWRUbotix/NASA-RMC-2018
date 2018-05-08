@@ -305,22 +305,59 @@ public class HardwareControlInterface implements Runnable {
 		port.writeBytes(p.asPacket());
 	}
 	
-	public HardwareControlInterface(String spName) {
+	public HardwareControlInterface() {
 
-		// Open the found arduino port
-		port = new SerialPort(spName);
-		// Try open port
-		try {
-			port.openPort();
-			Thread.sleep(1000);
-			port.setParams(baud, 8, 1, 0);
-			port.setDTR(false);
-		} catch (SerialPortException e) {
-			e.printStackTrace();
-			return;
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// Find arduino port
+		findArduinoPort();
 	}
+
+	private void findArduinoPort(){
+
+        // For each attached serial port
+        for(String s: SerialPortList.getPortNames()) {
+            SerialPort sp = new SerialPort(s);
+            try {
+                // Open the port
+                sp.openPort();
+                Thread.sleep(7000);
+                sp.setParams(baud, 8, 1, 0);
+                sp.setDTR(false);
+                // Create test packet
+                byte[] bt = {0x03,0x01,0x5A};
+                // Write test byte 0x5A
+                sp.writeBytes(bt);
+                System.out.println(bt[2]);
+                Thread.sleep(1000);
+                // Read response bytes
+                byte[] b = sp.readBytes(3,2000);
+                System.out.println(b[2]);
+                // If response is 0xA5, it is the arduino
+                if(b[2] == (byte)0xA5) {
+                	System.out.println("Found the arduino at " + s);
+                    // Capture the string of correct port
+                    port = sp;
+                    // Close the port
+                    //sp.closePort();
+                    return;
+                }
+                sp.closePort();
+            } catch(SerialPortException e) {
+                e.printStackTrace();
+                continue;
+            } catch(SerialPortTimeoutException e) {
+                try {
+                        sp.closePort();
+                } catch(Exception e1) {
+                        e1.printStackTrace();
+                }
+                continue;
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        if(port == null) {
+        	System.out.println("Couldn't find attached arduino, please try again");
+        }
+    }
 }

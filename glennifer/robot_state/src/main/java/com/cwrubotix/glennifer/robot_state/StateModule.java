@@ -77,10 +77,6 @@ public class StateModule {
                             .setFrontRightRpm(locomotionState.getWheelRpm(LocomotionState.Wheel.FRONT_RIGHT))
                             .setBackLeftRpm(locomotionState.getWheelRpm(LocomotionState.Wheel.BACK_LEFT))
                             .setBackRightRpm(locomotionState.getWheelRpm(LocomotionState.Wheel.BACK_RIGHT))
-                            .setFrontLeftCount(locomotionState.getWheelCount(LocomotionState.Wheel.FRONT_LEFT))
-                            .setFrontRightCount(locomotionState.getWheelCount(LocomotionState.Wheel.FRONT_RIGHT))
-                            .setBackLeftCount(locomotionState.getWheelCount(LocomotionState.Wheel.BACK_LEFT))
-                            .setBackRightCount(locomotionState.getWheelCount(LocomotionState.Wheel.BACK_RIGHT))
                             .build();
                     stateMsgBuilder.setLocDetailed(msg);
                 }
@@ -106,14 +102,12 @@ public class StateModule {
                             .setArmRightExtended(excavationState.getArmExtended(ExcavationState.Side.RIGHT))
                             .setTranslationLeftExtended(excavationState.getTranslationExtended(ExcavationState.Side.LEFT))
                             .setTranslationRightExtended(excavationState.getTranslationExtended(ExcavationState.Side.RIGHT))
-                            .setTranslationLeftRetracted(excavationState.getTranslationRetracted(ExcavationState.Side.LEFT))
-                            .setTranslationRightRetracted(excavationState.getTranslationRetracted(ExcavationState.Side.RIGHT))
+                            .setTranslationRetracted(excavationState.getTranslationRetracted())
                             .build();
                     stateMsgBuilder.setExcDetailed(msg);
                 }
                 if (dep_summary) {
                     Messages.DepositionStateSummary msg = Messages.DepositionStateSummary.newBuilder()
-                            .setPos(depositionState.getDumpPos())
                             .setLoad(depositionState.getDumpLoad())
                             .setDumpExtended(depositionState.getDumpExtended())
                             .setDumpRetracted(depositionState.getDumpRetracted())
@@ -122,7 +116,6 @@ public class StateModule {
                 }
                 if (dep_detailed) {
                     Messages.DepositionStateDetailed msg = Messages.DepositionStateDetailed.newBuilder()
-                            .setPos(depositionState.getDumpPos())
                             .setLeftLoad(depositionState.getDumpLoad(DepositionState.LoadCell.LEFT))
                             .setRightLoad(depositionState.getDumpLoad(DepositionState.LoadCell.RIGHT))
                             .setDumpLeftExtended(depositionState.getDumpExtended(DepositionState.Side.LEFT))
@@ -207,9 +200,7 @@ public class StateModule {
                     handleConveyorRpmUpdate(body);
                 } else if (sensorString.equals("translation_pos")) {
                     handleConveyorTranslationPosUpdate(body);
-                }  else if (sensorString.equals("arm_pos_a")) {
-                    handleArmPosUpdate(body);
-                }  else if (sensorString.equals("arm_pos_b")) {
+                }  else if (sensorString.equals("arm_pos")) {
                     handleArmPosUpdate(body);
                 } else if (sensorString.equals("conveyor_current")){
                     handleConveyorCurrentUpdate(body);
@@ -238,17 +229,7 @@ public class StateModule {
                     }
                     handleConveyorTranslationLimitExtendedUpdate(side, body);
                 } else if (sensorString.equals("conveyor_translation_limit_retracted")) {
-                    String sideString = keys[3];
-                    ExcavationState.Side side;
-                    if (sideString.equals("left")) {
-                        side = ExcavationState.Side.LEFT;
-                    } else if (sideString.equals("right")) {
-                        side = ExcavationState.Side.RIGHT;
-                    } else {
-                        System.out.println("Bad side string in routing key");
-                        return;
-                    }
-                    handleConveyorTranslationLimitRetractedUpdate(side, body);
+                    handleConveyorTranslationLimitRetractedUpdate(body);
                 } else {
                     System.out.println("Bad sensor string in routing key: " + sensorString);
                     return;
@@ -257,9 +238,7 @@ public class StateModule {
             else if(typeOfSensor.equals("deposition")){ //deposition message
                 String sensorString = keys[2];
                 
-                if (sensorString.equals("dump_pos")) {
-                    handleDumpPosUpdate(body);
-                } else if (sensorString.equals("load")) {
+                if (sensorString.equals("load")) {
                     String sideString = keys[4];
                     DepositionState.LoadCell side;
                     if (sideString.equals("left")) {
@@ -380,17 +359,6 @@ public class StateModule {
             sendFault(e.getFaultCode(), time);
         }
     }
-    
-    private void handleWheelCountUpdate(LocomotionState.Wheel wheel, byte[] body) throws IOException {
-    	CountUpdate message = CountUpdate.parseFrom(body);
-    	int count = message.getCount();
-    	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac()*1000000000L));
-    	try {
-    		locomotionState.updateWheelCount(wheel, count, time);
-    	} catch (RobotFaultException e) {
-    		sendFault(e.getFaultCode(), time);
-    	}
-    }
   
     private void handleConveyorRpmUpdate(byte[] body) throws IOException {
         RpmUpdate message = RpmUpdate.parseFrom(body);
@@ -458,12 +426,12 @@ public class StateModule {
         }
     }
 
-    private void handleConveyorTranslationLimitRetractedUpdate(ExcavationState.Side side, byte[] body) throws IOException {
+    private void handleConveyorTranslationLimitRetractedUpdate(byte[] body) throws IOException {
         LimitUpdate message = LimitUpdate.parseFrom(body);
         boolean pressed = message.getPressed();
         Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
         try {
-            excavationState.updateTranslationLimitRetracted(side, pressed, time);
+            excavationState.updateTranslationLimitRetracted(pressed, time);
         } catch (RobotFaultException e) {
             sendFault(e.getFaultCode(), time);
         }
@@ -475,17 +443,6 @@ public class StateModule {
         Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
         try {
             depositionState.updateDumpLoad(cell, load, time);
-        } catch (RobotFaultException e) {
-            sendFault(e.getFaultCode(), time);
-        }
-    }
-
-    private void handleDumpPosUpdate(byte[] body) throws IOException {
-        PositionUpdate message = PositionUpdate.parseFrom(body);
-        float pos = message.getPosition();
-        Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
-        try {
-            depositionState.updateDumpPos(pos, time);
         } catch (RobotFaultException e) {
             sendFault(e.getFaultCode(), time);
         }

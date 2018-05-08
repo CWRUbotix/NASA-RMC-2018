@@ -33,7 +33,6 @@ public class DepositionState {
 // Unneccesary since there are only two load cells??
     
     /* Data members */
-    private float dumpPos;
     private EnumMap <LoadCell, Float> loadCellValue;
     private EnumMap <Side, Boolean> dumpSideRetracted;
     private EnumMap <Side, Boolean> dumpSideExtended;
@@ -57,8 +56,6 @@ public class DepositionState {
         loadCellValue = new EnumMap<>(LoadCell.class);
         loadCellValue.put(LoadCell.LEFT, (float)0);
         loadCellValue.put(LoadCell.RIGHT, (float)0);
-       
-        dumpPos = 0;
 
         dumpSideRetracted = new EnumMap<>(Side.class);
         dumpSideRetracted.put(Side.LEFT, false);
@@ -75,12 +72,6 @@ public class DepositionState {
         // TODO: use timestamp to validate data
         // TODO: detect impossibly sudden changes
         loadCellValue.put(cell, load);
-    }
-    
-    public void updateDumpPos (float pos, Instant time) throws RobotFaultException {
-        // TODO: use timestamp to validate data
-        // TODO: detect impossibly sudden changes
-        dumpPos = pos;
     }
     
     public void updateDumpLimitExtended (Side side, boolean pressed, Instant time) throws RobotFaultException {
@@ -105,10 +96,6 @@ public class DepositionState {
     public float getDumpLoad() {
         //TODO: use linear functions to get more accurate reading
         return loadCellValue.get(LoadCell.LEFT) + loadCellValue.get(LoadCell.RIGHT);
-    }
-    
-    public float getDumpPos() {
-        return dumpPos;
     }
 
     public boolean getDumpExtended() { return dumpSideExtended.get(Side.LEFT) || dumpSideExtended.get(Side.RIGHT); }

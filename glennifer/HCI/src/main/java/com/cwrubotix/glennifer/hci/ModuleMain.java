@@ -34,7 +34,8 @@ public class ModuleMain {
     private static String queueName;
 
 	public static void runWithConnectionExceptions() throws IOException, TimeoutException {
-		// Read connection config
+
+        // Read connection config
 		Mechanics.initialize();
 
         // Read String paths from YML file
@@ -43,8 +44,7 @@ public class ModuleMain {
 		//Connect and Configure AMPQ
         setupAMQP();
 
-        String arduinoPort = findArduinoPort();
-        hci = createHCIFromPort(arduinoPort);
+        hci = new HardwareControlInterface();
 
 		// Initialize sensors
         initializeSensors();  
@@ -178,14 +178,14 @@ public class ModuleMain {
 
             // DEPOSITION HOPPER RPM 
             // maybe it should be position controlled instead of speed controlled
-            case 14: {
+            /*case 14: {
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.deposition.hopper_rpm", null, msg.toByteArray());
                 break;
-            }
+            }*/
 
             // LOAD CELLS
             case 22:
@@ -215,14 +215,12 @@ public class ModuleMain {
                     .setPressed(value > 0)
                     .setTimestamp(unixTime)
                     .build();
-                if (sensorDataID == 13) {
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_extended.left", null, msg.toByteArray());
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_extended.right", null, msg.toByteArray());
-                }
+                if (sensorDataID == 13) 
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_retracted", null, msg.toByteArray());
                 else if (sensorDataID == 14)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.right", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.right", null, msg.toByteArray());
                 else if (sensorDataID == 15)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.left", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.left", null, msg.toByteArray());
                 else if (sensorDataID == 16)
                     channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_retracted.left", null, msg.toByteArray());
                 else if (sensorDataID == 17)
@@ -273,66 +271,6 @@ public class ModuleMain {
         queueName = channel.queueDeclare().getQueue();
     }
 
-    private static String findArduinoPort(){
-        // Initialize port as null
-        String port = null;
-        // For each attached serial port
-        for(String s:SerialPortList.getPortNames()) {
-            SerialPort sp = new SerialPort(s);
-            try {
-                // Open the port
-                sp.openPort();
-                Thread.sleep(7000);
-                sp.setParams(baud, 8, 1, 0);
-                sp.setDTR(false);
-                // Create test packet
-                byte[] bt = {0x03,0x01,0x5A};
-                // Write test byte 0x5A
-                sp.writeBytes(bt);
-                System.out.println(bt[2]);
-                Thread.sleep(1000);
-                // Read response bytes
-                byte[] b = sp.readBytes(3,2000);
-                System.out.println(b[2]);
-                // If response is 0xA5, it is the arduino
-                if(b[2] == (byte)0xA5) {
-                	System.out.println("Found the arduino");
-                    // Capture the string of correct port
-                    port = s;
-                    // Close the port
-                    sp.closePort();
-                    break;
-                }
-                sp.closePort();
-            } catch(SerialPortException e) {
-                e.printStackTrace();
-                continue;
-            } catch(SerialPortTimeoutException e) {
-                try {
-                        sp.closePort();
-                } catch(Exception e1) {
-                        e1.printStackTrace();
-                }
-                continue;
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-        return port;
-    }
-
-    private static HardwareControlInterface createHCIFromPort(String port){
-        // If port is still null, couldn't find it
-        if(port == null) {
-            System.out.println("Couldn't find attached arduino, please try again");
-            return null;
-        } else {
-            System.out.println("Found arduino at " + port);
-        }
-        return new HardwareControlInterface(port);           
-    }
-
     private static void initializeSensors(){
         
         ArrayList<SensorConfig> sensorList = new ArrayList<SensorConfig>();
@@ -349,9 +287,9 @@ public class ModuleMain {
         sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
         sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
         sensorList.add(new SensorConfig("Bucket Conveyor Translation Pot", 12));
-        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit", 13));
-        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit A", 15));
-        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit B", 14));
+        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit", 13));
+        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit A", 15));
+        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit B", 14));
         sensorList.add(new SensorConfig("Bucket Conveyor Current", 33));
 
         //Deposition
