@@ -622,28 +622,32 @@ public:
 			if(!green_detect) {
 				if(green_lookie == 250.0) {
 					//go to 90 - 1
-					sleep_time = 5;
+					sleep_time = 1.5;
 					restart_green = false;
 					green_lookie = 91.0;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+					sleep(sleep_time);
 				}
 				if(green_lookie < 250.0 && !restart_green ) {
 					sleep_time = 0.25;
 					//decrement by one
 					green_lookie--;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+					sleep(sleep_time);
 				}
 				if(green_lookie < 250.0 && restart_green ) {
 					sleep_time = 0.25;
 					//increment by one
 					green_lookie++;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+					sleep(sleep_time);
 				}
 				if(green_lookie == 0.0) {
 					sleep_time = 0.25;
 					restart_green = true;
 					green_lookie++;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+					sleep(sleep_time);
 				}
 			}
 
@@ -654,28 +658,32 @@ public:
 			if(!yellow_detect) {
 				if(yellow_detect == 110.0) {
 					//go to 270 + 1
-					sleep_time = 5;
+					sleep_time = 1.5;
 					restart_yellow = false;
 					yellow_lookie = 271.0;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+					sleep(sleep_time);
 				}
 				if(yellow_detect < 360.0 && !restart_yellow ) {
 					sleep_time = 0.25;
 					//increment by one
 					yellow_lookie++;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+					sleep(sleep_time);
 				}
 				if(yellow_detect < 360.0 && restart_yellow ) {
 					sleep_time = 0.25;
 					//decrement by one
 					yellow_lookie--;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+					sleep(sleep_time);
 				}
 				if(yellow_detect == 360.0) {
 					sleep_time = 0.25;
 					restart_yellow = true;
 					yellow_lookie--;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+					sleep(sleep_time);
 				}
 			}
 
