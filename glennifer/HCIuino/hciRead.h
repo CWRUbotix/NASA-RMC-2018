@@ -44,9 +44,6 @@ FAULT_T hciRead(byte * cmd){
 	bodyLen = cmd_body_len(cmd);
 
 	
-	debugging[1] = cmd[0];
-	debugging[2] = bodyLen;
-
 	retval = Serial.readBytes(cmd + CMD_HEADER_SIZE, bodyLen);
 
 	if(retval < bodyLen){
