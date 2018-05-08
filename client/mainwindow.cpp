@@ -46,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->lineEdit_ExcavationTranslation, &IntEdit::valueEdited, ui->slider_ExcavationTranslation, &QSlider::setValue);
     connect(ui->lineEdit_LeftLooky, &IntEdit::valueEdited, ui->slider_LeftLooky, &QSlider::setValue);
     connect(ui->lineEdit_RightLooky, &IntEdit::valueEdited, ui->slider_RightLooky, &QSlider::setValue);
+    connect(ui->lineEdit_ExcavationConveyor, &IntEdit::valueEdited, ui->slider_ExcavationConveyor, &QSlider::setValue);
 
     //New Sliders for Drilling
     connect(ui->pushButton_DigDeep, &QPushButton::clicked, this, &MainWindow::handleDigDeep);
@@ -186,6 +187,8 @@ MainWindow::MainWindow(QWidget *parent) :
                      this, &MainWindow::handleLocomotionSpeedSet);
     QObject::connect(ui->slider_UpsetSpeed, &QSlider::valueChanged,
                      this, &MainWindow::handleLocomotionUpSet);
+    QObject::connect(ui->slider_ExcavationConveyor, &QSlider::valueChanged,
+                     this, &MainWindow::handleExcavationConveyerSpeed);
 
     //Add tankPivotButtonR and tankPivotButtonL
     QObject::connect(ui->tankPivotButtonR, &QPushButton::clicked,
@@ -923,6 +926,10 @@ void MainWindow::handleExcavationMoveSpeedSet(int value) {
     ui->lcdNumber_ExcavationMoveSpeed->display(value / (100.0F));
 }
 
+void MainWindow::handleExcavationConveyerSpeed(int value) {
+    ui->lcdNumber_ExcavationConveyor->display(value);
+}
+
 void MainWindow::initSubscription() {
     ConsumerThread *thread = new ConsumerThread(m_loginStr, "abcde");
     connect(thread, &ConsumerThread::receivedMessage, this, &MainWindow::handleState);
@@ -1051,24 +1058,24 @@ void MainWindow::keyPressEvent(QKeyEvent *ev) {
             handleTankPivotRK();
             //handleD_KeyPress();
             break;
-        case (Qt::Key_U):
+        case (Qt::Key_J):
              ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() - 10);
              //dumpConfig();
              break;
-        case (Qt::Key_I):
+        case (Qt::Key_K):
             ui->slider_UpsetSpeed->setValue(ui->slider_UpsetSpeed->value() + 10);//handleLocomotionStraight();
+            break;
+        case (Qt::Key_U):
+            ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() - 10);
+            break;
+        case (Qt::Key_I):
+            ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() + 10);
             break;
         case (Qt::Key_O):
             handleTankPivotL();
             break;
         case (Qt::Key_P):
             handleTankPivotR();
-            break;
-        case (Qt::Key_J):
-            ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() - 10);
-            break;
-        case (Qt::Key_K):
-            ui->slider_LocomotionSpeed->setValue(ui->slider_LocomotionSpeed->value() + 10);
             break;
         case (Qt::Key_R):
             handleTankPivotR();
@@ -1158,8 +1165,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent *ev) {
         case (Qt::Key_I):
             break;
         case (Qt::Key_O):
+            handleLocomotionStop();
             break;
         case (Qt::Key_P):
+            handleLocomotionStop();
             break;
         case (Qt::Key_J):
             break;
@@ -1429,18 +1438,18 @@ void MainWindow::actionTabRight() {
     if(ui->tabWidget->currentIndex() >= -1) {
         ui->tabWidget->setCurrentIndex(ui->tabWidget->currentIndex()+1);
     }
-    if(ui->tabWidget->currentIndex() >4) {
+    if(ui->tabWidget->currentIndex() >5) {
         ui->tabWidget->setCurrentIndex(1);
     }
 }
 
 //Tab Left
 void MainWindow::actionTabLeft() {
-    if(ui->tabWidget->currentIndex() <= 5) {
+    if(ui->tabWidget->currentIndex() <= 6) {
         ui->tabWidget->setCurrentIndex(ui->tabWidget->currentIndex()-1);
     }
     if(ui->tabWidget->currentIndex() < 1) {
-        ui->tabWidget->setCurrentIndex(5);
+        ui->tabWidget->setCurrentIndex(6);
     }
 }
 

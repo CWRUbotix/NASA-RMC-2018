@@ -118,6 +118,7 @@ public slots:
     void handleExcavationTargetDepthSet(int value);
     void handleExcavationDigSpeedSet(int value);
     void handleExcavationMoveSpeedSet(int value);
+    void handleExcavationConveyerSpeed(int value);
 
     void handleLocomotionSpeedSet(int value);
     void handleLocomotionUpSet(int value);
