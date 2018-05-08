@@ -19,7 +19,9 @@ public class SensorConfig {
     }
 
     SensorConfig(String name, int ID){
+        this.name = name;
         this.scale = 1;
+        this.ID = ID;
         this.limitSwitch = false;
     }
 }
