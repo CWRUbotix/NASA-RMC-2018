@@ -6,19 +6,19 @@ void setup_sensors(){
 	// 
 
 	//ENCODERS
-	sensor_infos[1].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[1].hardware 		= SH_QUAD_VEL;
 	sensor_infos[1].whichMotor 		= FRONT_PORT_MTR_ID;
 	sensor_infos[1].array_index 	= 0;
 
-	sensor_infos[3].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[3].hardware 		= SH_QUAD_VEL;
 	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
 	sensor_infos[3].array_index 	= 1;
 
-	sensor_infos[5].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[5].hardware 		= SH_QUAD_VEL;
 	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
 	sensor_infos[5].array_index 	= 2;
 
-	sensor_infos[7].hardware 		= SH_RC_ENC_VEL;
+	sensor_infos[7].hardware 		= SH_QUAD_VEL;
 	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
 	sensor_infos[7].array_index 	= 3;
 
@@ -52,7 +52,7 @@ void setup_sensors(){
 	sensor_infos[13].whichPin 		= 24;
 	pinMode(24, INPUT_PULLUP);
 	sensor_infos[13].whichMotor 	= 8;
-	sensor_infos[13].mtr_dir_if_triggered = 1; 	
+	sensor_infos[13].mtr_dir_if_triggered = -1; 	
 	limit_switches[0] 				= &(sensor_infos[13]);
 	exc_limits[0] 					= &(sensor_infos[13]);
 	// Exc translation; upper, starboard
@@ -60,7 +60,7 @@ void setup_sensors(){
 	sensor_infos[14].whichPin 		= 25;
 	pinMode(25, INPUT_PULLUP);
 	sensor_infos[14].whichMotor 	= 8;
-	sensor_infos[14].mtr_dir_if_triggered = -1; 
+	sensor_infos[14].mtr_dir_if_triggered = 1; 
 	limit_switches[1] 				= &(sensor_infos[14]);
 	exc_limits[1] 					= &(sensor_infos[14]);
 	// Exc translation; upper, port
@@ -68,7 +68,7 @@ void setup_sensors(){
 	sensor_infos[15].whichPin 		= 26;
 	pinMode(26, INPUT_PULLUP);
 	sensor_infos[15].whichMotor 	= 8;
-	sensor_infos[15].mtr_dir_if_triggered = -1; 
+	sensor_infos[15].mtr_dir_if_triggered = 1; 
 	limit_switches[2] 				= &(sensor_infos[15]);
 	exc_limits[2] 					= &(sensor_infos[15]);
 	// Exc rotation; port
@@ -119,6 +119,19 @@ void setup_sensors(){
 	sensor_infos[21].mtr_dir_if_triggered = -1; 
 	limit_switches[8] 				= &(sensor_infos[21]);
 	dep_limits[3] 					= &(sensor_infos[21]);
+
+	sensor_infos[22].hardware 		= SH_LD_CELL;
+	sensor_infos[22].whichPin 		= 34; 		// this is a clk pin
+	sensor_infos[22].baseline 		= -553;
+	sensor_infos[22].responsiveness = -0.0255; 	// using this as our slope
+
+	sensor_infos[23].hardware 		= SH_LD_CELL;
+	sensor_infos[23].whichPin 		= 36; 		// this is a clk pin
+	sensor_infos[23].baseline 		= -2325;
+	sensor_infos[23].responsiveness = -0.0222; 	// using this as our slope
+
+	pinMode(34, OUTPUT); // configure clock pins as output
+	pinMode(36, OUTPUT);
 
 	sensor_infos[33].hardware 		= SH_BL_CUR;
 	sensor_infos[33].whichPin  		= A3;
@@ -229,13 +242,14 @@ void setup_motors(){
 
 	// Depostion winch
 	motor_infos[5].hardware 						= MH_BL_VEL;
+	motor_infos[5].board 							= & (board_infos[5]);
 	motor_infos[5].max_pwr 							= 1000;
 	motor_infos[5].center 							= 1000;
 	motor_infos[5].deadband 						= 250;
 	motor_infos[5].subsys 							= DEP_SYS;
 	motor_infos[5].limits 							= dep_limits; // array of pointers to limit switches
 	motor_infos[5].num_limits 						= NUM_DEP_LIMS;
-	motor_infos[5].board 							= & (board_infos[3]);
+
 
 	// port-side linear actuator
 	motor_infos[PORT_LIN_ACT_ID].whichMotor 		= 0;
@@ -250,7 +264,7 @@ void setup_motors(){
 	motor_infos[PORT_LIN_ACT_ID].maxpos 			= 1000;
 	motor_infos[PORT_LIN_ACT_ID].subsys 			= EXC_SYS;
 	motor_infos[PORT_LIN_ACT_ID].limits 			= exc_rot_limits;
-	motor_infos[PORT_LIN_ACT_ID].num_limits 		= NUM_EXC_ROT_LIMS;
+	motor_infos[PORT_LIN_ACT_ID].num_limits 		= 0;  //NUM_EXC_ROT_LIMS;
 	motor_infos[PORT_LIN_ACT_ID].kp 				= LIN_ACT_KP;
 	motor_infos[PORT_LIN_ACT_ID].ki 				= LIN_ACT_KI;
 	// starboard-side linear actuator
@@ -266,7 +280,7 @@ void setup_motors(){
 	motor_infos[STARBOARD_LIN_ACT_ID].maxpos 		= 1000;
 	motor_infos[STARBOARD_LIN_ACT_ID].subsys 		= EXC_SYS;
 	motor_infos[STARBOARD_LIN_ACT_ID].limits 		= exc_rot_limits;
-	motor_infos[STARBOARD_LIN_ACT_ID].num_limits 	= NUM_EXC_ROT_LIMS;
+	motor_infos[STARBOARD_LIN_ACT_ID].num_limits 	= 0;  //NUM_EXC_ROT_LIMS;
 	motor_infos[STARBOARD_LIN_ACT_ID].kp 			= LIN_ACT_KP;
 	motor_infos[STARBOARD_LIN_ACT_ID].ki 			= LIN_ACT_KI;
 	

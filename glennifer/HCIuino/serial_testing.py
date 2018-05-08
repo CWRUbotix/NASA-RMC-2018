@@ -1,7 +1,6 @@
 import serial
 import sys
 
-BAUD_RATE 			= 9600
 CMD_READ_SENSORS	= 1
 CMD_SET_OUTPUTS 	= 2
 CMD_HCI_TEST 		= 3
@@ -37,16 +36,18 @@ def dispCMDTypes():
 	print('='*79)
 
 #===============================================================================
-def readSensors(cmdType):
+def readSensors(cmdType, inputs):
 	byteArr = [cmdType]
 	byteArr.append(0) 			# placeholder until later
 	bodyLen 	= 0
-	numSens 	= int(input("How many to read :\t"))
+	# numSens 	= int(input("How many to read :\t"))
+	numSens 	= int(inputs[1])
 	respLen 	= 2 + 3*numSens
 	bodyLen 	= numSens
 
-	for i in range(0,numSens):
-		ID  = int(input("ID :\t\t\t"))
+	for n in range(0,numSens):
+		# ID  = int(input("ID :\t\t\t"))
+		ID 	= int(inputs[n + 2])
 		byteArr.append(ID)
 		
 
@@ -89,22 +90,27 @@ def setOutputs(cmdType, inputs):
 
 #===============================================================================
 def main():
+	BAUD_RATE 	= 9600
+	PORT 		= ''
 	try:
 		if len(sys.argv[1])>1:
 			opt1 = sys.argv[1]
-			print(opt1)
 			opt1Arg = sys.argv[2]
 			if (opt1[0] == '-') and (len(opt1Arg) > 1):
 				if (opt1[1] == 'b' or opt1[1] == 'B'):
+					# global BAUD_RATE
 					BAUD_RATE = int(opt1[2])
+				if (opt1[1] == 'p' or opt1[1] == 'B'):
+					PORT = opt1Arg;
+
 	except Exception as e:
-		BAUD_RATE = 9600
+		pass
 
 
 	#dispAvailableCOM()
 	
-	
-	PORT = str(input("Which COM port?:\t"))
+	if(PORT == ''):
+		PORT = str(input("Which COM port?:\t"))
 	ser 			= serial.Serial()
 	ser.port 		= PORT
 	ser.baudrate 	= BAUD_RATE
@@ -137,7 +143,7 @@ def main():
 				respLen = 2 + byteArr[1];
 				
 			elif cmdType == CMD_READ_SENSORS:
-				byteArr = readSensors(cmdType)
+				byteArr = readSensors(cmdType, inputs)
 				respLen = 2 + 3*byteArr[1]
 				
 			elif cmdType < 0:
@@ -151,14 +157,18 @@ def main():
 				print("Will expect "+str(respLen)+" bytes.")
 				ser.write(byteArr)
 				resp = ser.read(respLen)
-				printval = "\n === Response ===\t"
-				printval +=   "CMD\t\tNUMBER\n"
-				printval += str(int(resp[0])) + '\t\t' + str(int(resp[1])) + '\n\n'
-				length = (respLen-2)/3
+				printval = "\n === Response ===\n"
+				printval +=   "CMD: "
+				printval += str(int(resp[0]))
+				printval += "\tBODY: "
+				printval += str(int(resp[1])) + '\n'
+				length = int((respLen-2)/3)
 				for i in range(0,length):
 					ind = (i*3)+2
-					val = int(resp[ind+1]) * 256
+					val = int(resp[ind+1])*256
 					val += int(resp[ind+2])
+					if val > 32767:
+						val = 32767-val
 					printval += str(int(resp[ind])) + '\t: ' + str(val) + '\n'
 				print(printval)
 

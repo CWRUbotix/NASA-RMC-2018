@@ -148,7 +148,7 @@ typedef struct SensorInfo{
 	bool     is_reversed = false;// When hardware = SH_PIN_LIMIT
 	float    responsiveness = 1;// 1 = responsiveness
 	uint16_t scale = 1; 		// 1 unless needed
-	int16_t  baseline;
+	int32_t  baseline;
 	int16_t  storedVal; 		// replacing the sensor_storedVals array
 	int16_t* prev_values; 		// 
 	int16_t  val_at_max; 		// when this is a linear pot or similar

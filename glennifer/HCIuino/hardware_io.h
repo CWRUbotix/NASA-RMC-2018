@@ -50,14 +50,40 @@ uint16_t read_load_cell(SensorInfo* loadyBoi){
 	int clk = loadyBoi->whichPin;
 	int dat = loadyBoi->whichPin+1;
 	int32_t bigData;
+	bool is_ready = false;
 
+	do{
+		is_ready = (digitalRead(dat) == LOW);
+	}while(!is_ready);
+
+	uint8_t data[3] = { 0 };
+	uint8_t filler = 0x00;
 	// shift in the 24-bit number
-	for(int i = 0; i<3; i++){
-		byte data = shiftIn(dat, clk, MSBFIRST);
-		bigData = bigData << 8;
-		bigData += data;
+	data[2] = shiftIn(dat, clk, MSBFIRST);
+	data[1] = shiftIn(dat, clk, MSBFIRST);
+	data[0] = shiftIn(dat, clk, MSBFIRST);
+
+	// program it with a gain of 128
+	digitalWrite(clk, HIGH);
+	digitalWrite(clk, LOW);
+	
+	if (data[2] & 0x80) {
+		filler = 0xFF;
+	} else {
+		filler = 0x00;
 	}
-	return (loadyBoi->scale * bigData);
+
+	// build the signed 32-bit integer
+	bigData = ( static_cast<unsigned long>(filler) << 24
+			| static_cast<unsigned long>(data[2]) << 16
+			| static_cast<unsigned long>(data[1]) << 8
+			| static_cast<unsigned long>(data[0]) );
+	Serial3.print("LOADY BOI: ");
+	Serial3.println(bigData, DEC);
+	delay(5);
+
+	// float raw_val = (float)((loadyBoi->responsiveness*bigData)-loadyBoi->baseline);
+	return (int16_t) ((loadyBoi->responsiveness*bigData)+loadyBoi->baseline);// (raw_val*loadyBoi->responsiveness);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +118,7 @@ int32_t read_enc(MotorInfo* motor){
 			// delay(10);
 			break;}
 		case SH_QUAD_VEL:
+			retval = encoder_values[enc->array_index];
 			break;
 	}
 	return retval;
@@ -135,26 +162,13 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 				*val = (tmp < 0 ? raw*(-1) : raw);
 			}
 			break;}
-		case SH_BL_ENC_VEL: {
-			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
-			// MCInfo* board 			= motor->board;
-			// sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
-			// *val 					= sensor->storedVal;
-			break;}
-
-		case SH_BL_ENC_POS: {
-			// motor 		= &(motor_infos[sensor->whichMotor]); 	// get the motor for this sensor
-			// MCInfo* board 			= motor->board;
-			// sensor->storedVal 		= (sensor->storedVal * (1 - sensor->responsiveness)) + (readVal * sensor->responsiveness);
-			// *val 					= sensor->storedVal;
-			break; }
 
 		case SH_LD_CELL: {
-			*val 					= read_load_cell(sensor);
+			*val = read_load_cell(sensor);
 			break;}
 
 		case SH_QUAD_VEL:{
-			
+			*val = read_enc(motor);
 			break;}
 		case SH_BL_CUR:{
 			int raw 	= analogRead(sensor->whichPin);
@@ -302,9 +316,24 @@ int get_motor_dir(MotorInfo* motor){
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+bool is_dir_legal(MotorInfo* motor, SensorInfo* limit){
+	int legal_dir 	= limit->mtr_dir_if_triggered;
+	//int16_t pos 	= read_enc(motor);
+	int16_t dir 	= 0;
+	if(motor->hardware == MH_ST_POS){
+		dir 		= motor->setPt - motor->lastSet;
+	}else{//} if(motor->hardware == MH_ST_PWM || motor->hardware == MH_BL_VEL){
+		dir 		= motor->setPt;
+	}
+	return (sign(dir) == sign(legal_dir));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void update_quad_encoders(int8_t* arr){
 	Wire.beginTransmission(QUAD_ENC_READER_ADDR); 	// begin comms w/ the slave device
-	Wire.write(1); 									// command to get some data
+	Wire.write(0x01); 								// command to get some data
+	Wire.endTransmission();							// 
 	for(int i = 0; i<6; i++){
 		arr[i] = Wire.read();
 	}
@@ -358,37 +387,38 @@ void maintain_motors(byte* cmd, bool success){
 		}
 	}
 
-	// check limit switches & handle collisions
-	// for(int i = 0; i < NUM_LIM_SWITCHES; i++){
-	// 	SensorInfo* limit = limit_switches[i];
-
-	// 	if(is_limit_triggered(limit)){
-	// 		MotorInfo* motor 	= &(motor_infos[limit->whichMotor]);
-	// 		int set_pt_sign 	= get_motor_dir(motor); //sign((int) motor->setPt);
-	// 		if(set_pt_sign != limit->mtr_dir_if_triggered){
-	// 			// stop the motor!!
-	// 			motor->is_stopped 	= true;
-	// 		}else{
-	// 			motor->is_stopped 	= false; 	// make sure we can now move the motor
-	// 		}
-	// 	}
-	// }
-
 	// actually maintain motors
 	// handle any PID, acceleration, faults, etc.
 	for(int i=0; i<NUM_MOTORS; i++){
-		long time 			= millis();
 		MotorInfo* motor 	= &(motor_infos[i]); 	// get a pointer to the struct
+
+		uint8_t conflicts 	= 0;
+		if(motor->num_limits > 0){
+			// check the limit switches, see if the setPt is allowed
+			for(int i = 0; i<motor->num_limits; i++){
+				SensorInfo* limit 	= motor->limits[i];
+				if(is_limit_triggered(limit) && !is_dir_legal(motor, limit)){
+					conflicts++;
+					motor->is_stopped = true;
+				}
+			}
+		}
+		
+		if(conflicts == 0){
+			motor->is_stopped = false;
+		}
+
+		long time 			= millis();
 		bool writeSuccess 	= false;
-		bool is_stopped 	= motor->is_stopped;
+		//bool is_stopped 	= motor->is_stopped;
 
 		switch(motor->hardware){
 			case MH_NONE:
 				break;
 			case MH_ST_PWM:
-				if(is_stopped){
+				if(motor->is_stopped){
 					writeSuccess = write_to_sabertooth(motor, 0);
-				} else if(motor->setPt != motor->lastSet){
+				} else {//if(motor->setPt != motor->lastSet){
 					writeSuccess = write_to_sabertooth(motor, motor->setPt);
 				}
 				break;
@@ -421,7 +451,7 @@ void maintain_motors(byte* cmd, bool success){
 				}else{
 					pwr = 0;
 				}
-				if(is_stopped){
+				if(motor->is_stopped){
 					pwr = 0;
 				}
 				
@@ -429,25 +459,8 @@ void maintain_motors(byte* cmd, bool success){
 				
 				
 				break;}
-			case MH_RC_VEL: {
-				if(is_stopped){
-					writeSuccess 		= write_to_roboclaw(motor, 0);
-				}else{
-					int16_t newSetPt 	= contstrainMag(motor->setPt, motor->maxDuty);
-					// int16_t vel 		= read_enc(motor);
-					// Serial3.print("\nVel: ");
-					// Serial3.println(vel);
-					// delay(10);
-					motor->setPt 		= newSetPt;  // update setPt with the constrained value
-					// newSetPt 			= ramp_up(motor, newSetPt);
-					newSetPt 			= ramp_up_better(motor, newSetPt);
-					writeSuccess 		= write_to_roboclaw(motor, newSetPt);
-					
-					motor->lastSet 		= newSetPt;
-				}
-				break; }
 			case MH_BL_VEL:
-				if(is_stopped){
+				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
 					// if client is requesting a direction change
