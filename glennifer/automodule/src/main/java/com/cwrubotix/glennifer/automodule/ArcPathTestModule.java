@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.Button;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.LocObsStateDetailed;
 import com.cwrubotix.glennifer.Messages.LocalizationPosition;
 import com.cwrubotix.glennifer.Messages.ObstaclePosition;
 import com.rabbitmq.client.AMQP;
@@ -285,9 +286,9 @@ public class ArcPathTestModule extends Module{
 	@Override
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
 	    Messages.State msg = Messages.State.parseFrom(body);
-	    LocObsStateDetailed locObs = msg.getLocObsStateDetailed();
+	    LocObsStateDetailed locObs = msg.getLocObsDetailed();
 	    LocalizationPosition posUpdate = locObs.getLocPosition();
-	    List<ObstaclePosition> obstacles = locObs.getObstaclePositionsList();
+	    List<ObstaclePosition> obstacles = locObs.getObstaclesList();
 	    Position pos = new Position(posUpdate.getXPosition(), posUpdate.getYPosition(), posUpdate.getBearingAngle());
 	    if(!pos.equals(new Position(0, 0, 0))){
 		tagFound = true;
