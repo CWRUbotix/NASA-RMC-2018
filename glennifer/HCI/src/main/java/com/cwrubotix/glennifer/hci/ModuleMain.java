@@ -34,7 +34,8 @@ public class ModuleMain {
     private static String queueName;
 
 	public static void runWithConnectionExceptions() throws IOException, TimeoutException {
-		// Read connection config
+
+        // Read connection config
 		Mechanics.initialize();
 
         // Read String paths from YML file
@@ -43,8 +44,7 @@ public class ModuleMain {
 		//Connect and Configure AMPQ
         setupAMQP();
 
-        String arduinoPort = findArduinoPort();
-        hci = createHCIFromPort(arduinoPort);
+        hci = new HardwareControlInterface();
 
 		// Initialize sensors
         initializeSensors();  
@@ -91,10 +91,10 @@ public class ModuleMain {
 
 		channel.basicConsume(queueName, true, consumer);
         // Main loop to get sensor data
-        generateDummyMessage();
+        //generateDummyMessage();
         try {
             while (true) {
-                System.out.println("Looping in main");
+                //System.out.println("Looping in main");
                 SensorData sensorData = hci.pollSensorUpdate();
                 generateSensorUpdateMessage(sensorData);
 
@@ -108,6 +108,8 @@ public class ModuleMain {
     private static void generateSensorUpdateMessage(SensorData sensorData) throws IOException{
         int sensorDataID =  sensorData.id;
         double value = sensorData.data;
+        System.out.print("data ID: " + sensorDataID);
+        System.out.println(", value: " + value);
         long time_ms = sensorData.timestamp;
         Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
                 .setTimeInt(time_ms / 1000)
@@ -115,38 +117,36 @@ public class ModuleMain {
                 .build();
         switch(sensorDataID){
             // LEFT WHEEL RPM
-            case 0:
-            case 2: {
-                value = -(Mechanics.wheelValueToRPM(value));
-                Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
-                    .setRpm((float)value)
-                    .setTimestamp(unixTime)
-                    .build();
-                if (sensorDataID == 0)
-                    channel.basicPublish("amq.topic", "sensor.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
-                else if (sensorDataID == 2)
-                    channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_rpm", null, msg.toByteArray());
-                break;
-            }
-
-            // RIGHT WHEEL RPM
             case 1:
-            case 3: {
-                value = (Mechanics.wheelValueToRPM(value));
+            case 7: {
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 if (sensorDataID == 1)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.front_left.wheel_rpm", null, msg.toByteArray());
+                else if (sensorDataID == 7)
+                    channel.basicPublish("amq.topic", "sensor.locomotion.back_left.wheel_rpm", null, msg.toByteArray());
+                break;
+            }
+
+            // RIGHT WHEEL RPM
+            case 3:
+            case 5: {
+                Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
+                    .setRpm((float)value)
+                    .setTimestamp(unixTime)
+                    .build();
+                if (sensorDataID == 3)
                     channel.basicPublish("amq.topic", "sensor.locomotion.front_right.wheel_rpm", null, msg.toByteArray());
-                else if (sensorDataID == 3)
+                else if (sensorDataID == 5)
                     channel.basicPublish("amq.topic", "sensor.locomotion.back_right.wheel_rpm", null, msg.toByteArray());
                 break;
             }
 
             // EXCAVATION ARM POSITION
-            case 4:
-            case 5: {
+            case 10:
+            case 11: {
                 value = (float)convertToBCAngle(value);
                 Messages.PositionUpdate msg = Messages.PositionUpdate.newBuilder()
                     .setPosition((float)value)
@@ -157,9 +157,9 @@ public class ModuleMain {
             }
 
             // EXCAVATION BC TRANSLATION DISPLACEMENT
-            case 8: {
+            case 12: {
                 Messages.DisplacementUpdate msg = Messages.DisplacementUpdate.newBuilder()
-                    .setDisplacement((((float)value - 45.0F) / 785.0F) * 100.0F)
+                    .setDisplacement((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_displacement", null, msg.toByteArray());
@@ -167,9 +167,9 @@ public class ModuleMain {
             }
 
             // EXCAVATION BC DIGGING CURRENT
-            case 13: {
+            case 33: {
                 Messages.CurrentUpdate msg = Messages.CurrentUpdate.newBuilder()
-                    .setCurrent((float)value / 100.0F)
+                    .setCurrent((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.excavation.conveyor_current", null, msg.toByteArray());
@@ -178,57 +178,54 @@ public class ModuleMain {
 
             // DEPOSITION HOPPER RPM 
             // maybe it should be position controlled instead of speed controlled
-            case 14: {
+            /*case 14: {
                 Messages.RpmUpdate msg = Messages.RpmUpdate.newBuilder()
                     .setRpm((float)value)
                     .setTimestamp(unixTime)
                     .build();
                 channel.basicPublish("amq.topic", "sensor.deposition.hopper_rpm", null, msg.toByteArray());
                 break;
-            }
+            }*/
 
             // LOAD CELLS
-            case 15:
-            case 16: {
+            case 22:
+            case 23: {
                 Messages.LoadUpdate msg = Messages.LoadUpdate.newBuilder()
                     .setLoad((float)value)
                     .setTimestamp(unixTime)
                     .build();
-                if (sensorDataID == 15)
+                if (sensorDataID == 22)
                     channel.basicPublish("amq.topic", "sensor.deposition.load.left", null, msg.toByteArray());
-                else if (sensorDataID == 16)
+                else if (sensorDataID == 23)
                     channel.basicPublish("amq.topic", "sensor.deposition.load.right", null, msg.toByteArray());
                 break;
             }
 
             // LIMIT SWITCHES
-            case 6:
-            case 7:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
             case 17:
             case 18:
             case 19:
-            case 20: {
+            case 20:
+            case 21: {
                 Messages.LimitUpdate msg = Messages.LimitUpdate.newBuilder()
                     .setPressed(value > 0)
                     .setTimestamp(unixTime)
                     .build();
-                if (sensorDataID == 6)
-                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.left", null, msg.toByteArray());
-                else if (sensorDataID == 7)
-                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.right", null, msg.toByteArray());
-                else if (sensorDataID == 9)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.left", null, msg.toByteArray());
-                else if (sensorDataID == 10)
+                if (sensorDataID == 13) 
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_retracted", null, msg.toByteArray());
+                else if (sensorDataID == 14)
                     channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.right", null, msg.toByteArray());
-                else if (sensorDataID == 11)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.left", null, msg.toByteArray());
-                else if (sensorDataID == 12)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_retracted.right", null, msg.toByteArray());
+                else if (sensorDataID == 15)
+                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.left", null, msg.toByteArray());
+                else if (sensorDataID == 16)
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_retracted.left", null, msg.toByteArray());
                 else if (sensorDataID == 17)
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_retracted.right", null, msg.toByteArray());
+                else if (sensorDataID == 21)
                     channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_extended.left", null, msg.toByteArray());
                 else if (sensorDataID == 18)
                     channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_extended.right", null, msg.toByteArray());
@@ -274,93 +271,31 @@ public class ModuleMain {
         queueName = channel.queueDeclare().getQueue();
     }
 
-    private static String findArduinoPort(){
-        // Initialize port as null
-        String port = null;
-        // For each attached serial port
-        for(String s:SerialPortList.getPortNames()) {
-            SerialPort sp = new SerialPort(s);
-            try {
-                // Open the port
-                sp.openPort();
-                Thread.sleep(1000);
-                sp.setParams(baud, 8, 1, 0);
-                sp.setDTR(false);
-                // Create test packet
-                byte[] bt = {0x03,0x01,0x5A};
-                // Write test byte 0x5A
-                sp.writeBytes(bt);
-                System.out.println(bt[2]);
-                Thread.sleep(1000);
-                // Read response bytes
-                byte[] b = sp.readBytes(3,2000);
-                System.out.println(b[2]);
-                // If response is 0xA5, it is the arduino
-                if(b[2] == (byte)0xA5) {
-                	System.out.println("Found the arduino");
-                    // Capture the string of correct port
-                    port = s;
-                    // Close the port
-                    sp.closePort();
-                    break;
-                }
-                sp.closePort();
-            } catch(SerialPortException e) {
-                e.printStackTrace();
-                continue;
-            } catch(SerialPortTimeoutException e) {
-                try {
-                        sp.closePort();
-                } catch(Exception e1) {
-                        e1.printStackTrace();
-                }
-                continue;
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-        return port;
-    }
-
-    private static HardwareControlInterface createHCIFromPort(String port){
-        // If port is still null, couldn't find it
-        if(port == null) {
-            System.out.println("Couldn't find attached arduino, please try again");
-            return null;
-        } else {
-            System.out.println("Found arduino at " + port);
-        }
-        return new HardwareControlInterface(port);           
-    }
-
     private static void initializeSensors(){
         
         ArrayList<SensorConfig> sensorList = new ArrayList<SensorConfig>();
         
         // Locomotion 
-        sensorList.add(new SensorConfig("Front Left Wheel Encoder", 0));
-        sensorList.add(new SensorConfig("Front Right Wheel Encoder", 1));
-        sensorList.add(new SensorConfig("Back Left Wheel Encoder", 2));
-        sensorList.add(new SensorConfig("Back Right Wheel Encoder", 3));
+        sensorList.add(new SensorConfig("Front Left Wheel Encoder", 1));
+        sensorList.add(new SensorConfig("Front Right Wheel Encoder", 3));
+        sensorList.add(new SensorConfig("Back Left Wheel Encoder", 7));
+        sensorList.add(new SensorConfig("Back Right Wheel Encoder", 5));
         
         //Excavation
-        sensorList.add(new SensorConfig("Left Arm Pot", 4));
-        sensorList.add(new SensorConfig("Right Arm Pot", 5));
-        sensorList.add(new SensorConfig("Left Arm Extended Limit", 6));
-        sensorList.add(new SensorConfig("Right Arm Extended Limit", 7));
-        sensorList.add(new SensorConfig("Bucket Conveyor Translation Pot", 8));
-        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit A", 9));
-        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit B", 10));
-        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit A", 11));
-        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit B", 12));
-        sensorList.add(new SensorConfig("Bucket Conveyor Current", 13));
+        sensorList.add(new SensorConfig("Left Arm Pot", 10));
+        sensorList.add(new SensorConfig("Right Arm Pot", 11));
+        sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
+        sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
+        sensorList.add(new SensorConfig("Bucket Conveyor Translation Pot", 12));
+        sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit", 13));
+        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit A", 15));
+        sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit B", 14));
+        sensorList.add(new SensorConfig("Bucket Conveyor Current", 33));
 
         //Deposition
-        sensorList.add(new SensorConfig("Hopper Encoder", 14));
-        sensorList.add(new SensorConfig("Load Cell A", 15));
-        sensorList.add(new SensorConfig("Load Cell B", 16));
-        sensorList.add(new SensorConfig("Hopper Extended Limit A", 17));
+        sensorList.add(new SensorConfig("Load Cell A", 22));
+        sensorList.add(new SensorConfig("Load Cell B", 23));
+        sensorList.add(new SensorConfig("Hopper Extended Limit A", 21));
         sensorList.add(new SensorConfig("Hopper Extended Limit B", 18));
         sensorList.add(new SensorConfig("Hopper Retracted Limit A", 19));
         sensorList.add(new SensorConfig("Hopper Retracted Limit B", 20));
@@ -434,7 +369,7 @@ public class ModuleMain {
         }
         double targetValue = 0;
         Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
-        targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+        targetValue = (scc.getRpm() * 2);
         if(id == 0){
             targetValue *= 1.00;
         }
@@ -492,19 +427,19 @@ public class ModuleMain {
         if (keys[2].equals("conveyor_translation_displacement")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 8;
-            double targetValue = (pcc.getPosition() * 5);
+            double targetValue = pcc.getPosition() * 5;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id1 = 6;
             int id2 = 7;
-            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2) ;
+            double targetValue = pcc.getPosition() * 10;
             queueActuation(id1, targetValue);
             queueActuation(id2, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
             Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 4;
-            double targetValue = (((scc.getRpm() / 100.0F) * 32767) / 2);
+            double targetValue = scc.getRpm() * 2;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Excavation motor control routing key has unrecognized motor");
@@ -520,7 +455,7 @@ public class ModuleMain {
         if (keys[2].equals("dump_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 5;
-            double targetValue = (((pcc.getPosition() / 100.0F) * 32767) / 2);
+            double targetValue = pcc.getPosition() * 2;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Deposition motor control routing key has unrecognized motor");

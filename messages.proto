@@ -44,12 +44,15 @@ message CurrentUpdate {
 	required UnixTime timestamp = 2;
 }
 
-// sensor.excavation.arm_limit_extended
-// sensor.excavation.arm_limit_retracted
-// sensor.excavation.bucket_conveyor_translation_limit_extended
+// sensor.excavation.arm_limit_extended.left
+// sensor.excavation.arm_limit_extended.right
+// sensor.excavation.bucket_conveyor_translation_limit_extended.right
+// sensor.excavation.bucket_conveyor_translation_limit_extended.left
 // sensor.excavation.bucket_conveyor_translation_limit_retracted
-// sensor.deposition.dump_limit_extended
-// sensor.deposition.dump_limit_retracted
+// sensor.deposition.dump_limit_extended.right
+// sensor.deposition.dump_limit_extended.left
+// sensor.deposition.dump_limit_retracted.right
+// sensor.deposition.dump_limit_retracted.left
 message LimitUpdate {
 	required bool pressed = 1;
 	required UnixTime timestamp = 2;
@@ -144,18 +147,20 @@ message StateSubscribe {
 	required bool excavation_detailed = 6;
 	required bool deposition_summary = 7;
 	required bool deposition_detailed = 8;
-	optional UnixTime startTime = 9;
+	required bool loc_obs_detailed = 9;
+	optional UnixTime startTime = 10;
 }
 
 //state "super message"
 message State{
-	optional LocomotionStateSummary locSummary = 1;
-	optional LocomotionStateDetailed locDetailed = 2;
-	optional ExcavationStateSummary excSummary = 3;
-	optional ExcavationStateDetailed excDetailed = 4;
-	optional DepositionStateSummary depSummary = 5;
-	optional DepositionStateDetailed depDetailed = 6;
-	required UnixTime timestamp = 7;
+	optional LocomotionStateSummary loc_summary = 1;
+	optional LocomotionStateDetailed loc_detailed = 2;
+	optional ExcavationStateSummary exc_summary = 3;
+	optional ExcavationStateDetailed exc_detailed = 4;
+	optional DepositionStateSummary dep_summary = 5;
+	optional DepositionStateDetailed dep_detailed = 6;
+	optional LocObsStateDetailed loc_obs_detailed = 7;
+	required UnixTime timestamp = 8;
 }
 
 //summary of locomotion state
@@ -169,10 +174,6 @@ message LocomotionStateDetailed {
 	required float front_right_rpm = 2;
 	required float back_left_rpm = 3;
 	required float back_right_rpm = 4;
-	required uint32 front_left_count = 5;
-	required uint32 front_right_count = 6;
-	required uint32 back_left_count = 7;
-	required uint32 back_right_count = 8;
 }
 
 //summary of excavation state
@@ -196,37 +197,40 @@ message ExcavationStateDetailed {
 	required bool arm_right_extended = 6;
 	required bool translation_left_extended = 7;
 	required bool translation_right_extended = 8;
-	required bool translation_left_retracted = 9;
-	required bool translation_right_retracted = 10;
+	required bool translation_retracted = 9;
 }
 
 //summary of deposition state
 message DepositionStateSummary { 
-	required float pos = 1;
-	required float load = 2;
-	required bool dump_extended = 3;
-	required bool dump_retracted = 4;
+	required float load = 1;
+	required bool dump_extended = 2;
+	required bool dump_retracted = 3;
 }
 
 //details of deposition state
 message DepositionStateDetailed {
-	required float pos = 1;
-	required float left_load = 2;
-	required float right_load = 3;
-	required bool dump_left_extended = 4;
-	required bool dump_right_extended = 5;
-	required bool dump_left_retracted = 6;
-	required bool dump_right_retracted = 7;
+	required float left_load = 1;
+	required float right_load = 2;
+	required bool dump_left_extended = 3;
+	required bool dump_right_extended = 4;
+	required bool dump_left_retracted = 5;
+	required bool dump_right_retracted = 6;
 }
 
-//localization vector
+//details of localization and obstacle detection state
+message LocObsStateDetailed {
+	required LocalizationPosition loc_position = 1;
+	repeated ObstaclePosition obstacles = 2;
+}
+
+//localization vector update
 message	LocalizationPosition {
 	required float x_position = 1;
 	required float y_position = 2;
 	required float bearing_angle = 3;
 }
 
-//obstacle detection
+//obstacle detection update
 message ObstaclePosition {
 	required float x_position = 1;
 	required float y_position = 2;

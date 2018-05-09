@@ -22,19 +22,6 @@ public class DepositionStateTest {
         assertEquals(load, resultLoad, 0);
     }
 
-    /**
-     * Test of updateArmPos method, of class DepositionState.
-     */
-    @Test
-    public void testDumpPos() throws Exception {
-        float dumpPos = 4.8F;
-        Instant time = Instant.now();
-        DepositionState instance = new DepositionState();
-        instance.updateDumpPos(dumpPos, time);
-        float resultDumpPos = instance.getDumpPos();
-        assertEquals(dumpPos, resultDumpPos, 0);
-    }
-
     @Test
     public void testLimitSwitches() throws Exception {
         Instant time = Instant.now();

@@ -31,21 +31,21 @@ public class AutoDrillModule extends Module {
      * Upper limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentUpperLimit = 20.0F;
+    private final float currentUpperLimit = 1000.0F;
     /**
      * Lower limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentLowerLimit = 8.0F;
+    private final float currentLowerLimit = 300.0F;
     
 
     /**
      * Consumer class for DrillDeepCommand.
      */
     private class DrillDeepConsumer extends DefaultConsumer {
-	public DrillDeepConsumer(Channel channel) {
-	    super(channel);
-	}
+		public DrillDeepConsumer(Channel channel) {
+		    super(channel);
+		}
 
 	/**
 	 * Takes in message queue from RabbitMQ, interprets the message, and
@@ -65,32 +65,32 @@ public class AutoDrillModule extends Module {
 	 * @throws IOException
 	 *             when message system messes up with us
 	 */
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    if(launched){ //Stops autonomy operation
-		launched = false;
-	    }
-	    // Transition to dig deep
-	    currentJob = DrillJob.DEEP;
-	    excavationAngleControl(bc_angle);
-	    
-	    // Parse the incoming message to get target depth and speed we want
-	    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
-	    targetDepth = cmd.getDepth(); // How deep we want to dig
-	    
-	    detectStall();
-	    updateMotors(); // Starts digging with given goals.
-	}
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    if(launched){ //Stops autonomy operation
+				launched = false;
+		    }
+		    // Transition to dig deep
+		    currentJob = DrillJob.DEEP;
+		    //excavationAngleControl(bc_angle);
+		    
+		    // Parse the incoming message to get target depth and speed we want
+		    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
+		    targetDepth = cmd.getDepth(); // How deep we want to dig
+		    
+		    detectStall();
+		    updateMotors(); // Starts digging with given goals.
+		}
     }
 
     /**
      * Consumer class for DrillEndCommand
      */
     private class DrillEndConsumer extends DefaultConsumer {
-	public DrillEndConsumer(Channel channel) {
-	    super(channel);
-	}
+		public DrillEndConsumer(Channel channel) {
+		    super(channel);
+		}
 
 	/**
 	 * Takes in message queue from RabbitMQ, interprets the message, and
@@ -110,98 +110,99 @@ public class AutoDrillModule extends Module {
 	 * @throws IOException
 	 *             when message system messes up with us
 	 */
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    if(launched){ //Stops autonomy operation
-		launched = false;
-	    }
-	    currentJob = DrillJob.NONE; // Transition to DrillJob.NONE state to
-					// end digging cycle
-	    updateMotors(); // Ends digging cycle
-	}
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    if(launched){ //Stops autonomy operation
+				launched = false;
+		    }
+		    currentJob = DrillJob.NONE; // Transition to DrillJob.NONE state to
+						// end digging cycle
+		    updateMotors(); // Ends digging cycle
+		}
     }
     
     private class LaunchDrillConsumer extends DefaultConsumer {
-	public LaunchDrillConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.LaunchDrill launch = Messages.LaunchDrill.parseFrom(body);
-	    float x = launch.getCurrentX();
-	    float y = launch.getCurrentY();
-	    double heading = launch.getCurrentHeading();
-	    currentPos = new Position(x, y, heading);
-	    launched = true;
-	    excavationAngleControl(bc_angle);
-	    if(digProgress.get(currentPos) != null || MAX_TRANSLATION - digProgress.get(currentPos) < 1.0F){
-		nextPos = currentPos;
-		lastJob = currentJob;
-		currentJob = DrillJob.DEEP;
-		detectStall();
-		updateMotors();
-	    } else{ /*Assuming that we will probably not dig more than 3 places in one competitions run*/
-		if(currentPos.getX() > 0.5F || currentPos.getX() < -0.5F){
-		    Position next = new Position(-1 * currentPos.getX(), currentPos.getY(), -1 * Math.PI / 2 * Math.signum(currentPos.getX()));
-		    if(!digProgress.containsKey(next)){
-			nextPos = next;
-		    } else{
-			nextPos = new Position(0.0F, currentPos.getY(), -1 * Math.signum(currentPos.getX()) * Math.PI / 2);
-		    }
-		    lastJob = currentJob;
-		    currentJob = DrillJob.DRIVE;
-		    detectStall();
-		    updateMotors();
-		} else{
-		    nextPos = currentPos;
-		    lastJob = currentJob;
-		    currentJob = DrillJob.DEEP;
-		    detectStall();
-		    updateMotors();
+		public LaunchDrillConsumer(Channel channel){
+		    super(channel);
 		}
-	    }
-	}
+	
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+		    Messages.LaunchDrill launch = Messages.LaunchDrill.parseFrom(body);
+		    float x = launch.getCurrentX();
+		    float y = launch.getCurrentY();
+		    double heading = launch.getCurrentHeading();
+		    currentPos = new Position(x, y, heading);
+		    launched = true;
+		    //excavationAngleControl(bc_angle);
+		    if(digProgress.get(currentPos) != null || MAX_TRANSLATION - digProgress.get(currentPos) < 1.0F){
+				nextPos = currentPos;
+				lastJob = currentJob;
+				currentJob = DrillJob.DEEP;
+				detectStall();
+				updateMotors();
+		    } else{ /*Assuming that we will probably not dig more than 3 places in one competitions run*/
+				if(currentPos.getX() > 0.5F || currentPos.getX() < -0.5F){
+				    Position next = new Position(-1 * currentPos.getX(), currentPos.getY(), -1 * Math.PI / 2 * Math.signum(currentPos.getX()));
+				    if(!digProgress.containsKey(next)){
+					nextPos = next;
+				    } else{
+					nextPos = new Position(0.0F, currentPos.getY(), -1 * Math.signum(currentPos.getX()) * Math.PI / 2);
+				    }
+				    lastJob = currentJob;
+				    currentJob = DrillJob.DRIVE;
+				    detectStall();
+				    updateMotors();
+				} else{
+				    nextPos = currentPos;
+				    lastJob = currentJob;
+				    currentJob = DrillJob.DEEP;
+				    detectStall();
+				    updateMotors();
+				}
+		    }
+		}
     }
     
     private class LocalizationConsumer extends DefaultConsumer{
-	public LocalizationConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
-	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
-	    
-	    if(launched && currentJob == DrillJob.DRIVE){
-		if(currentPos.equals(nextPos)){
-		    lastJob = currentJob;
-		    currentJob = DrillJob.DEEP;
-		    detectStall();
-		    updateMotors();
-		} else{
-		    updateMotors();
+		public LocalizationConsumer(Channel channel){
+		    super(channel);
 		}
-	    }
-	}
+		
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+		    Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
+		    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
+		    
+		    if(launched && currentJob == DrillJob.DRIVE){
+				if(currentPos.equals(nextPos)){
+				    lastJob = currentJob;
+				    currentJob = DrillJob.DEEP;
+				    detectStall();
+				    updateMotors();
+				} else{
+				    updateMotors();
+				}
+		    }
+		}
     }
     
     private class StateUpdateConsumer extends DefaultConsumer{
-	public StateUpdateConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.State msg = Messages.State.parseFrom(body);
-	    bc_trans = msg.getExcDetailed().getDisplacement();
-	    bc_current = msg.getExcDetailed().getCurrent();
-	    
-	    detectStall();
-	    updateMotors();
-	}
+		public StateUpdateConsumer(Channel channel){
+		    super(channel);
+		}
+		
+		@Override
+		public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+		    System.out.println("handling state update message");
+		    Messages.State msg = Messages.State.parseFrom(body);
+		    bc_trans = msg.getExcDetailed().getDisplacement();
+		    bc_current = msg.getExcDetailed().getCurrent();
+		    System.out.println("current: " + bc_current);
+		    detectStall();
+		    updateMotors();
+		}
     }
 
     /**
@@ -260,14 +261,14 @@ public class AutoDrillModule extends Module {
 		    excavationConveyorRPM(0);
 		    excavationTranslationControl(0.0F);
 		}
-		break;
-	    case DEEP:
+		break;	    
+		case DEEP:
 		if (isStalled) {
-		    excavationConveyorRPM(50);
-		    excavationTranslationControl(0);
+		    excavationConveyorRPM(200);
+		    excavationTranslationControl(10);
 		} else {
-		    excavationConveyorRPM(50);
-		    excavationTranslationControl(getCurrentDepthTarget());
+		    excavationConveyorRPM(200);
+		    excavationTranslationControl(-8);
 		}
 		break;
 	    case DRIVE: //TODO
@@ -324,7 +325,7 @@ public class AutoDrillModule extends Module {
 	String line = reader.readLine();
 	
 	while(line != null){
-	    temp.add(Double.parseDouble(line.split(" ")[1]));
+	    temp.add(Double.parseDouble(line.split(" ")[0]));
 	    line = reader.readLine();
 	}
 	
@@ -422,7 +423,7 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-	loadTable();
+	//loadTable();
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
