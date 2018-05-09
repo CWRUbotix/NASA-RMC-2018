@@ -1,6 +1,7 @@
 package com.cwrubotix.glennifer.automodule;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javafx.application.Application;
@@ -12,6 +13,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.Button;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.LocalizationPosition;
+import com.cwrubotix.glennifer.Messages.ObstaclePosition;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -53,7 +56,6 @@ public class ArcPathTestModule extends Module{
 	    direction = Direction.BACKWARD;
 	    arcPath = new ArcPath(destination, currentPos);
 	}
-	moveRobot();
     }
     
     private void setUpTest(int scheme){
@@ -212,13 +214,21 @@ public class ArcPathTestModule extends Module{
 	this.connection = factory.newConnection();
 	this.channel = connection.createChannel();
 	
-	String queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "loc.post");
-	this.channel.basicConsume(queueName, true, new LocConsumer(channel));
+	// Subscribing to StateModule
+	Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("arcPathTest")
+									  .setInterval(0.1F)
+									  .setDepositionDetailed(false)
+									  .setDepositionSummary(true)
+									  .setExcavationDetailed(false)
+									  .setExcavationSummary(true)
+									  .setLocomotionDetailed(true)
+									  .setLocomotionSummary(false)
+									  .build();
+	this.channel.basicPublish(exchangeName, "state.subscribe", null, msg.toByteArray());
 	
-	queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "obstacle.position");
-	this.channel.basicConsume(queueName, true, new ObsConsumer(channel));
+	String queueName = channel.queueDeclare().getQueue();
+	channel.queueBind(queueName, exchangeName, "arcPathTest");
+	this.channel.basicConsume(queueName, true, new StateUpdate(channel));
 	
 	System.out.println("Waiting on Localization message");
     }
@@ -275,48 +285,27 @@ public class ArcPathTestModule extends Module{
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
 	    Messages.State msg = Messages.State.parseFrom(body);
 	    LocObsStateDetailed locObs = msg.getLocObsStateDetailed();
-	    
-	}
-    }
-    
-    private class LocConsumer extends DefaultConsumer{
-	public LocConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.LocalizationPosition msg = Messages.LocalizationPosition.parseFrom(body);
-	    currentPos = new Position(msg.getXPosition(), msg.getYPosition(), msg.getBearingAngle());
-	    if(!tagFound){
+	    LocalizationPosition posUpdate = locObs.getLocPosition();
+	    List<ObstaclePosition> obstacles = locObs.getObstaclePositionsList();
+	    Position pos = new Position(posUpdate.getXPosition(), posUpdate.getYPosition(), posUpdate.getBearingAngle());
+	    if(!pos.equals(new Position(0, 0, 0))){
 		tagFound = true;
-		System.out.println("Found AprilTag, Ready to launch");
+		currentPos = pos;
 	    }
-	    if(launched){
-		if(checkProgress()){
-		    System.out.println("Starting next iteration");
-		    setUpTest(++currentScheme);
+	    
+	    for(ObstaclePosition op : obstacles){
+		Obstacle obs = new Obstacle(new Position(op.getXPosition(), op.getYPosition()));
+		if(arcPath.addObstacle(currentPos, obs)){
+		    progress = 1;
 		}
+	    }
+	    if(progress != 1){
 		updateConstant();
-		moveRobot();
+		checkProgress();
+		if(progress == arcPath.getPoints().length - 1)
+		    setUpTest(++currentScheme);
 	    }
-	}
-    }
-    
-    private class ObsConsumer extends DefaultConsumer{
-	public ObsConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.ObstaclePosition msg = Messages.ObstaclePosition.parseFrom(body);
-	    msg.
-	    Obstacle obs = new Obstacle(msg.getXPosition(), msg.getYPosition(), msg.getDiameter() / 2);
-	    if(launched && arcPath.addObstacle(currentPos, obs)){
-		progress = 1;
-		moveRobot();
-	    }
+	    moveRobot();
 	}
     }
 }
