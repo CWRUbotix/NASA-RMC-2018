@@ -266,6 +266,19 @@ public class ArcPathTestModule extends Module{
 	}
     }
     
+    private class StateUpdate extends DefaultConsumer{
+	public StateUpdate(Channel channel){
+	    super(channel);
+	}
+	
+	@Override
+	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
+	    Messages.State msg = Messages.State.parseFrom(body);
+	    LocObsStateDetailed locObs = msg.getLocObsStateDetailed();
+	    
+	}
+    }
+    
     private class LocConsumer extends DefaultConsumer{
 	public LocConsumer(Channel channel){
 	    super(channel);
@@ -298,6 +311,7 @@ public class ArcPathTestModule extends Module{
 	@Override
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
 	    Messages.ObstaclePosition msg = Messages.ObstaclePosition.parseFrom(body);
+	    msg.
 	    Obstacle obs = new Obstacle(msg.getXPosition(), msg.getYPosition(), msg.getDiameter() / 2);
 	    if(launched && arcPath.addObstacle(currentPos, obs)){
 		progress = 1;
