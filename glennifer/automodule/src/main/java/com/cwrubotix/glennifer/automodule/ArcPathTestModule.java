@@ -41,7 +41,7 @@ public class ArcPathTestModule extends Module{
     private int progress = 1;
     private int currentScheme = 0;
     private ArcPath arcPath;
-    private final float DRIVE_SPEED = 15;
+    private final float DRIVE_SPEED = 20;
     private final double rate = 0.015; //Random shit
     
     public ArcPathTestModule(){
@@ -121,11 +121,40 @@ public class ArcPathTestModule extends Module{
     
     private void updateConstant(){
 	double[] args = arcPath.getArc(progress);
+	Curvature k = new Curvature(arcPath.getPoints()[progress - 1].getX(), arcPath.getPoints()[progress].getX(), arcPath.getArc(progress));
 	double expectedY = args[0] * currentPos.getX() * currentPos.getX() * currentPos.getX() +
 			   args[1] * currentPos.getX() * currentPos.getX() +
 			   args[2] * currentPos.getX() +
 			   args[3];
-	constant = constant + (currentPos.getY() - expectedY) * rate;
+	
+	if(Math.abs(currentPos.getY() - expectedY) > 0.3F){
+	    if(currentPos.getY() - expectedY > 0){
+		constant = constant + (currentPos.getY() - expectedY) * rate;
+	    }
+	} else{
+	    double m = 0.0;
+	    if(currentPos.getHeading() == Math.PI / 2 || currentPos.getHeading() == Math.PI * 3 / 2)
+		m = 0;
+	    else
+		m = -Math.tan(currentPos.getHeading() + Math.PI / 2);
+	    double expectedM = k.getFirstDeriv(currentPos.getX());
+	    if(expectedM - m > 0){
+		switch(k.getTurn(currentPos.getX())){
+		case LEFT: constant = constant + (currentPos.getY() - expectedY) * rate;
+		    break;
+		case RIGHT: constant = constant - (currentPos.getY() - expectedY) * rate;
+		    break;
+		}
+	    }else{
+		switch(k.getTurn(currentPos.getX())){
+		case LEFT: constant = constant - (currentPos.getY() - expectedY) * rate;
+		    break;
+		case RIGHT: constant = constant + (currentPos.getY() - expectedY) * rate;
+		    break;
+		}
+	    }
+	}
+	
     }
     
     private boolean checkProgress(){
@@ -147,7 +176,18 @@ public class ArcPathTestModule extends Module{
     private void moveRobot(){
 	if(launched){
 	    System.out.println("Moving robot");
-	    Curvature k = new Curvature(arcPath.getPoints()[progress - 1].getX(), arcPath.getPoints()[progress].getX(), arcPath.getArc(progress));
+	    Position p1 = null,p2 = null;
+	    Curvature k = null;
+	    switch(direction){
+	    case FORWARD: p1 = arcPath.getPoints()[progress - 1]; p2 = arcPath.getPoints()[progress];
+	    	k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(progress));
+		break;
+	    case BACKWARD:
+		int place = arcPath.getPoints().length - progress;
+		p1 = arcPath.getPoints()[place]; p2 = arcPath.getPoints()[place - 1];
+		k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(place));
+		break;
+	    }
 	    double factor = DRIVE_SPEED / (1 + Math.exp(constant / k.getCurvature(currentPos.getX())));
 	    float left = 0.0F, right = 0.0F;
 	    switch(k.getTurn(currentPos.getX())){
@@ -160,6 +200,7 @@ public class ArcPathTestModule extends Module{
 		right = (float)Math.min(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
 		break;
 	    }
+	    
 	    switch(direction){
 	    case FORWARD: System.out.println("Going forward direction"); leftMotorControl(left); rightMotorControl(right);
 		break;
