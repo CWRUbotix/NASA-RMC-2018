@@ -225,6 +225,7 @@ public class ArcPathTestModule extends Module{
 									  .setExcavationSummary(true)
 									  .setLocomotionDetailed(true)
 									  .setLocomotionSummary(false)
+									  .setLocObsDetailed(true)
 									  .build();
 	this.channel.basicPublish(exchangeName, "state.subscribe", null, msg.toByteArray());
 	
