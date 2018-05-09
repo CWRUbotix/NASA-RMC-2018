@@ -165,29 +165,6 @@ public class AutoDrillModule extends Module {
 		}
     }
     
-    private class LocalizationConsumer extends DefaultConsumer{
-		public LocalizationConsumer(Channel channel){
-		    super(channel);
-		}
-		
-		@Override
-		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-		    Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
-		    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
-		    
-		    if(launched && currentJob == DrillJob.DRIVE){
-				if(currentPos.equals(nextPos)){
-				    lastJob = currentJob;
-				    currentJob = DrillJob.DEEP;
-				    detectStall();
-				    updateMotors();
-				} else{
-				    updateMotors();
-				}
-		    }
-		}
-    }
-    
     private class StateUpdateConsumer extends DefaultConsumer{
 		public StateUpdateConsumer(Channel channel){
 		    super(channel);
@@ -226,6 +203,8 @@ public class AutoDrillModule extends Module {
      * Depth we want to dig
      */
     private float targetDepth = 100.0F;
+    
+    private float lastTranslation = 0.0F;
 
     private final float MaxTranslationInCM = 77.5F;
     
@@ -265,10 +244,10 @@ public class AutoDrillModule extends Module {
 		case DEEP:
 		if (isStalled) {
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(10);
+		    excavationTranslationControl(lastTranslation - convertCMToMotor(10));
 		} else {
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(-8);
+		    excavationTranslationControl(getCurrentDepthTarget());
 		}
 		break;
 	    case DRIVE: //TODO
@@ -288,10 +267,12 @@ public class AutoDrillModule extends Module {
     private void detectStall() {
 	if (!isStalled && bc_current > currentUpperLimit) {
 	    // Transition to stalled
+	    lastTranslation = bc_trans;
 	    isStalled = true;
 	} else if (isStalled && bc_current <= currentLowerLimit) {
 	    // Transition to unstalled
 	    isStalled = false;
+	    
 	}
     }
 
@@ -423,7 +404,8 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-	//loadTable();
+	loadTable();
+	System.out.println("Loaded table");
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
@@ -445,10 +427,7 @@ public class AutoDrillModule extends Module {
 	queueName = channel.queueDeclare().getQueue();
 	channel.queueBind(queueName, exchangeName, "launch.drill");
 	this.channel.basicConsume(queueName,  true, new LaunchDrillConsumer(channel));
-	
-	queueName = channel.queueDeclare().getQueue();
-	channel.queueBind(queueName, exchangeName, "loc.post");
-	this.channel.basicConsume(queueName, true, new LocalizationConsumer(channel));
+
 
 	// Subscribing to StateModule
 	Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("autoDrillModule")
@@ -459,6 +438,7 @@ public class AutoDrillModule extends Module {
 									  .setExcavationSummary(false)
 									  .setLocomotionDetailed(true)
 									  .setLocomotionSummary(false)
+									  .setLocObsDetailed(true)
 									  .build();
 	this.channel.basicPublish(exchangeName, "state.subscribe", null, msg.toByteArray());
 	
@@ -466,7 +446,7 @@ public class AutoDrillModule extends Module {
 	queueName = channel.queueDeclare().getQueue();
 	channel.queueBind(queueName, exchangeName, "autoDrillModule");
 	this.channel.basicConsume(queueName, true, new StateUpdateConsumer(channel));
-
+	System.out.println("Wating commands...");
     }
 
     @Override
