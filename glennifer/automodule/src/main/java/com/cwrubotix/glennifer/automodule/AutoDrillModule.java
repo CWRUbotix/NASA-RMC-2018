@@ -300,7 +300,7 @@ public class AutoDrillModule extends Module {
     }
     
     private void loadTable() throws IOException{
-	File table = new File("config/AutoDrillTable.txt");
+	File table = new File("../config/AutoDrillTable.txt");
 	BufferedReader reader = new BufferedReader(new FileReader(table));
 	LinkedList<Double> temp = new LinkedList<>();
 	String line = reader.readLine();
@@ -446,7 +446,7 @@ public class AutoDrillModule extends Module {
 	queueName = channel.queueDeclare().getQueue();
 	channel.queueBind(queueName, exchangeName, "autoDrillModule");
 	this.channel.basicConsume(queueName, true, new StateUpdateConsumer(channel));
-	System.out.println("Wating commands...");
+	System.out.println("Waitng commands...");
     }
 
     @Override
@@ -459,7 +459,7 @@ public class AutoDrillModule extends Module {
 	    Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("autoDrillModule")
 		    .setInterval(0.2F).setDepositionDetailed(false).setDepositionSummary(true)
 		    .setExcavationDetailed(true).setExcavationSummary(false).setLocomotionDetailed(true)
-		    .setLocomotionSummary(false).build();
+		    .setLocomotionSummary(false).setLocObsDetailed(true).build();
 	    this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
 	} catch (TimeoutException | IOException e) {
 	    // Do nothing

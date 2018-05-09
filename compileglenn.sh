@@ -1,9 +1,6 @@
 
 datestring=$(date +%Y_%m_%d_%H_%M_%S)
-cd /home/workspace
 mkdir -p "logs/$datestring"
-
-cd /home/workspace/NASA-RMC-2018/
 
 # copy config
 cp -r config glennifer/HCI/
