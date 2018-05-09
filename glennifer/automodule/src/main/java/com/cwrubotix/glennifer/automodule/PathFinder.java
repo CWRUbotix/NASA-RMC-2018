@@ -54,6 +54,10 @@ public class PathFinder {
     public void runAlgorithm() {
         path = pathFindingAlgorithm.computePath();
     }
+    
+    public void recalculatePath(Position start, Position end){
+	this.path = pathFindingAlgorithm.computePath(start, end);
+    }
 
     public void registerObstacle(Obstacle obstacle) throws PathFindingAlgorithm.AlgorithmFailureException, DestinationModified{
         Path path = pathFindingAlgorithm.computePath(currentPos, obstacle);

@@ -69,7 +69,6 @@ public class ArcPathTestModule extends Module{
 	    arcPath = new ArcPath(destination, currentPos);
 	}
 	progress = 1;
-	moveRobot();
     }
     
     private boolean checkStray(){
@@ -305,8 +304,11 @@ public class ArcPathTestModule extends Module{
 	    if(progress != 1){
 		updateConstant();
 		checkProgress();
-		if(progress == arcPath.getPoints().length - 1)
+		if(progress == arcPath.getPoints().length - 1){
+		    leftMotorControl(0);
+		    rightMotorControl(0);
 		    setUpTest(++currentScheme);
+		}
 	    }
 	    moveRobot();
 	}
