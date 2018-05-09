@@ -293,22 +293,25 @@ public class ArcPathTestModule extends Module{
 	    if(!pos.equals(new Position(0, 0, 0))){
 		tagFound = true;
 		currentPos = pos;
+		System.out.println("Ready to start test");
 	    }
 	    
 	    for(ObstaclePosition op : obstacles){
 		Obstacle obs = new Obstacle(new Position(op.getXPosition(), op.getYPosition()));
 		if(arcPath.addObstacle(currentPos, obs)){
+			System.out.println("New obstacle found, recalculating path");
 		    progress = 1;
 		}
 	    }
 	    if(progress != 1){
 		updateConstant();
 		checkProgress();
-		if(progress == arcPath.getPoints().length - 1){
-		    leftMotorControl(0);
-		    rightMotorControl(0);
-		    setUpTest(++currentScheme);
-		}
+
+		if(progress == arcPath.getPoints().length - 1)
+			if(currentScheme == scheme.length - 1)
+				endTest();
+			System.out.println("Reached current destination: " + scheme[currentScheme] +"\nNow heading to " + scheme[++currentScheme]);
+		    setUpTest(currentScheme);
 	    }
 	    moveRobot();
 	}
