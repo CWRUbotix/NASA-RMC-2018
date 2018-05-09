@@ -1,11 +1,7 @@
 package com.cwrubotix.glennifer.automodule;
 
 import java.io.IOException;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.BufferedReader;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javafx.application.Application;
@@ -17,6 +13,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.Button;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.LocObsStateDetailed;
+import com.cwrubotix.glennifer.Messages.LocalizationPosition;
+import com.cwrubotix.glennifer.Messages.ObstaclePosition;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
@@ -34,14 +33,15 @@ public class ArcPathTestModule extends Module{
     private Direction direction;
     private Position destination;
     private Position currentPos;
-    private Position[] scheme;
+    private Position[] scheme = {new Position(1.0, 6.0), new Position(-1.0, 1.0), new Position(0.0, 6.0), new Position(1.0, 1.0), 
+	    			new Position(-1.0, 6.0), new Position(0.0, 1.0), new Position(1.0,6.0)};
     private boolean tagFound = false;
     private boolean launched = false;
     private double constant = 1.0;
     private int progress = 1;
     private int currentScheme = 0;
     private ArcPath arcPath;
-    private final float DRIVE_SPEED = 15;
+    private final float DRIVE_SPEED = 20;
     private final double rate = 0.015; //Random shit
     
     public ArcPathTestModule(){
@@ -49,8 +49,6 @@ public class ArcPathTestModule extends Module{
     }
     
     private void setUpTest() throws IOException{
-	loadScheme();
-	//loadConstant();
 	destination = scheme[currentScheme];
 	if(currentPos.getY() < destination.getY()){
 	    direction = Direction.FORWARD;
@@ -59,7 +57,6 @@ public class ArcPathTestModule extends Module{
 	    direction = Direction.BACKWARD;
 	    arcPath = new ArcPath(destination, currentPos);
 	}
-	moveRobot();
     }
     
     private void setUpTest(int scheme){
@@ -73,37 +70,6 @@ public class ArcPathTestModule extends Module{
 	}
 	progress = 1;
 	moveRobot();
-    }
-    
-    private void loadScheme() throws IOException{
-	File scheme = new File("test/testScheme.txt");
-	BufferedReader reader = new BufferedReader(new FileReader(scheme));
-	LinkedList<Position> positions = new LinkedList<>();
-	String line = reader.readLine();
-	while(line != null){
-	    String[] args = line.split(" ");
-	    positions.add(new Position(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
-	    line = reader.readLine();
-	}
-	reader.close();
-	this.scheme = positions.toArray(new Position[0]);
-    }
-    
-    private void loadConstant() throws IOException{
-	File constant = new File("test/constant.txt");
-	if(constant.exists()){
-	    BufferedReader reader = new BufferedReader(new FileReader(constant));
-	    String temp = reader.readLine();
-	    String line = null;
-	    while(temp != null){
-		line = temp;
-		temp = reader.readLine();
-	    }
-	    this.constant = Double.parseDouble(line.split(":")[1].trim());
-	    reader.close();
-	} else{
-	    this.constant = 1.0;
-	}
     }
     
     private boolean checkStray(){
@@ -121,11 +87,40 @@ public class ArcPathTestModule extends Module{
     
     private void updateConstant(){
 	double[] args = arcPath.getArc(progress);
+	Curvature k = new Curvature(arcPath.getPoints()[progress - 1].getX(), arcPath.getPoints()[progress].getX(), arcPath.getArc(progress));
 	double expectedY = args[0] * currentPos.getX() * currentPos.getX() * currentPos.getX() +
 			   args[1] * currentPos.getX() * currentPos.getX() +
 			   args[2] * currentPos.getX() +
 			   args[3];
-	constant = constant + (currentPos.getY() - expectedY) * rate;
+	
+	if(Math.abs(currentPos.getY() - expectedY) > 0.3F){
+	    if(currentPos.getY() - expectedY > 0){
+		constant = constant + (currentPos.getY() - expectedY) * rate;
+	    }
+	} else{
+	    double m = 0.0;
+	    if(currentPos.getHeading() == Math.PI / 2 || currentPos.getHeading() == Math.PI * 3 / 2)
+		m = 0;
+	    else
+		m = -Math.tan(currentPos.getHeading() + Math.PI / 2);
+	    double expectedM = k.getFirstDeriv(currentPos.getX());
+	    if(expectedM - m > 0){
+		switch(k.getTurn(currentPos.getX())){
+		case LEFT: constant = constant + (currentPos.getY() - expectedY) * rate;
+		    break;
+		case RIGHT: constant = constant - (currentPos.getY() - expectedY) * rate;
+		    break;
+		}
+	    }else{
+		switch(k.getTurn(currentPos.getX())){
+		case LEFT: constant = constant - (currentPos.getY() - expectedY) * rate;
+		    break;
+		case RIGHT: constant = constant + (currentPos.getY() - expectedY) * rate;
+		    break;
+		}
+	    }
+	}
+	
     }
     
     private boolean checkProgress(){
@@ -147,7 +142,18 @@ public class ArcPathTestModule extends Module{
     private void moveRobot(){
 	if(launched){
 	    System.out.println("Moving robot");
-	    Curvature k = new Curvature(arcPath.getPoints()[progress - 1].getX(), arcPath.getPoints()[progress].getX(), arcPath.getArc(progress));
+	    Position p1 = null,p2 = null;
+	    Curvature k = null;
+	    switch(direction){
+	    case FORWARD: p1 = arcPath.getPoints()[progress - 1]; p2 = arcPath.getPoints()[progress];
+	    	k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(progress));
+		break;
+	    case BACKWARD:
+		int place = arcPath.getPoints().length - progress;
+		p1 = arcPath.getPoints()[place]; p2 = arcPath.getPoints()[place - 1];
+		k = new Curvature(p1.getX(), p2.getX(), arcPath.getArc(place));
+		break;
+	    }
 	    double factor = DRIVE_SPEED / (1 + Math.exp(constant / k.getCurvature(currentPos.getX())));
 	    float left = 0.0F, right = 0.0F;
 	    switch(k.getTurn(currentPos.getX())){
@@ -160,6 +166,7 @@ public class ArcPathTestModule extends Module{
 		right = (float)Math.min(factor, factor * Math.exp(constant / k.getCurvature(currentPos.getX())));
 		break;
 	    }
+	    
 	    switch(direction){
 	    case FORWARD: System.out.println("Going forward direction"); leftMotorControl(left); rightMotorControl(right);
 		break;
@@ -169,22 +176,7 @@ public class ArcPathTestModule extends Module{
 	}
     }
     
-    
-    private void logConstant(){
-	try{
-	    File constant = new File("test/constant.txt");
-	    if(!constant.exists())
-		constant.createNewFile();
-	    FileWriter fw = new FileWriter(constant);
-	    fw.append(constant + "\n");
-	    fw.close();
-	} catch(IOException e){
-	    e.printStackTrace();
-	}
-    }
-    
     public void endTest(){
-	logConstant();
 	leftMotorControl(0.0F);
 	rightMotorControl(0.0F);
 	this.stop();
@@ -224,13 +216,22 @@ public class ArcPathTestModule extends Module{
 	this.connection = factory.newConnection();
 	this.channel = connection.createChannel();
 	
-	String queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "loc.post");
-	this.channel.basicConsume(queueName, true, new LocConsumer(channel));
+	// Subscribing to StateModule
+	Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("arcPathTest")
+									  .setInterval(0.1F)
+									  .setDepositionDetailed(false)
+									  .setDepositionSummary(true)
+									  .setExcavationDetailed(false)
+									  .setExcavationSummary(true)
+									  .setLocomotionDetailed(true)
+									  .setLocomotionSummary(false)
+									  .setLocObsDetailed(true)
+									  .build();
+	this.channel.basicPublish(exchangeName, "state.subscribe", null, msg.toByteArray());
 	
-	queueName = channel.queueDeclare().getQueue();
-	this.channel.queueBind(queueName, exchangeName, "obstacle.position");
-	this.channel.basicConsume(queueName, true, new ObsConsumer(channel));
+	String queueName = channel.queueDeclare().getQueue();
+	channel.queueBind(queueName, exchangeName, "arcPathTest");
+	this.channel.basicConsume(queueName, true, new StateUpdate(channel));
 	
 	System.out.println("Waiting on Localization message");
     }
@@ -278,43 +279,36 @@ public class ArcPathTestModule extends Module{
 	}
     }
     
-    private class LocConsumer extends DefaultConsumer{
-	public LocConsumer(Channel channel){
+    private class StateUpdate extends DefaultConsumer{
+	public StateUpdate(Channel channel){
 	    super(channel);
 	}
 	
 	@Override
 	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.LocalizationPosition msg = Messages.LocalizationPosition.parseFrom(body);
-	    currentPos = new Position(msg.getXPosition(), msg.getYPosition(), msg.getBearingAngle());
-	    if(!tagFound){
+	    Messages.State msg = Messages.State.parseFrom(body);
+	    LocObsStateDetailed locObs = msg.getLocObsDetailed();
+	    LocalizationPosition posUpdate = locObs.getLocPosition();
+	    List<ObstaclePosition> obstacles = locObs.getObstaclesList();
+	    Position pos = new Position(posUpdate.getXPosition(), posUpdate.getYPosition(), posUpdate.getBearingAngle());
+	    if(!pos.equals(new Position(0, 0, 0))){
 		tagFound = true;
-		System.out.println("Found AprilTag, Ready to launch");
+		currentPos = pos;
 	    }
-	    if(launched){
-		if(checkProgress()){
-		    System.out.println("Starting next iteration");
-		    setUpTest(++currentScheme);
+	    
+	    for(ObstaclePosition op : obstacles){
+		Obstacle obs = new Obstacle(new Position(op.getXPosition(), op.getYPosition()));
+		if(arcPath.addObstacle(currentPos, obs)){
+		    progress = 1;
 		}
+	    }
+	    if(progress != 1){
 		updateConstant();
-		moveRobot();
+		checkProgress();
+		if(progress == arcPath.getPoints().length - 1)
+		    setUpTest(++currentScheme);
 	    }
-	}
-    }
-    
-    private class ObsConsumer extends DefaultConsumer{
-	public ObsConsumer(Channel channel){
-	    super(channel);
-	}
-	
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-	    Messages.ObstaclePosition msg = Messages.ObstaclePosition.parseFrom(body);
-	    Obstacle obs = new Obstacle(msg.getXPosition(), msg.getYPosition(), msg.getDiameter() / 2);
-	    if(launched && arcPath.addObstacle(currentPos, obs)){
-		progress = 1;
-		moveRobot();
-	    }
+	    moveRobot();
 	}
     }
 }
