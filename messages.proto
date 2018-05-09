@@ -147,18 +147,20 @@ message StateSubscribe {
 	required bool excavation_detailed = 6;
 	required bool deposition_summary = 7;
 	required bool deposition_detailed = 8;
-	optional UnixTime startTime = 9;
+	required bool loc_obs_detailed = 9;
+	optional UnixTime startTime = 10;
 }
 
 //state "super message"
 message State{
-	optional LocomotionStateSummary locSummary = 1;
-	optional LocomotionStateDetailed locDetailed = 2;
-	optional ExcavationStateSummary excSummary = 3;
-	optional ExcavationStateDetailed excDetailed = 4;
-	optional DepositionStateSummary depSummary = 5;
-	optional DepositionStateDetailed depDetailed = 6;
-	required UnixTime timestamp = 7;
+	optional LocomotionStateSummary loc_summary = 1;
+	optional LocomotionStateDetailed loc_detailed = 2;
+	optional ExcavationStateSummary exc_summary = 3;
+	optional ExcavationStateDetailed exc_detailed = 4;
+	optional DepositionStateSummary dep_summary = 5;
+	optional DepositionStateDetailed dep_detailed = 6;
+	optional LocObsStateDetailed loc_obs_detailed = 7;
+	required UnixTime timestamp = 8;
 }
 
 //summary of locomotion state
@@ -215,14 +217,20 @@ message DepositionStateDetailed {
 	required bool dump_right_retracted = 6;
 }
 
-//localization vector
+//details of localization and obstacle detection state
+message LocObsStateDetailed {
+	required LocalizationPosition loc_position = 1;
+	repeated ObstaclePosition obstacles = 2;
+}
+
+//localization vector update
 message	LocalizationPosition {
 	required float x_position = 1;
 	required float y_position = 2;
 	required float bearing_angle = 3;
 }
 
-//obstacle detection
+//obstacle detection update
 message ObstaclePosition {
 	required float x_position = 1;
 	required float y_position = 2;

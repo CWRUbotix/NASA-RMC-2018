@@ -44,10 +44,12 @@ public class StateModule {
         private boolean exc_detailed;
         private boolean dep_summary;
         private boolean dep_detailed;
+        private boolean loc_obs_detailed;
 
         public SubscriptionRunnable(String returnKey, int interval_ms, boolean loc_summary, boolean loc_detailed,
                                                                         boolean exc_summary, boolean exc_detailed,
-                                                                        boolean dep_summary, boolean dep_detailed) {
+                                                                        boolean dep_summary, boolean dep_detailed,
+                                                                        boolean loc_obs_detailed) {
             this.returnKey = returnKey;
             this.interval_ms = interval_ms;
             this.loc_summary = loc_summary;
@@ -56,6 +58,7 @@ public class StateModule {
             this.exc_detailed = exc_detailed;
             this.dep_summary = dep_summary;
             this.dep_detailed = dep_detailed;
+            this.loc_obs_detailed = loc_obs_detailed;
         }
 
         @Override
@@ -125,13 +128,13 @@ public class StateModule {
                             .build();
                     stateMsgBuilder.setDepDetailed(msg);
                 }
-                /*if(auto_summary) {
-                	Messages.AutonomyStateSummary msg = Messages.AutonomyStateSummary.newBuilder()
-                			.setPos(autonomyState.getPosition())
-                			.setObst(autonomyState.getObstacles())
+                if(loc_obs_detailed) {
+                	Messages.LocObsStateDetailed msg = Messages.LocObsStateDetailed.newBuilder()
+                			.setLocPosition(locObsState.getLocPosition())
+                			.addAllObstacles(locObsState.getObstacles())
                 			.build();
-                	stateMsgBuilder.setAutoSummary(msg);
-                }*/
+                	stateMsgBuilder.setLocObsDetailed(msg);
+                }
                 try {
                     //Not sure how to do this bit properly
                     StateModule.this.channel.basicPublish(exchangeName, returnKey, null, stateMsgBuilder.build().toByteArray());
@@ -277,10 +280,29 @@ public class StateModule {
                 } else {
                     System.out.println("Bad sensor string in routing key");
                 }
-            //I have no idea what is supposed to go here
-            } else if(typeOfSensor.equals("autonomy")){
-            	String sensorString = keys[2];
-            	
+            } else if(typeOfSensor.equals("loc")){
+            	if (keys.length < 3) {
+                    System.out.println("Localization update routing key requires 3 elements");
+                    return;
+                }
+                String sensorString = keys[2];
+
+                if(sensorString.equals("post")){
+                    handleLocalizationUpdate(body);
+                } else {
+                    System.out.println("Bad sensor string in routing key");
+                }
+            } else if(typeOfSensor.equals("obstacle")){
+                if (keys.length < 3) {
+                    System.out.println("Obstacle update routing key requires 3 elements");
+                    return;
+                }
+                String sensorString = keys[2];
+                if(sensorString.equals("position")){
+                    handleObstacleUpdate(body);
+                } else {
+                    System.out.println("Bad sensor string in routing key");
+                }
             } else { //oops
                 System.out.println("Bad subsystem string in routing key");
                 return;
@@ -306,6 +328,7 @@ public class StateModule {
             boolean exc_detailed = true;
             boolean dep_summary = true;
             boolean dep_detailed = true;
+            boolean loc_obs_detailed = true;
             String replyKey = msg.getReplyKey();
             Thread t = new Thread(new SubscriptionRunnable(
                     replyKey,
@@ -315,7 +338,8 @@ public class StateModule {
                     exc_summary,
                     exc_detailed,
                     dep_summary,
-                    dep_detailed), replyKey);
+                    dep_detailed,
+                    loc_obs_detailed), replyKey);
             subscriptionThreads.add(t, -1);
             t.start();
             System.out.println("Start subscription thread with interval = " + interval);
@@ -470,27 +494,30 @@ public class StateModule {
         }
     }
     
-    /*private void handlePositionUpdate(byte[] body) throws IOException {
-    	PositionUpdate message = PositionUpdate.parseFrom(body);
-    	Position pos = message.getPosition();
-    	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
+    private void handleLocalizationUpdate(byte[] body) throws IOException {
+    	LocalizationPositionUpdate message = LocalizationPositionUpdate.parseFrom(body);
+    	float xPos = message.getXPosition();
+        float yPos = message.getYPosition();
+        float bearingAngle = message.getBearingAngle();
     	try {
-    		autonomyState.updatePosition(pos, time);
+    		locObsState.updateLocalizationPosition(xPos, yPos, bearingAngle);
     	} catch (RobotFaultException e) {
     		sendFault(e.getFaultCode(), time);
     	}
     }
     
     private void handleObstacleUpdate(byte[] body) throws IOException {
-    	ObstacleUpdate message = ObstacleUpdate.parseFrom(body);
-    	Coordinate obstacle = message.getObstacle();
-    	Instant time = Instant.ofEpochSecond(message.getTimestamp().getTimeInt(), (long)(message.getTimestamp().getTimeFrac() * 1000000000L));
+    	ObstaclePosition message = ObstaclePosition.parseFrom(body);
+    	float xPos = message.getXPosition();
+        float yPos = message.getYPosition();
+        float zPos = message.getZPosition();
+        float diameter = message.getDiameter();
     	try {
-    		autonomyState.updateObstacle(obstacle, time);
+    		locObsState.addObstacle(xPos, yPos, zPos, diameter);
     	} catch (RobotFaultException e) {
     		sendFault(e.getFaultCode(), time);
     	}
-    }*/
+    }
     
     /*Hash Table for SubscriptionThreads*/
     private class SubscriptionThreads{
@@ -566,21 +593,21 @@ public class StateModule {
     private LocomotionState locomotionState;
     private ExcavationState excavationState;
     private DepositionState depositionState;
-    private AutonomyState autonomyState;
+    private LocalizationObstacleState locObsState;
     private String exchangeName;
     private Connection connection;
     private Channel channel;
     private SubscriptionThreads subscriptionThreads = new SubscriptionThreads();
     
-    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, AutonomyState autoState) {
-        this(locState, excState, depState, autoState, "amq.topic");
+    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, LocalizationObstacleState locObsState) {
+        this(locState, excState, depState, locObsState, "amq.topic");
     }
 
-    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, AutonomyState autoState, String exchangeName) {
+    public StateModule(LocomotionState locState, ExcavationState excState, DepositionState depState, LocalizationObstacleState locObsState, String exchangeName) {
         this.locomotionState = locState;
         this.excavationState = excState;
         this.depositionState = depState;
-        this.autonomyState = autoState;
+        this.locObsState = locObsState;
         this.exchangeName = exchangeName;
     }
     
@@ -649,8 +676,8 @@ public class StateModule {
         LocomotionState locState = new LocomotionState();
         ExcavationState excState = new ExcavationState();
         DepositionState depState = new DepositionState();
-        AutonomyState autoState = new AutonomyState();
-        StateModule module = new StateModule(locState, excState, depState, autoState);
+        LocalizationObstacleState locObsState = new LocalizationObstacleState();
+        StateModule module = new StateModule(locState, excState, depState, locObsState);
         module.start();
     }
 }
