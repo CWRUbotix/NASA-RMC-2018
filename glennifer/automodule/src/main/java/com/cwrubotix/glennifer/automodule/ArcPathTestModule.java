@@ -1,11 +1,6 @@
 package com.cwrubotix.glennifer.automodule;
 
 import java.io.IOException;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.BufferedReader;
-import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
 import javafx.application.Application;
@@ -34,7 +29,8 @@ public class ArcPathTestModule extends Module{
     private Direction direction;
     private Position destination;
     private Position currentPos;
-    private Position[] scheme;
+    private Position[] scheme = {new Position(1.0, 6.0), new Position(-1.0, 1.0), new Position(0.0, 6.0), new Position(1.0, 1.0), 
+	    			new Position(-1.0, 6.0), new Position(0.0, 1.0), new Position(1.0,6.0)};
     private boolean tagFound = false;
     private boolean launched = false;
     private double constant = 1.0;
@@ -49,8 +45,6 @@ public class ArcPathTestModule extends Module{
     }
     
     private void setUpTest() throws IOException{
-	loadScheme();
-	loadConstant();
 	destination = scheme[currentScheme];
 	if(currentPos.getY() < destination.getY()){
 	    direction = Direction.FORWARD;
@@ -73,37 +67,6 @@ public class ArcPathTestModule extends Module{
 	}
 	progress = 1;
 	moveRobot();
-    }
-    
-    private void loadScheme() throws IOException{
-	File scheme = new File("test/testScheme.txt");
-	BufferedReader reader = new BufferedReader(new FileReader(scheme));
-	LinkedList<Position> positions = new LinkedList<>();
-	String line = reader.readLine();
-	while(line != null){
-	    String[] args = line.split(" ");
-	    positions.add(new Position(Double.parseDouble(args[0]), Double.parseDouble(args[1])));
-	    line = reader.readLine();
-	}
-	reader.close();
-	this.scheme = positions.toArray(new Position[0]);
-    }
-    
-    private void loadConstant() throws IOException{
-	File constant = new File("test/constant.txt");
-	if(constant.exists()){
-	    BufferedReader reader = new BufferedReader(new FileReader(constant));
-	    String temp = reader.readLine();
-	    String line = null;
-	    while(temp != null){
-		line = temp;
-		temp = reader.readLine();
-	    }
-	    this.constant = Double.parseDouble(line.split(":")[1].trim());
-	    reader.close();
-	} else{
-	    this.constant = 1.0;
-	}
     }
     
     private boolean checkStray(){
@@ -210,22 +173,7 @@ public class ArcPathTestModule extends Module{
 	}
     }
     
-    
-    private void logConstant(){
-	try{
-	    File constant = new File("test/constant.txt");
-	    if(!constant.exists())
-		constant.createNewFile();
-	    FileWriter fw = new FileWriter(constant);
-	    fw.append(constant + "\n");
-	    fw.close();
-	} catch(IOException e){
-	    e.printStackTrace();
-	}
-    }
-    
     public void endTest(){
-	logConstant();
 	leftMotorControl(0.0F);
 	rightMotorControl(0.0F);
 	this.stop();
