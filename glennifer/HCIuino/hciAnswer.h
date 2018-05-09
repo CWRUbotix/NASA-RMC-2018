@@ -80,7 +80,7 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 				bodyLen += 3;
 			}
 			break;
-		case CMD_SET_OUTPUTS:
+		case CMD_SET_OUTPUTS:{
 			num = cmd_body_len(cmd)/3;
 			uint16_t setPt;
 			uint8_t cmd_index = CMD_HEADER_SIZE;
@@ -95,12 +95,34 @@ FAULT_T hciAnswer(byte* cmd, byte* rpy){
 				rpy[rpy_index+2] = (uint8_t)(setPt & 0xFF);
 				bodyLen+=3;
 			}
-			break;
+			break;}
+		case CMD_SET_PID:{
+			uint8_t cmd_index = CMD_HEADER_SIZE;
+			uint8_t rpy_index = RPY_HEADER_SIZE;
+			num = cmd_body_len(cmd)/3;
+			for(i = 0; i < num; i++){
+				cmd_index 		 += (3*i);
+				rpy_index 		 += (3*i);
+				ID 				 = cmd[cmd_index];
+				MotorInfo* motor = &(motor_infos[ID]);
+				uint8_t member 	 = cmd[cmd_index+1];
+				int8_t scale	 = cmd[cmd_index+2];
+
+				switch (member){
+					case 0:
+						motor->kp += (1.0 * scale * KP_INC);
+						break;
+					case 1:
+						motor->ki += (1.0 * scale * KI_INC);
+						break;
+				}
+
+			}
+			break;}
 	}
 
 	rpy_set_len(rpy, bodyLen); 	// we only want to consider body length
 	size 	= RPY_HEADER_SIZE + bodyLen;
-	debugging[4] = size;
 
 	retval 	= Serial.write(rpy, size); 	// Actually write to the client
 	

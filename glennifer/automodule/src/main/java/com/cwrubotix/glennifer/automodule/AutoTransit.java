@@ -41,115 +41,115 @@ public class AutoTransit extends Module {
      * Consumer class for launch command
      */
     public class TransitLaunchConsumer extends DefaultConsumer {
-	public TransitLaunchConsumer(Channel channel) {
-	    super(channel);
+		public TransitLaunchConsumer(Channel channel) {
+		    super(channel);
+		}
+
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+
+		    Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
+		    // Get current position
+		    Position currentPos = new Position(cmd.getCurXPos(), cmd.getCurYPos(), cmd.getCurHeading());
+
+		    destinationPos = new Position(cmd.getDestXPos(), cmd.getDestYPos(), 0f);
+		    if (!launched) {
+				launched = true;
+				launchNavigation(currentPos, destinationPos);
+		    }
+		}
 	}
-
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-
-	    Messages.LaunchTransit cmd = Messages.LaunchTransit.parseFrom(body);
-	    // Get current position
-	    Position currentPos = new Position(cmd.getCurXPos(), cmd.getCurYPos(), cmd.getCurHeading());
-
-	    destinationPos = new Position(cmd.getDestXPos(), cmd.getDestYPos(), 0f);
-	    if (!launched) {
-			launched = true;
-			launchNavigation(currentPos, destinationPos);
-	    }
-	}
-    }
 
     public class TransitSoftStopConsumer extends DefaultConsumer {
-	public TransitSoftStopConsumer(Channel channel) {
-	    super(channel);
-	}
+		public TransitSoftStopConsumer(Channel channel) {
+		    super(channel);
+		}
 
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    Messages.TransitSoftStop cmd = Messages.TransitSoftStop.parseFrom(body);
-	    launched = false;// TODO: Implement soft stop handler
-	}
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    Messages.TransitSoftStop cmd = Messages.TransitSoftStop.parseFrom(body);
+		    launched = false;// TODO: Implement soft stop handler
+		}
     }
 
     public class TransitHardStopConsumer extends DefaultConsumer {
-	public TransitHardStopConsumer(Channel channel) {
-	    super(channel);
-	}
+		public TransitHardStopConsumer(Channel channel) {
+		    super(channel);
+		}
 
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    Messages.TransitHardStop cmd = Messages.TransitHardStop.parseFrom(body);
-	    System.err.println("AutoTransit Received Hard Stop");
-	    System.exit(1); // End the process
-	}
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    Messages.TransitHardStop cmd = Messages.TransitHardStop.parseFrom(body);
+		    System.err.println("AutoTransit Received Hard Stop");
+		    System.exit(1); // End the process
+		}
     }
 
     public class TransitNewObstacleConsumer extends DefaultConsumer {
-	public TransitNewObstacleConsumer(Channel channel) {
-	    super(channel);
-	}
+		public TransitNewObstacleConsumer(Channel channel) {
+		    super(channel);
+		}
 
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    // Parse message
-	    Messages.TransitNewObstacle cmd = Messages.TransitNewObstacle.parseFrom(body);
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    // Parse message
+		    Messages.TransitNewObstacle cmd = Messages.TransitNewObstacle.parseFrom(body);
 
-	    // Construct obstacle data
-	    float obsXPos = cmd.getXPos();
-	    float obsYPos = cmd.getXPos();
-	    obsXPos += currentPos.getX(); // TODO Temporarily converting
-					  // obstacle position relative to the
-					  // tag
-	    obsYPos += currentPos.getY(); // Probably good idea to move this to
-					  // the StateModule in the future.
-	    float obsDiameter = cmd.getDiameter();
-	    Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
+		    // Construct obstacle data
+		    float obsXPos = cmd.getXPos();
+		    float obsYPos = cmd.getXPos();
+		    obsXPos += currentPos.getX(); // TODO Temporarily converting
+						  // obstacle position relative to the
+						  // tag
+		    obsYPos += currentPos.getY(); // Probably good idea to move this to
+						  // the StateModule in the future.
+		    float obsDiameter = cmd.getDiameter();
+		    Obstacle newObs = new Obstacle(obsXPos, obsYPos, obsDiameter);
 
-	    launchNavigation(currentPos, newObs);
-	}
+		    launchNavigation(currentPos, newObs);
+		}
     }
 
     public class LocalizationPositionConsumer extends DefaultConsumer {
-	public LocalizationPositionConsumer(Channel channel) {
-	    super(channel);
-	}
-
-	@Override
-	public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-		throws IOException {
-	    // parse message
-	    Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
-
-	    // Updates current position
-	    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
-	    System.out.println("current pos:" + currentPos);
-	    if (currentPos.equals(destinationPos)) {
-			launched = false;
-			System.out.println("Arrived at Destination, sending AutoModule report message.");
-			TRAVEL_SPEED = 0;
-			moveToPos(destinationPos, destinationPos);
-			ProgressReport report = ProgressReport.newBuilder().setDone(true)
-				.setTimestamp(instantToUnixTime(Instant.now())).build();
-			this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
-	    } else if (launched && subTarget.equals(currentPos)) {
-	    	System.out.println("have arrived at subtarget");
-	    	if(currentPath.getPath().size() > 1)
-				moveToPos(currentPath.getPath().remove(), subTarget = currentPath.getPath().getFirst());
-			else
-				moveToPos(currentPath.getPath().remove(), subTarget = destinationPos);
-	    } else if(launched){
-	    	System.out.println("going to subtarget");
-			moveToPos(currentPos, subTarget);
-	    } else {
-	    	System.out.println("not launched!");
+		public LocalizationPositionConsumer(Channel channel) {
+		    super(channel);
 		}
 
-    }
+		@Override
+		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+			throws IOException {
+		    // parse message
+		    Messages.LocalizationPosition pos = Messages.LocalizationPosition.parseFrom(body);
+
+		    // Updates current position
+		    currentPos = new Position(pos.getXPosition(), pos.getYPosition(), pos.getBearingAngle());
+		    System.out.println("current pos:" + currentPos);
+		    if (currentPos.equals(destinationPos)) {
+				launched = false;
+				System.out.println("Arrived at Destination, sending AutoModule report message.");
+				TRAVEL_SPEED = 0;
+				moveToPos(destinationPos, destinationPos);
+				ProgressReport report = ProgressReport.newBuilder().setDone(true)
+					.setTimestamp(instantToUnixTime(Instant.now())).build();
+				this.getChannel().basicPublish(exchangeName, "progress.transit", null, report.toByteArray());
+		    } else if (launched && subTarget.equals(currentPos)) {
+		    	System.out.println("have arrived at subtarget");
+		    	if(currentPath.getPath().size() > 1)
+					moveToPos(currentPath.getPath().remove(), subTarget = currentPath.getPath().getFirst());
+				else
+					moveToPos(currentPath.getPath().remove(), subTarget = destinationPos);
+		    } else if(launched){
+		    	System.out.println("going to subtarget");
+				moveToPos(currentPos, subTarget);
+		    } else {
+		    	System.out.println("not launched!");
+			}
+
+	    }
 	}
 
     /////// MODULE LOGIC

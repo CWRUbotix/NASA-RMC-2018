@@ -41,7 +41,7 @@ public class ArcPathTestModule extends Module{
     private int progress = 1;
     private int currentScheme = 0;
     private ArcPath arcPath;
-    private final float DRIVE_SPEED = 30;
+    private final float DRIVE_SPEED = 20;
     private final double rate = 0.015; //Random shit
     
     public ArcPathTestModule(){
@@ -50,7 +50,7 @@ public class ArcPathTestModule extends Module{
     
     private void setUpTest() throws IOException{
 	loadScheme();
-	loadConstant();
+	//loadConstant();
 	destination = scheme[currentScheme];
 	if(currentPos.getY() < destination.getY()){
 	    direction = Direction.FORWARD;
@@ -163,7 +163,7 @@ public class ArcPathTestModule extends Module{
 	    Position p2 = arcPath.getPoints()[progress];
 	    if(currentPos.getY() < Math.min(p1.getY(), p2.getY()) || currentPos.getY() > Math.max(p1.getY(), p2.getY())
 		    || currentPos.getX() < Math.min(p1.getX(), p2.getX()) || currentPos.getX() > Math.max(p1.getX(), p2.getX())){
-		if(progress != arcPath.getPoints().length - 1){
+		if((progress != arcPath.getPoints().length - 1) || currentPos.equals(arcPath.getPoints()[progress])){
 		    progress++;
 		    return false;
 		} else{
@@ -229,6 +229,7 @@ public class ArcPathTestModule extends Module{
 	leftMotorControl(0.0F);
 	rightMotorControl(0.0F);
 	this.stop();
+	System.exit(0);
     }
     
     private void leftMotorControl(float value){

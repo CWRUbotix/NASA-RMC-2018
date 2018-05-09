@@ -26,7 +26,7 @@ public class ExcavationState {
 	private float armPos;
     private float conveyorCurrent; 
     private EnumMap <Side, Boolean> armSideExtended;
-    private EnumMap <Side, Boolean> translationSideRetracted;
+    private Boolean translationRetracted;
     private EnumMap <Side, Boolean> translationSideExtended;
 
     // TODO: Store the time most recently updated, either for the whole system
@@ -53,9 +53,7 @@ public class ExcavationState {
         armSideExtended.put(Side.LEFT, false);
         armSideExtended.put(Side.RIGHT, false);
 
-        translationSideRetracted = new EnumMap<>(Side.class);
-        translationSideRetracted.put(Side.LEFT, false);
-        translationSideRetracted.put(Side.RIGHT, false);
+        translationRetracted = false;
 
         translationSideExtended = new EnumMap<>(Side.class);
         translationSideExtended.put(Side.LEFT, false);
@@ -99,8 +97,8 @@ public class ExcavationState {
         translationSideExtended.put(side, pressed);
     }
     
-    public void updateTranslationLimitRetracted(Side side, boolean pressed, Instant time) throws RobotFaultException {
-        translationSideRetracted.put(side, pressed);
+    public void updateTranslationLimitRetracted(boolean pressed, Instant time) throws RobotFaultException {
+        translationRetracted = pressed;
     }
     
     /* State getter methods */
@@ -138,10 +136,6 @@ public class ExcavationState {
         return armSideExtended.get(side);
     }
 
-    public boolean getTranslationRetracted(Side side) { 
-        return translationSideRetracted.get(side); 
-    }
-
     public boolean getTranslationExtended(Side side) { 
         return translationSideExtended.get(side); 
     }
@@ -151,7 +145,7 @@ public class ExcavationState {
     }
 
     public boolean getTranslationRetracted() { 
-        return translationSideRetracted.get(Side.LEFT) || translationSideRetracted.get(Side.RIGHT); 
+        return translationRetracted;
     }
 
     public boolean getTranslationExtended() { 
