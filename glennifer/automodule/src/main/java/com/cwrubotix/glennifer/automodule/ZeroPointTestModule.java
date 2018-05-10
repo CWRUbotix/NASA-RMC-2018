@@ -172,37 +172,53 @@ public class ZeroPointTestModule extends Module{
 	System.out.println("Waiting on Localization message");
     }
     
+    @Override
+    public void stop(){
+	//Unsubscribing
+	Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("zeroPointTest")
+		  .setInterval(0.1F)
+		  .setDepositionDetailed(false)
+		  .setDepositionSummary(true)
+		  .setExcavationDetailed(false)
+		  .setExcavationSummary(true)
+		  .setLocomotionDetailed(true)
+		  .setLocomotionSummary(false)
+		  .setLocObsDetailed(true)
+		  .build();
+	try {
+	    this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
+	} catch (IOException e) {
+	    e.printStackTrace();
+	} finally{
+	    super.stop();
+	}
+    }
+    
     public static void main(String[] args){
 	Control.launchwrap(args);
     }
     
     public static class Control extends Application{
-	private ZeroPointTestModule module;
 	
 	@Override
 	public void start(Stage primaryStage){
-	    module = new ZeroPointTestModule();
+	    ZeroPointTestModule module = new ZeroPointTestModule();
 	    module.start();
 	    HBox box = new HBox();
 	    Button start = new Button("START");
-	    Button estop = new Button("ESTOP");
-	    start.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    if(module.tagFound){
-			module.setUpTest();
-			module.launched = true;
-		    }
+	    Button estop = new Button("END");
+	    start.setOnAction(e -> {
+		if(module.tagFound){
+		    module.setUpTest();
+		    module.launched = true;
 		}
 	    });
-	    estop.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    module.endTest();
-		}
-	    });
+	    estop.setOnAction(e -> module.endTest());
 	    box.getChildren().addAll(start, estop);
 	    Scene scene = new Scene(box);
 	    primaryStage.setScene(scene);
 	    primaryStage.sizeToScene();
+	    primaryStage.setOnCloseRequest(e -> e.consume());
 	    primaryStage.show();
 	}
 	

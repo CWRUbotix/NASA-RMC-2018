@@ -11,12 +11,16 @@ import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 
 import java.io.IOException;
-import java.io.File;
-import java.io.FileReader;
-import java.io.BufferedReader;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
+
+import javafx.application.Application;
+import javafx.geometry.Pos;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.stage.Stage;
 
 /**
  * Module that controls digging cycle of the run
@@ -37,6 +41,11 @@ public class AutoDrillModule extends Module {
      * operation
      */
     private final float currentLowerLimit = 5000.0F;
+  
+    private float transSpeed = 10;
+    
+    private float stallSpeed = -20;
+
     
 
     /**
@@ -75,10 +84,7 @@ public class AutoDrillModule extends Module {
 		    currentJob = DrillJob.DEEP;
 		    //excavationAngleControl(bc_angle);
 		    
-		    // Parse the incoming message to get target depth and speed we want
-		    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
-		    targetDepth = cmd.getDepth(); // How deep we want to dig
-		    
+		    // Parse the incoming message to get target depth and speed we want		    
 		    detectStall();
 		    updateMotors(); // Starts digging with given goals.
 		}
@@ -172,12 +178,9 @@ public class AutoDrillModule extends Module {
 		
 		@Override
 		public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-		    System.out.println("handling state update message");
 		    Messages.State msg = Messages.State.parseFrom(body);
 		    bc_trans = msg.getExcDetailed().getDisplacement();
 		    bc_current = msg.getExcDetailed().getCurrent();
-		    System.out.println("current: " + bc_current);
-		    System.out.println("translation: " + bc_trans);
 		    detectStall();
 		    updateMotors();
 		}
@@ -200,16 +203,6 @@ public class AutoDrillModule extends Module {
      * stall current
      */
     private DrillJob lastJob = DrillJob.NONE;
-    /**
-     * Depth we want to dig
-     */
-    private float targetDepth = 100.0F;
-    
-    private float lastTranslation = 0.0F;
-
-    private final float MaxTranslationInCM = 77.5F;
-    
-    private double[] diggingTable;
 
     /**
      * Records whether the excavation motor is in stall
@@ -239,18 +232,18 @@ public class AutoDrillModule extends Module {
 	    case NONE:
 		if (currentJob != lastJob) {
 		    excavationConveyorRPM(0);
-		    excavationTranslationControl(0.0F);
+		    retract();
 		}
 		break;	    
 		case DEEP:
 		if (isStalled) {
 			System.out.println("stalled");
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(lastTranslation - convertCMToMotor(10));
+		    excavationTranslationControl(stallSpeed);
 		} else {
 			System.out.println("not stalled");
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(getCurrentDepthTarget());
+		    excavationTranslationControl(transSpeed);
 		}
 		break;
 	    case DRIVE: //TODO
@@ -270,63 +263,14 @@ public class AutoDrillModule extends Module {
     private void detectStall() {
 	if (!isStalled && bc_current > currentUpperLimit) {
 	    // Transition to stalled
-	    lastTranslation = bc_trans;
+	    System.out.println("Excavation System overloaded, starts retracting");
 	    isStalled = true;
 	} else if (isStalled && bc_current <= currentLowerLimit) {
 	    // Transition to unstalled
 	    isStalled = false;
-	    
-	}
-    }
+	    System.out.println("Current back to normal, resuming normal digging");
 
-    /**
-     * This method calculates subgoal of our task so that our motor control
-     * commands are incremental.
-     *
-     * @return the calculated next target depth the next command should have.
-     */
-    private float getCurrentDepthTarget() {
-	int index = (int)convertMotorToCM(bc_trans);
-	if(index > diggingTable.length - 1){
-		index = diggingTable.length - 2;
-	} else if(index < 5){
-		index = 5;
 	}
-	float calculatedDepth = (float)(index + 1 / (diggingTable[index + 1] - diggingTable[index]) / 10);
-	System.out.println(calculatedDepth);
-	if(calculatedDepth > targetDepth)
-	    return convertCMToMotor(targetDepth);
-	
-	return convertCMToMotor(calculatedDepth);
-    }
-    
-    private float convertCMToMotor(float cm){
-	return cm / MaxTranslationInCM * 100;
-    }
-    
-    private float convertMotorToCM(float value){
-	return value / 100 * MaxTranslationInCM;
-    }
-    
-    private void loadTable() throws IOException{
-	File table = new File("../config/AutoDrillTable.txt");
-	BufferedReader reader = new BufferedReader(new FileReader(table));
-	LinkedList<Double> temp = new LinkedList<>();
-	String line = reader.readLine();
-	
-	while(line != null){
-	    temp.add(Double.parseDouble(line.split(" ")[0]));
-	    line = reader.readLine();
-	}
-	
-	reader.close();
-	Object[] t = temp.toArray();
-	double[] diggingTable = new double[t.length];
-	for(int i = 0; i < t.length; i ++){
-	    diggingTable[i] = ((Double)t[i]).doubleValue();
-	}
-	
-	this.diggingTable = diggingTable;
     }
 
     /**
@@ -338,10 +282,14 @@ public class AutoDrillModule extends Module {
      *             when failed to create/publish message
      */
     private void excavationTranslationControl(float targetValue) throws IOException {
-	Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder().setPosition(targetValue)
-		.setTimeout(123).build();
-	AutoDrillModule.this.channel.basicPublish(exchangeName,
-		"motorcontrol.excavation.conveyor_translation_displacement", null, pcc.toByteArray());
+	Messages.SpeedControlCommand spc = Messages.SpeedControlCommand.newBuilder().setRpm(targetValue)
+										    .setTimeout(123).build();
+	this.channel.basicPublish(exchangeName, "motorcontrol.excavation.conveyor_translation_speed", null, spc.toByteArray());
+    }
+    
+    private void retract() throws IOException{
+	Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder().setPosition(0).setTimeout(123).build();
+	this.channel.basicPublish(exchangeName, "motorcontrol.excavation.conveyor_translation_displacement", null, pcc.toByteArray());
     }
 
     /**
@@ -397,6 +345,10 @@ public class AutoDrillModule extends Module {
 	AutoDrillModule.this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, blWheel.toByteArray());
 	AutoDrillModule.this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, brWheel.toByteArray());
     }
+    
+    private void setTranslationSpeed(float speed){
+	transSpeed = speed;
+    }
 
     public AutoDrillModule() {
 	this("amq.topic");
@@ -413,8 +365,6 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-	loadTable();
-	System.out.println("Loaded table");
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
@@ -461,22 +411,53 @@ public class AutoDrillModule extends Module {
     @Override
     public void stop() {
 	try {
-	    channel.close();
-	    connection.close();
-
 	    // Unsubscribe from StateModule
 	    Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("autoDrillModule")
 		    .setInterval(0.2F).setDepositionDetailed(false).setDepositionSummary(true)
 		    .setExcavationDetailed(true).setExcavationSummary(false).setLocomotionDetailed(true)
 		    .setLocomotionSummary(false).setLocObsDetailed(true).build();
 	    this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
+	    channel.close();
+	    connection.close();
 	} catch (TimeoutException | IOException e) {
 	    // Do nothing
 	}
     }
 
     public static void main(String[] args) {
-	AutoDrillModule module = new AutoDrillModule();
-	module.start();
+	GUI.launchWrap(args);
+    }
+    
+    public static class GUI extends Application{
+	public void start(Stage primaryStage){
+	    AutoDrillModule module = new AutoDrillModule();
+	    module.start();
+	    HBox bigBox = new HBox();
+	    VBox box = new VBox();
+	    Button increment = new Button(" ^ ");
+	    Button decrement = new Button(" v ");
+	    Button end = new Button("END");
+	    bigBox.setAlignment(Pos.CENTER);
+	    increment.setOnAction(e -> {
+		module.setTranslationSpeed(module.transSpeed + 5);
+		System.out.println("Current translation speed: " + module.transSpeed);
+	    });
+	    decrement.setOnAction(e -> {
+		module.setTranslationSpeed(module.transSpeed - 5);
+		System.out.println("Current translation speed: " + module.transSpeed);
+	    });
+	    end.setOnAction(e -> {module.stop(); System.exit(0);});
+	    box.getChildren().addAll(increment, decrement);
+	    bigBox.getChildren().addAll(box, end);
+	    Scene scene = new Scene(bigBox);
+	    primaryStage.setScene(scene);
+	    primaryStage.sizeToScene();
+	    primaryStage.setOnCloseRequest(e -> e.consume());
+	    primaryStage.show();
+	}
+	
+	public static void launchWrap(String[] args){
+	    Application.launch(args);
+	}
     }
 }
