@@ -52,8 +52,15 @@ public class LocalizationObstacleState {
         // TODO: use timestamp to validate data
         // TODO: detect impossibly sudden changes
 
-    public void addObstacle(ObstaclePosition obstaclePosition) throws RobotFaultException {
+    public void addObstacle(ObstaclePosition newObstacle) throws RobotFaultException {
+        for(ObstaclePosition obstacle : obstacles){
+            if((Math.abs(newObstacle.getXPosition() - obstacle.getXPosition()) < obstacle.getDiameter()) &&
+                (Math.abs(newObstacle.getYPosition() - obstacle.getYPosition()) < obstacle.getDiameter())){
+                return;
+            }
+        }
         obstacles.add(obstaclePosition);
+        
     }
     
     /* State getter methods */
