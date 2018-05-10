@@ -278,16 +278,16 @@ public class ModuleMain {
         ArrayList<SensorConfig> sensorList = new ArrayList<SensorConfig>();
         
         // Locomotion 
-        //sensorList.add(new SensorConfig("Front Left Wheel Encoder", 1));
-        //sensorList.add(new SensorConfig("Front Right Wheel Encoder", 3));
-        //sensorList.add(new SensorConfig("Back Left Wheel Encoder", 7));
-        //sensorList.add(new SensorConfig("Back Right Wheel Encoder", 5));
+        sensorList.add(new SensorConfig("Front Left Wheel Encoder", 1));
+        sensorList.add(new SensorConfig("Front Right Wheel Encoder", 3));
+        sensorList.add(new SensorConfig("Back Left Wheel Encoder", 7));
+        sensorList.add(new SensorConfig("Back Right Wheel Encoder", 5));
         
         //Excavation
         sensorList.add(new SensorConfig("Left Arm Pot", 10));
         sensorList.add(new SensorConfig("Right Arm Pot", 11));
-        //sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
-        //sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
+        sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
+        sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
         sensorList.add(new SensorConfig("Bucket Conveyor Translation Pot", 12));
         sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit", 13));
         sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit A", 15));
@@ -295,12 +295,12 @@ public class ModuleMain {
         sensorList.add(new SensorConfig("Bucket Conveyor Current", 33));
 
         //Deposition
-        //sensorList.add(new SensorConfig("Load Cell A", 22));
-        //sensorList.add(new SensorConfig("Load Cell B", 23));
-        //sensorList.add(new SensorConfig("Hopper Extended Limit A", 21));
-        //sensorList.add(new SensorConfig("Hopper Extended Limit B", 18));
-        //sensorList.add(new SensorConfig("Hopper Retracted Limit A", 19));
-        //sensorList.add(new SensorConfig("Hopper Retracted Limit B", 20));
+        sensorList.add(new SensorConfig("Load Cell A", 22));
+        sensorList.add(new SensorConfig("Load Cell B", 23));
+        sensorList.add(new SensorConfig("Hopper Extended Limit A", 21));
+        sensorList.add(new SensorConfig("Hopper Extended Limit B", 18));
+        sensorList.add(new SensorConfig("Hopper Retracted Limit A", 19));
+        sensorList.add(new SensorConfig("Hopper Retracted Limit B", 20));
 
         // Add sensors
         for (SensorConfig config : sensorList){
@@ -319,9 +319,10 @@ public class ModuleMain {
         actuatorList.add(new ActuatorConfig("Deposition Motor", 5));
         actuatorList.add(new ActuatorConfig("Left Arm Actuator", 6));
         actuatorList.add(new ActuatorConfig("Right Arm Actuator", 7));
-        actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor", 8));
+        actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor Position", 8));
         actuatorList.add(new ActuatorConfig("Left Looky Servo", 9));
         actuatorList.add(new ActuatorConfig("Right Looky Servo", 10));
+        actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor Speed", 11));
 
          // Add sensors
         for (ActuatorConfig config : actuatorList){
@@ -430,8 +431,13 @@ public class ModuleMain {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 8;
             double targetValue = pcc.getPosition() * 10;
+            queueActuation(id, targetValue);      
+        } else if (keys[2].equals("conveyor_translation_speed")) {
+            Messages.SpeedControlCommand pcc = Messages.SpeedControlCommand.parseFrom(body);
+            int id = 11;
+            double targetValue = pcc.getPosition() * 5;
             queueActuation(id, targetValue);
-        } else if (keys[2].equals("arm_pos")) {
+        }else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id1 = 6;
             int id2 = 7;

@@ -53,7 +53,24 @@ public class LocalizationObstacleState {
         // TODO: detect impossibly sudden changes
 
     public void addObstacle(ObstaclePosition obstaclePosition) throws RobotFaultException {
+        float obstacleDistance = Math.sqrt(obstaclePosition.getXPosition() ^ 2 + obstaclePosition.getYPosition() ^ 2)
+        ObstaclePosition newObstacle = ObstaclePosition.newBuilder()
+                                                        .setXPosition(robotPosition.getXPosition() + obstacleDistance * Math.cos(robotPosition.getBearingAngle()))
+                                                        .setYPosition(robotPosition.getYPosition() + obstacleDistance * Math.sin(robotPosition.getBearingAngle()))
+                                                        .setZPosition(obstaclePosition.getZPosition())
+                                                        .setDiameter(obstaclePosition.getDiameter())
+                                                        .build();
+
+
+
+        for(ObstaclePosition obstacle : obstacles){
+            if((Math.abs(newObstacle.getXPosition() - obstacle.getXPosition()) < obstacle.getDiameter()) &&
+                (Math.abs(newObstacle.getYPosition() - obstacle.getYPosition()) < obstacle.getDiameter())){
+                return;
+            }
+        }
         obstacles.add(obstaclePosition);
+        
     }
     
     /* State getter methods */
