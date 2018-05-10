@@ -31,12 +31,12 @@ public class AutoDrillModule extends Module {
      * Upper limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentUpperLimit = 1000.0F;
+    private final float currentUpperLimit = 7000.0F;
     /**
      * Lower limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentLowerLimit = 300.0F;
+    private final float currentLowerLimit = 5000.0F;
     
 
     /**
@@ -177,6 +177,7 @@ public class AutoDrillModule extends Module {
 		    bc_trans = msg.getExcDetailed().getDisplacement();
 		    bc_current = msg.getExcDetailed().getCurrent();
 		    System.out.println("current: " + bc_current);
+		    System.out.println("translation: " + bc_trans);
 		    detectStall();
 		    updateMotors();
 		}
@@ -243,9 +244,11 @@ public class AutoDrillModule extends Module {
 		break;	    
 		case DEEP:
 		if (isStalled) {
+			System.out.println("stalled");
 		    excavationConveyorRPM(200);
 		    excavationTranslationControl(lastTranslation - convertCMToMotor(10));
 		} else {
+			System.out.println("not stalled");
 		    excavationConveyorRPM(200);
 		    excavationTranslationControl(getCurrentDepthTarget());
 		}
@@ -284,7 +287,13 @@ public class AutoDrillModule extends Module {
      */
     private float getCurrentDepthTarget() {
 	int index = (int)convertMotorToCM(bc_trans);
-	float calculatedDepth = (float)(index + 0.1 / (diggingTable[index + 1] - diggingTable[index]));
+	if(index > diggingTable.length - 1){
+		index = diggingTable.length - 2;
+	} else if(index < 5){
+		index = 5;
+	}
+	float calculatedDepth = (float)(index + 1 / (diggingTable[index + 1] - diggingTable[index]) / 10);
+	System.out.println(calculatedDepth);
 	if(calculatedDepth > targetDepth)
 	    return convertCMToMotor(targetDepth);
 	

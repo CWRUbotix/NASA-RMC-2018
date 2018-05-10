@@ -20,14 +20,14 @@ public class SubscriptionTestMain {
             LocomotionState locomotionState;
             ExcavationState excavationState;
             DepositionState depositionState;
-            AutonomyState autonomyState;
+            LocalizationObstacleState locObsState;
             StateModule module;
 
             locomotionState = new LocomotionState();
             excavationState = new ExcavationState();
             depositionState = new DepositionState();
-            autonomyState = new AutonomyState();
-            module = new StateModule(locomotionState, excavationState, depositionState, autonomyState, "amq.topic");
+            locObsState = new LocalizationObstacleState();
+            module = new StateModule(locomotionState, excavationState, depositionState, locObsState, "amq.topic");
             module.start();
 
             ConnectionFactory factory = new ConnectionFactory();
@@ -53,7 +53,7 @@ public class SubscriptionTestMain {
                     .setDepositionDetailed(true)
                     .setExcavationSummary(true)
                     .setExcavationDetailed(true)
-                    //.setAutonomySummary(true)
+                    .setLocObsDetailed(true)
                     //.setAutonomyDetailed(true)
                     .build();
 

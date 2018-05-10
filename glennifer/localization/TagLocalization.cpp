@@ -146,9 +146,9 @@ struct camera {
 };
 
 //Using the same values to avoid inconsistensies with swapping camera ports
-camera greenCam = {644.12, 644.12, 319.5, 239.5, 1};
+camera greenCam = {644.12, 644.12, 319.5, 239.5, 2};
 camera yellowCam = {644.12, 644.12, 319.5, 239.5, 0};
-camera blueCam = {644.12, 644.12, 319.5, 239.5, 2};
+camera blueCam = {644.12, 644.12, 319.5, 239.5, 1};
 //camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
 //camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
 
@@ -415,7 +415,7 @@ public:
 		wRo_to_euler(fixed_rot, yaw, pitch, roll);
 
 		//x and y coordinates of the camera
-		double lookie = lookie_angle;
+		double lookie = lookie_angle * (PI/180);
 
 		//using x,y camera coords to find coordinates of robot center/wheel center
 		double cam_bearing = pitch;
@@ -424,13 +424,14 @@ public:
 		double robot_x = cam_x;
 		double robot_y = cam_y;
 
-		double robot_bearing = lookie - cam_bearing; //TODO: make sure these works with negative angles and whatnot
+		double robot_bearing = lookie - cam_bearing - PI; //TODO: make sure these works with negative angles and whatnot
+		cout << "Bearing " << lookie << ", Camera Bearing " << cam_bearing << cout;
 		robot_x = cam_x + (greenToCenter*cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
-		robot_y = cam_y + (greenToCenter*sin(robot_bearing));
+		robot_y = cam_y - (greenToCenter*sin(robot_bearing));
 
 		//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
 		//also, try to move the exchange creation/declaration so we only do it once
-		if (!(name.compare("Blue Cam")) == 0 && send) {
+		//if ((name.compare("Blue Cam")) != 0) {
 			AMQPExchange * ex = amqp.createExchange("amq.topic");
 			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
 			//
@@ -460,10 +461,10 @@ public:
 						//<< " x norm = " << (translation.norm() * (sin (pitch)))
 						//<< " y norm = " << (translation.norm() * (cos (pitch)))
 						//<< ", w=" << fcol(1) //yaw
-						<< ", Bearing = " << (robot_bearing * 180/PI);
+						<< ", Robot Bearing = " << (robot_bearing * 180/PI);
 
 			free(msg_buff);
-		}
+		//}
 		//<< ", roll=" << roll
 		//<< endl;
 
@@ -601,7 +602,7 @@ public:
 		bool restart_green = true;
 		bool restart_yellow = true;
 
-		double sleep_time = 0.25;
+		double sleep_time = 0.10;
 
 		int frame = 0;
 		double last_t = tic();
@@ -620,32 +621,37 @@ public:
 			blue_detect = processImage(blue_image, blue_image_gray, blueCam, windowBlueCam, 0, false);
 
 			if(!green_detect) {
-				if(green_lookie == 250.0) {
+				if(green_lookie >= 250.0) {
 					//go to 90 - 1
-					sleep_time = 1.5;
+					sleep_time = 0.20;
 					restart_green = false;
-					green_lookie = 91.0;
+					green_lookie = 90.0;
+					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
 				}
 				if(green_lookie < 250.0 && !restart_green ) {
-					sleep_time = 0.25;
+					sleep_time = 0.10;
 					//decrement by one
-					green_lookie--;
+					green_lookie-=1;
+					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
 				}
 				if(green_lookie < 250.0 && restart_green ) {
-					sleep_time = 0.25;
+					sleep_time = 0.10;
 					//increment by one
-					green_lookie++;
+					green_lookie+=1;
+					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
 				}
-				if(green_lookie == 0.0) {
-					sleep_time = 0.25;
+				if(green_lookie <= -70.0) {
+					sleep_time = 0.10;
 					restart_green = true;
-					green_lookie++;
+					green_lookie+=1;
+					//printf("At 0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
 				}
@@ -656,38 +662,39 @@ public:
 			}
 
 			if(!yellow_detect) {
-				if(yellow_detect == 110.0) {
+				if(yellow_detect <= 110.0) {
 					//go to 270 + 1
-					sleep_time = 1.5;
+					sleep_time = 0.20;
 					restart_yellow = false;
-					yellow_lookie = 271.0;
+					yellow_lookie = 270.0;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
 				if(yellow_detect < 360.0 && !restart_yellow ) {
-					sleep_time = 0.25;
+					sleep_time = 0.10;
 					//increment by one
-					yellow_lookie++;
+					yellow_lookie+=1;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
 				if(yellow_detect < 360.0 && restart_yellow ) {
-					sleep_time = 0.25;
+					sleep_time = 0.10;
 					//decrement by one
-					yellow_lookie--;
+					yellow_lookie-=1;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
-				if(yellow_detect == 360.0) {
-					sleep_time = 0.25;
+				if(yellow_detect >= 430.0) {
+					sleep_time = 0.10;
 					restart_yellow = true;
-					yellow_lookie--;
+					//printf("At 360!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					yellow_lookie-=1;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
 			}
 
-			if(yellow_detect && !green_detect) {
+			if(yellow_detect) {
 				yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, true);
 			}
 

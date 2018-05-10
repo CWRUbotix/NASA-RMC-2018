@@ -108,8 +108,8 @@ public class ModuleMain {
     private static void generateSensorUpdateMessage(SensorData sensorData) throws IOException{
         int sensorDataID =  sensorData.id;
         double value = sensorData.data;
-        System.out.print("data ID: " + sensorDataID);
-        System.out.println(", value: " + value);
+        //System.out.print("data ID: " + sensorDataID);
+        //System.out.println(", value: " + value);
         long time_ms = sensorData.timestamp;
         Messages.UnixTime unixTime = Messages.UnixTime.newBuilder()
                 .setTimeInt(time_ms / 1000)
@@ -158,11 +158,13 @@ public class ModuleMain {
 
             // EXCAVATION BC TRANSLATION DISPLACEMENT
             case 12: {
+                value = (value - 2944) / 10.5;  
                 Messages.DisplacementUpdate msg = Messages.DisplacementUpdate.newBuilder()
                     .setDisplacement((float)value)
                     .setTimestamp(unixTime)
                     .build();
-                channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_displacement", null, msg.toByteArray());
+                channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_displacement", null, msg.toByteArray());
+                
                 break;
             }
 
@@ -216,15 +218,15 @@ public class ModuleMain {
                     .setTimestamp(unixTime)
                     .build();
                 if (sensorDataID == 13) 
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_retracted", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_retracted", null, msg.toByteArray());
                 else if (sensorDataID == 14)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.right", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_extended.right", null, msg.toByteArray());
                 else if (sensorDataID == 15)
-                    channel.basicPublish("amq.topic", "sensor.excavation.bucket_conveyor_translation_limit_extended.left", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.conveyor_translation_limit_extended.left", null, msg.toByteArray());
                 else if (sensorDataID == 16)
-                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_retracted.left", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.left", null, msg.toByteArray());
                 else if (sensorDataID == 17)
-                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_retracted.right", null, msg.toByteArray());
+                    channel.basicPublish("amq.topic", "sensor.excavation.arm_limit_extended.right", null, msg.toByteArray());
                 else if (sensorDataID == 21)
                     channel.basicPublish("amq.topic", "sensor.deposition.hopper_limit_extended.left", null, msg.toByteArray());
                 else if (sensorDataID == 18)
@@ -276,16 +278,16 @@ public class ModuleMain {
         ArrayList<SensorConfig> sensorList = new ArrayList<SensorConfig>();
         
         // Locomotion 
-        sensorList.add(new SensorConfig("Front Left Wheel Encoder", 1));
-        sensorList.add(new SensorConfig("Front Right Wheel Encoder", 3));
-        sensorList.add(new SensorConfig("Back Left Wheel Encoder", 7));
-        sensorList.add(new SensorConfig("Back Right Wheel Encoder", 5));
+        //sensorList.add(new SensorConfig("Front Left Wheel Encoder", 1));
+        //sensorList.add(new SensorConfig("Front Right Wheel Encoder", 3));
+        //sensorList.add(new SensorConfig("Back Left Wheel Encoder", 7));
+        //sensorList.add(new SensorConfig("Back Right Wheel Encoder", 5));
         
         //Excavation
         sensorList.add(new SensorConfig("Left Arm Pot", 10));
         sensorList.add(new SensorConfig("Right Arm Pot", 11));
-        sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
-        sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
+        //sensorList.add(new SensorConfig("Left Arm Extended Limit", 16));
+        //sensorList.add(new SensorConfig("Right Arm Extended Limit", 17));
         sensorList.add(new SensorConfig("Bucket Conveyor Translation Pot", 12));
         sensorList.add(new SensorConfig("Bucket Conveyor Retracted Limit", 13));
         sensorList.add(new SensorConfig("Bucket Conveyor Extended Limit A", 15));
@@ -293,12 +295,12 @@ public class ModuleMain {
         sensorList.add(new SensorConfig("Bucket Conveyor Current", 33));
 
         //Deposition
-        sensorList.add(new SensorConfig("Load Cell A", 22));
-        sensorList.add(new SensorConfig("Load Cell B", 23));
-        sensorList.add(new SensorConfig("Hopper Extended Limit A", 21));
-        sensorList.add(new SensorConfig("Hopper Extended Limit B", 18));
-        sensorList.add(new SensorConfig("Hopper Retracted Limit A", 19));
-        sensorList.add(new SensorConfig("Hopper Retracted Limit B", 20));
+        //sensorList.add(new SensorConfig("Load Cell A", 22));
+        //sensorList.add(new SensorConfig("Load Cell B", 23));
+        //sensorList.add(new SensorConfig("Hopper Extended Limit A", 21));
+        //sensorList.add(new SensorConfig("Hopper Extended Limit B", 18));
+        //sensorList.add(new SensorConfig("Hopper Retracted Limit A", 19));
+        //sensorList.add(new SensorConfig("Hopper Retracted Limit B", 20));
 
         // Add sensors
         for (SensorConfig config : sensorList){
@@ -427,7 +429,7 @@ public class ModuleMain {
         if (keys[2].equals("conveyor_translation_displacement")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
             int id = 8;
-            double targetValue = pcc.getPosition() * 5;
+            double targetValue = pcc.getPosition() * 10;
             queueActuation(id, targetValue);
         } else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);
