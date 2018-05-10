@@ -177,11 +177,9 @@ public class AutoDrillModule extends Module {
 		
 		@Override
 		public void handleDelivery(String conumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException{
-		    System.out.println("handling state update message");
 		    Messages.State msg = Messages.State.parseFrom(body);
 		    bc_trans = msg.getExcDetailed().getDisplacement();
 		    bc_current = msg.getExcDetailed().getCurrent();
-		    System.out.println("current: " + bc_current);
 		    detectStall();
 		    updateMotors();
 		}
@@ -262,11 +260,12 @@ public class AutoDrillModule extends Module {
     private void detectStall() {
 	if (!isStalled && bc_current > currentUpperLimit) {
 	    // Transition to stalled
+	    System.out.println("Excavation System overloaded, starts retracting");
 	    isStalled = true;
 	} else if (isStalled && bc_current <= currentLowerLimit) {
 	    // Transition to unstalled
 	    isStalled = false;
-	    
+	    System.out.println("Current back to normal, resuming normal digging");
 	}
     }
 
@@ -435,8 +434,14 @@ public class AutoDrillModule extends Module {
 	    Button decrement = new Button(" v ");
 	    Button end = new Button("END");
 	    bigBox.setAlignment(Pos.CENTER);
-	    increment.setOnAction(e -> module.setTranslationSpeed(module.transSpeed + 5));
-	    decrement.setOnAction(e -> module.setTranslationSpeed(module.transSpeed - 5));
+	    increment.setOnAction(e -> {
+		module.setTranslationSpeed(module.transSpeed + 5);
+		System.out.println("Current translation speed: " + module.transSpeed);
+	    });
+	    decrement.setOnAction(e -> {
+		module.setTranslationSpeed(module.transSpeed - 5);
+		System.out.println("Current translation speed: " + module.transSpeed);
+	    });
 	    end.setOnAction(e -> {module.stop(); System.exit(0);});
 	    box.getChildren().addAll(increment, decrement);
 	    bigBox.getChildren().addAll(box, end);
