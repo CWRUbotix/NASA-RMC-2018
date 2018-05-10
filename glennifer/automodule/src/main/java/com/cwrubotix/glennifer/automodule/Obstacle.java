@@ -7,7 +7,7 @@ public class Obstacle extends Coordinate {
 
     public Obstacle(double x_pos, double y_pos, double radius) {
         super(x_pos, y_pos);
-        this.radius = radius;
+        this.radius = 0.15;
     }
 
     public double getRadius() {
@@ -19,7 +19,7 @@ public class Obstacle extends Coordinate {
     }
 
     public void setRadius(double radius) {
-        this.radius = radius;
+        this.radius = 0.15;
     }
     
     @Override
