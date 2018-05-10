@@ -18,6 +18,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
+import javafx.application.Application;
+import javafx.geometry.Pos;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.stage.Stage;
+
 /**
  * Module that controls digging cycle of the run
  *
@@ -31,12 +39,16 @@ public class AutoDrillModule extends Module {
      * Upper limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentUpperLimit = 1000.0F;
+    private final float currentUpperLimit = 7000.0F;
     /**
      * Lower limit of the current excavation motor is pulling under normal
      * operation
      */
-    private final float currentLowerLimit = 300.0F;
+    private final float currentLowerLimit = 5000.0F;
+    
+    private float transSpeed = 10;
+    
+    private float stallSpeed = -20;
     
 
     /**
@@ -244,10 +256,10 @@ public class AutoDrillModule extends Module {
 		case DEEP:
 		if (isStalled) {
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(lastTranslation - convertCMToMotor(10));
+		    excavationTranslationControl(stallSpeed);
 		} else {
 		    excavationConveyorRPM(200);
-		    excavationTranslationControl(getCurrentDepthTarget());
+		    excavationTranslationControl(transSpeed);
 		}
 		break;
 	    case DRIVE: //TODO
@@ -388,6 +400,10 @@ public class AutoDrillModule extends Module {
 	AutoDrillModule.this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_left.wheel_rpm", null, blWheel.toByteArray());
 	AutoDrillModule.this.channel.basicPublish(exchangeName, "motorcontrol.locomotion.back_right.wheel_rpm", null, brWheel.toByteArray());
     }
+    
+    private void setTranslationSpeed(float speed){
+	
+    }
 
     public AutoDrillModule() {
 	this("amq.topic");
@@ -404,8 +420,8 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-	loadTable();
-	System.out.println("Loaded table");
+//	loadTable();
+//	System.out.println("Loaded table");
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
@@ -452,22 +468,46 @@ public class AutoDrillModule extends Module {
     @Override
     public void stop() {
 	try {
-	    channel.close();
-	    connection.close();
-
 	    // Unsubscribe from StateModule
 	    Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("autoDrillModule")
 		    .setInterval(0.2F).setDepositionDetailed(false).setDepositionSummary(true)
 		    .setExcavationDetailed(true).setExcavationSummary(false).setLocomotionDetailed(true)
 		    .setLocomotionSummary(false).setLocObsDetailed(true).build();
 	    this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
+	    channel.close();
+	    connection.close();
 	} catch (TimeoutException | IOException e) {
 	    // Do nothing
 	}
     }
 
     public static void main(String[] args) {
-	AutoDrillModule module = new AutoDrillModule();
-	module.start();
+	GUI.launchWrap(args);
+    }
+    
+    public static class GUI extends Application{
+	public void start(Stage primaryStage){
+	    AutoDrillModule module = new AutoDrillModule();
+	    module.start();
+	    HBox bigBox = new HBox();
+	    VBox box = new VBox();
+	    Button increment = new Button(" ^ ");
+	    Button decrement = new Button(" v ");
+	    Button end = new Button("END");
+	    bigBox.setAlignment(Pos.CENTER);
+	    increment.setOnAction(e -> module.setTranslationSpeed(module.transSpeed + 5));
+	    decrement.setOnAction(e -> module.setTranslationSpeed(module.transSpeed - 5));
+	    end.setOnAction(e -> {module.stop(); System.exit(0);});
+	    box.getChildren().addAll(increment, decrement);
+	    bigBox.getChildren().addAll(box, end);
+	    Scene scene = new Scene(bigBox);
+	    primaryStage.setScene(scene);
+	    primaryStage.sizeToScene();
+	    primaryStage.show();
+	}
+	
+	public static void launchWrap(String[] args){
+	    Application.launch(args);
+	}
     }
 }

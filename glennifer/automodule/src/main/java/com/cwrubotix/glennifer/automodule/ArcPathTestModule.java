@@ -235,6 +235,28 @@ public class ArcPathTestModule extends Module{
 	System.out.println("Waiting on Localization message");
     }
     
+    @Override
+    public void stop(){
+	//Unsubscribing
+	Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("arcPathTest")
+		  .setInterval(0.1F)
+		  .setDepositionDetailed(false)
+		  .setDepositionSummary(true)
+		  .setExcavationDetailed(false)
+		  .setExcavationSummary(true)
+		  .setLocomotionDetailed(true)
+		  .setLocomotionSummary(false)
+		  .setLocObsDetailed(true)
+		  .build();
+	try {
+	    this.channel.basicPublish(exchangeName, "state.unsubscribe", null, msg.toByteArray());
+	} catch (IOException e) {
+	    e.printStackTrace();
+	} finally{
+	    super.stop();
+	}
+    }
+    
     public static void main(String[] args){
 	Control.launchwrap(args);
     }
