@@ -284,7 +284,6 @@ public class HardwareControlInterface implements Runnable {
 				if (different) {
 					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 				}
-				sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
 			}
 		}
 		return true;

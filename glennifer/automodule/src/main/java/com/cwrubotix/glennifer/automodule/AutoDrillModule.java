@@ -41,10 +41,11 @@ public class AutoDrillModule extends Module {
      * operation
      */
     private final float currentLowerLimit = 5000.0F;
-    
+  
     private float transSpeed = 10;
     
     private float stallSpeed = -20;
+
     
 
     /**
@@ -236,9 +237,11 @@ public class AutoDrillModule extends Module {
 		break;	    
 		case DEEP:
 		if (isStalled) {
+			System.out.println("stalled");
 		    excavationConveyorRPM(200);
 		    excavationTranslationControl(stallSpeed);
 		} else {
+			System.out.println("not stalled");
 		    excavationConveyorRPM(200);
 		    excavationTranslationControl(transSpeed);
 		}
@@ -266,6 +269,7 @@ public class AutoDrillModule extends Module {
 	    // Transition to unstalled
 	    isStalled = false;
 	    System.out.println("Current back to normal, resuming normal digging");
+
 	}
     }
 

@@ -1,9 +1,8 @@
 package com.cwrubotix.glennifer.robot_state;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.EnumMap;
 import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.cwrubotix.glennifer.Messages.LocalizationPosition;
 import com.cwrubotix.glennifer.Messages.ObstaclePosition;
@@ -25,7 +24,12 @@ public class LocalizationObstacleState {
     
 
     /* Data members */
-     
+    LocalizationPosition robotPosition = LocalizationPosition.newBuilder()
+                                                            .setXPosition(0)
+                                                            .setYPosition(0)
+                                                            .setBearingAngle(0)
+                                                            .build();
+    ArrayList<ObstaclePosition> obstacles = new ArrayList<ObstaclePosition>();
     
     /* Constructor */
 
@@ -39,19 +43,26 @@ public class LocalizationObstacleState {
 
         // TODO: handle no input from sensor
     	//Initialize with empty optionals, if that's a thing
-        
     }
     
     /* Update methods */
-    public void 
+    public void updateLocalizationPosition(LocalizationPosition robotPosition) throws RobotFaultException {
+            this.robotPosition = robotPosition;
+        }
+        // TODO: use timestamp to validate data
+        // TODO: detect impossibly sudden changes
+
+    public void addObstacle(ObstaclePosition obstaclePosition) throws RobotFaultException {
+        obstacles.add(obstaclePosition);
+    }
     
     /* State getter methods */
    
     public LocalizationPosition getLocPosition(){
-
+        return robotPosition;
     }
 
     public List<ObstaclePosition> getObstacles(){
-        
+        return obstacles;
     }
 }

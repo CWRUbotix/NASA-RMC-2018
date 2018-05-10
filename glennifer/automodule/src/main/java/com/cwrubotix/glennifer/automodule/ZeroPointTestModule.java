@@ -93,7 +93,10 @@ public class ZeroPointTestModule extends Module{
 	    if(Math.abs(heading - currentPos.getHeading()) > 0.02)
 		turn(heading);
 	    else{
-		motorControl(DRIVE_SPEED);
+	    	if(direction == Direction.FORWARD)
+				motorControl(DRIVE_SPEED);
+			else
+				motorControl(-DRIVE_SPEED);
 	    }
 	}
     }
@@ -240,8 +243,8 @@ public class ZeroPointTestModule extends Module{
 		tagFound = true;
 		currentPos = pos;
 	    }
-	    
-	    checkProgress();
+	    if(tagFound)
+		    checkProgress();
 	   
 	    
 	    for(ObstaclePosition op : obstacles){

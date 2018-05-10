@@ -19,6 +19,8 @@ import com.cwrubotix.glennifer.Messages.CurrentUpdate;
 import com.cwrubotix.glennifer.Messages.CountUpdate;
 import com.cwrubotix.glennifer.Messages.Fault;
 import com.cwrubotix.glennifer.Messages.UnixTime;
+import com.cwrubotix.glennifer.Messages.LocalizationPosition;
+import com.cwrubotix.glennifer.Messages.ObstaclePosition;
 
 
 import java.io.IOException;
@@ -188,7 +190,7 @@ public class StateModule {
                 if (sensorString.equals("wheel_rpm")) {
                     handleWheelRpmUpdate(wheel, body);
                 } else {
-                    System.out.println("Bad sensor string in routing key");
+                    System.out.println("Bad sensor string in routing key: " + sensorString);
                     return;
                 }
             }
@@ -201,7 +203,7 @@ public class StateModule {
 
                 if (sensorString.equals("conveyor_rpm")) {
                     handleConveyorRpmUpdate(body);
-                } else if (sensorString.equals("translation_pos")) {
+                } else if (sensorString.equals("conveyor_translation_displacement")) {
                     handleConveyorTranslationPosUpdate(body);
                 }  else if (sensorString.equals("arm_pos")) {
                     handleArmPosUpdate(body);
@@ -242,7 +244,7 @@ public class StateModule {
                 String sensorString = keys[2];
                 
                 if (sensorString.equals("load")) {
-                    String sideString = keys[4];
+                    String sideString = keys[3];
                     DepositionState.LoadCell side;
                     if (sideString.equals("left")) {
                         side = DepositionState.LoadCell.LEFT;
@@ -253,7 +255,7 @@ public class StateModule {
                         return;
                     }
                     handleDumpLoadUpdate(side, body);
-                }else if (sensorString.equals("dump_limit_extended")) {
+                }else if (sensorString.equals("hopper_limit_extended")) {
                     String sideString = keys[3];
                     DepositionState.Side side;
                     if (sideString.equals("left")) {
@@ -265,7 +267,7 @@ public class StateModule {
                         return;
                     }
                     handleDumpLimitExtendedUpdate(side, body);
-                } else if (sensorString.equals("dump_limit_retracted")) {
+                } else if (sensorString.equals("hopper_limit_retracted")) {
                     String sideString = keys[3];
                     DepositionState.Side side;
                     if (sideString.equals("left")) {
@@ -278,7 +280,7 @@ public class StateModule {
                     }
                     handleDumpLimitRetractedUpdate(side, body);
                 } else {
-                    System.out.println("Bad sensor string in routing key");
+                    System.out.println("Bad sensor string in routing key: " + sensorString);
                 }
             } else if(typeOfSensor.equals("loc")){
             	if (keys.length < 3) {
@@ -290,7 +292,7 @@ public class StateModule {
                 if(sensorString.equals("post")){
                     handleLocalizationUpdate(body);
                 } else {
-                    System.out.println("Bad sensor string in routing key");
+                    System.out.println("Bad sensor string in routing key: " + sensorString);
                 }
             } else if(typeOfSensor.equals("obstacle")){
                 if (keys.length < 3) {
@@ -301,7 +303,7 @@ public class StateModule {
                 if(sensorString.equals("position")){
                     handleObstacleUpdate(body);
                 } else {
-                    System.out.println("Bad sensor string in routing key");
+                    System.out.println("Bad sensor string in routing key: " + sensorString);
                 }
             } else { //oops
                 System.out.println("Bad subsystem string in routing key");
@@ -495,27 +497,20 @@ public class StateModule {
     }
     
     private void handleLocalizationUpdate(byte[] body) throws IOException {
-    	LocalizationPositionUpdate message = LocalizationPositionUpdate.parseFrom(body);
-    	float xPos = message.getXPosition();
-        float yPos = message.getYPosition();
-        float bearingAngle = message.getBearingAngle();
+    	LocalizationPosition message = LocalizationPosition.parseFrom(body);
     	try {
-    		locObsState.updateLocalizationPosition(xPos, yPos, bearingAngle);
+    		locObsState.updateLocalizationPosition(message);
     	} catch (RobotFaultException e) {
-    		sendFault(e.getFaultCode(), time);
+    
     	}
     }
     
     private void handleObstacleUpdate(byte[] body) throws IOException {
     	ObstaclePosition message = ObstaclePosition.parseFrom(body);
-    	float xPos = message.getXPosition();
-        float yPos = message.getYPosition();
-        float zPos = message.getZPosition();
-        float diameter = message.getDiameter();
     	try {
-    		locObsState.addObstacle(xPos, yPos, zPos, diameter);
+    		locObsState.addObstacle(message);
     	} catch (RobotFaultException e) {
-    		sendFault(e.getFaultCode(), time);
+    		
     	}
     }
     
