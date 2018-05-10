@@ -8,11 +8,8 @@
 // 		Required Libraries:
 // 		○ Sabertooth: 
 // 			• https://www.dimensionengineering.com/info/arduino
-// 		○ Roboclaw: 
-// 			• Libraries 	: http://www.ionmc.com/downloads
-// 			• User Manual 	: http://downloads.ionmc.com/docs/roboclaw_user_manual.pdf
-// 		○ ODrive:
-// 			• http://odriverobotics.com
+// 		○ ESC.h
+// 			• https://github.com/RB-ENantel/RC_ESC
 //
 //		This file covers:
 //		• setup() Arduino function
@@ -130,41 +127,4 @@ void loop(){
 		delay(10);
 	}
 	loops++;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-//
-//  FUNCTIONS
-//
-////////////////////////////////////////////////////////////////////////////////
-
-FAULT_T log_fault(FAULT_T fault, byte* rpy){
-	//form a reply with relevant data regarding the fault
-
-	if(faultIndex < 255){
-		faults[faultIndex++] = fault;
-		return NO_FAULT;
-	}else{
-		faults[faultIndex]   = fault;
-		return FAULT_LOG_FULL;
-	}
-}
-
-void clear_fault_log(){
-//	FAULT_T tmp[256] = {}; 	// allocate an empty buffer
-//	faults 			 = tmp;
-}
-
-// Return the most recent fault
-FAULT_T popLastFault(){
-	FAULT_T retVal = faults[faultIndex]; 	// stash current fault value to return
-	faults[faultIndex] = 0;					// 0 has no meaning
-
-	if(faultIndex > 0){
-		faultIndex--;			
-	}
-	return retVal;
-
 }
