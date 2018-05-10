@@ -11,11 +11,7 @@ import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.SpeedControlCommand;
 
 import java.io.IOException;
-import java.io.File;
-import java.io.FileReader;
-import java.io.BufferedReader;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 
 import javafx.application.Application;
@@ -87,10 +83,7 @@ public class AutoDrillModule extends Module {
 		    currentJob = DrillJob.DEEP;
 		    //excavationAngleControl(bc_angle);
 		    
-		    // Parse the incoming message to get target depth and speed we want
-		    Messages.ExcavationControlCommandDigDeep cmd = Messages.ExcavationControlCommandDigDeep.parseFrom(body);
-		    targetDepth = cmd.getDepth(); // How deep we want to dig
-		    
+		    // Parse the incoming message to get target depth and speed we want		    
 		    detectStall();
 		    updateMotors(); // Starts digging with given goals.
 		}
@@ -211,16 +204,6 @@ public class AutoDrillModule extends Module {
      * stall current
      */
     private DrillJob lastJob = DrillJob.NONE;
-    /**
-     * Depth we want to dig
-     */
-    private float targetDepth = 100.0F;
-    
-    private float lastTranslation = 0.0F;
-
-    private final float MaxTranslationInCM = 77.5F;
-    
-    private double[] diggingTable;
 
     /**
      * Records whether the excavation motor is in stall
@@ -250,7 +233,7 @@ public class AutoDrillModule extends Module {
 	    case NONE:
 		if (currentJob != lastJob) {
 		    excavationConveyorRPM(0);
-		    excavationTranslationControl(0.0F);
+		    retract();
 		}
 		break;	    
 		case DEEP:
@@ -279,57 +262,12 @@ public class AutoDrillModule extends Module {
     private void detectStall() {
 	if (!isStalled && bc_current > currentUpperLimit) {
 	    // Transition to stalled
-	    lastTranslation = bc_trans;
 	    isStalled = true;
 	} else if (isStalled && bc_current <= currentLowerLimit) {
 	    // Transition to unstalled
 	    isStalled = false;
 	    
 	}
-    }
-
-    /**
-     * This method calculates subgoal of our task so that our motor control
-     * commands are incremental.
-     *
-     * @return the calculated next target depth the next command should have.
-     */
-    private float getCurrentDepthTarget() {
-	int index = (int)convertMotorToCM(bc_trans);
-	float calculatedDepth = (float)(index + 0.1 / (diggingTable[index + 1] - diggingTable[index]));
-	if(calculatedDepth > targetDepth)
-	    return convertCMToMotor(targetDepth);
-	
-	return convertCMToMotor(calculatedDepth);
-    }
-    
-    private float convertCMToMotor(float cm){
-	return cm / MaxTranslationInCM * 100;
-    }
-    
-    private float convertMotorToCM(float value){
-	return value / 100 * MaxTranslationInCM;
-    }
-    
-    private void loadTable() throws IOException{
-	File table = new File("../config/AutoDrillTable.txt");
-	BufferedReader reader = new BufferedReader(new FileReader(table));
-	LinkedList<Double> temp = new LinkedList<>();
-	String line = reader.readLine();
-	
-	while(line != null){
-	    temp.add(Double.parseDouble(line.split(" ")[0]));
-	    line = reader.readLine();
-	}
-	
-	reader.close();
-	Object[] t = temp.toArray();
-	double[] diggingTable = new double[t.length];
-	for(int i = 0; i < t.length; i ++){
-	    diggingTable[i] = ((Double)t[i]).doubleValue();
-	}
-	
-	this.diggingTable = diggingTable;
     }
 
     /**
@@ -341,10 +279,14 @@ public class AutoDrillModule extends Module {
      *             when failed to create/publish message
      */
     private void excavationTranslationControl(float targetValue) throws IOException {
-	Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder().setPosition(targetValue)
-		.setTimeout(123).build();
-	AutoDrillModule.this.channel.basicPublish(exchangeName,
-		"motorcontrol.excavation.conveyor_translation_displacement", null, pcc.toByteArray());
+	Messages.SpeedControlCommand spc = Messages.SpeedControlCommand.newBuilder().setRpm(targetValue)
+										    .setTimeout(123).build();
+	this.channel.basicPublish(exchangeName, "motorcontrol.excavation.conveyor_translation_speed", null, spc.toByteArray());
+    }
+    
+    private void retract() throws IOException{
+	Messages.PositionControlCommand pcc = Messages.PositionControlCommand.newBuilder().setPosition(0).setTimeout(123).build();
+	this.channel.basicPublish(exchangeName, "motorcontrol.excavation.conveyor_translation_displacement", null, pcc.toByteArray());
     }
 
     /**
@@ -402,7 +344,7 @@ public class AutoDrillModule extends Module {
     }
     
     private void setTranslationSpeed(float speed){
-	
+	transSpeed = speed;
     }
 
     public AutoDrillModule() {
@@ -420,8 +362,6 @@ public class AutoDrillModule extends Module {
      * @throws TimeoutException
      */
     public void runWithExceptions() throws IOException, TimeoutException {
-//	loadTable();
-//	System.out.println("Loaded table");
 	
 	// Setup connection
 	ConnectionFactory factory = new ConnectionFactory();
