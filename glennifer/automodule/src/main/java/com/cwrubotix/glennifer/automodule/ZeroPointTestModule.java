@@ -196,32 +196,26 @@ public class ZeroPointTestModule extends Module{
     }
     
     public static class Control extends Application{
-	private ZeroPointTestModule module;
 	
 	@Override
 	public void start(Stage primaryStage){
-	    module = new ZeroPointTestModule();
+	    ZeroPointTestModule module = new ZeroPointTestModule();
 	    module.start();
 	    HBox box = new HBox();
 	    Button start = new Button("START");
-	    Button estop = new Button("ESTOP");
-	    start.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    if(module.tagFound){
-			module.setUpTest();
-			module.launched = true;
-		    }
+	    Button estop = new Button("END");
+	    start.setOnAction(e -> {
+		if(module.tagFound){
+		    module.setUpTest();
+		    module.launched = true;
 		}
 	    });
-	    estop.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    module.endTest();
-		}
-	    });
+	    estop.setOnAction(e -> module.endTest());
 	    box.getChildren().addAll(start, estop);
 	    Scene scene = new Scene(box);
 	    primaryStage.setScene(scene);
 	    primaryStage.sizeToScene();
+	    primaryStage.setOnCloseRequest(e -> e.consume());
 	    primaryStage.show();
 	}
 	

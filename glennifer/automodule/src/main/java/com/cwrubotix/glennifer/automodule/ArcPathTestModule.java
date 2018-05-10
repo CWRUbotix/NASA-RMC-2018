@@ -262,36 +262,30 @@ public class ArcPathTestModule extends Module{
     }
     
     public static class Control extends Application{
-	private ArcPathTestModule module;
 	
 	@Override
 	public void start(Stage primaryStage){
-	    module = new ArcPathTestModule();
+	    ArcPathTestModule module = new ArcPathTestModule();
 	    module.start();
 	    HBox box = new HBox();
 	    Button start = new Button("START");
-	    Button estop = new Button("ESTOP");
-	    start.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    if(module.tagFound){
-			try{
-			    module.setUpTest();
-			}catch(IOException er){
-			    er.printStackTrace();
-			}
-			module.launched = true;
+	    Button estop = new Button("END");
+	    start.setOnAction(e -> {
+		if(module.tagFound){
+		    try{
+			module.setUpTest();
+		    }catch(IOException er){
+			er.printStackTrace();
 		    }
+		    module.launched = true;
 		}
 	    });
-	    estop.setOnAction(new EventHandler<ActionEvent>(){
-		public void handle(ActionEvent e){
-		    module.endTest();
-		}
-	    });
+	    estop.setOnAction(e -> {module.endTest(); System.exit(0);});
 	    box.getChildren().addAll(start, estop);
 	    Scene scene = new Scene(box);
 	    primaryStage.setScene(scene);
 	    primaryStage.sizeToScene();
+	    primaryStage.setOnCloseRequest(e -> e.consume());
 	    primaryStage.show();
 	}
 	

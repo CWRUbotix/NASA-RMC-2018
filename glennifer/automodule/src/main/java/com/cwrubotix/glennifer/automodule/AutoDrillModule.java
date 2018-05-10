@@ -503,6 +503,7 @@ public class AutoDrillModule extends Module {
 	    Scene scene = new Scene(bigBox);
 	    primaryStage.setScene(scene);
 	    primaryStage.sizeToScene();
+	    primaryStage.setOnCloseRequest(e -> e.consume());
 	    primaryStage.show();
 	}
 	
