@@ -147,7 +147,7 @@ struct camera {
 
 //Using the same values to avoid inconsistensies with swapping camera ports
 camera greenCam = {644.12, 644.12, 319.5, 239.5, 2};
-camera yellowCam = {644.12, 644.12, 319.5, 239.5, 0};
+camera yellowCam = {651.12, 651.12, 319.5, 239.5, 0};
 camera blueCam = {644.12, 644.12, 319.5, 239.5, 1};
 //camera yellowCam = {538.23, 538.23, 319.5, 239.5, 1};
 //camera blueCam = {538.23, 538.23, 319.5, 239.5, 2};
@@ -389,7 +389,7 @@ public:
 
 	}
 
-	void print_detection(AprilTags::TagDetection& detection, camera camera, string name, double lookie_angle, bool send) const {
+	void print_detection(AprilTags::TagDetection& detection, camera camera, string name, double lookie_angle, bool send, int cam_num) const {
 		cout << "  Id: " << detection.id
 				<< " (Hamming: " << detection.hammingDistance << ")";
 
@@ -424,46 +424,94 @@ public:
 		double robot_x = cam_x;
 		double robot_y = cam_y;
 
-		double robot_bearing = lookie - cam_bearing - PI; //TODO: make sure these works with negative angles and whatnot
-		cout << "Bearing " << lookie << ", Camera Bearing " << cam_bearing << cout;
-		robot_x = cam_x + (greenToCenter*cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
-		robot_y = cam_y - (greenToCenter*sin(robot_bearing));
+		if (cam_num == 0) { //green camera
+			double robot_bearing = lookie - cam_bearing - PI; //TODO: make sure these works with negative angles and whatnot
+			cout << "Bearing " << lookie << ", Camera Bearing " << " " << cam_bearing << cout;
+			robot_x = cam_x + (greenToCenter*cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
+			robot_y = cam_y - (greenToCenter*sin(robot_bearing));
 
-		//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
-		//also, try to move the exchange creation/declaration so we only do it once
-		//if ((name.compare("Blue Cam")) != 0) {
+			//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
+			//also, try to move the exchange creation/declaration so we only do it once
+			//if ((name.compare("Blue Cam")) != 0) {
 			AMQPExchange * ex = amqp.createExchange("amq.topic");
 			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
 			//
 			com::cwrubotix::glennifer::LocalizationPosition msg;
-			msg.set_x_position((float)robot_x);
-			msg.set_y_position((float)robot_y);
-			msg.set_bearing_angle((float)robot_bearing);	//((float) ((-1 * pitch) + PI)); //THIS ANGLE MIGHT NOT CORRECTLY ADAPTED TO AUTONOMY STANDARDS
+			msg.set_x_position((float) robot_x);
+			msg.set_y_position((float) robot_y);
+			msg.set_bearing_angle((float) robot_bearing);//((float) ((-1 * pitch) + PI)); //THIS ANGLE MIGHT NOT CORRECTLY ADAPTED TO AUTONOMY STANDARDS
 
 			int msg_size = msg.ByteSize();
 			void *msg_buff = malloc(msg_size);
 			msg.SerializeToArray(msg_buff, msg_size);
 
-			ex->Publish((char*)msg_buff, msg_size, "loc.post");
+			ex->Publish((char*) msg_buff, msg_size, "loc.post");
 
-			cout << name
-					<< " distance=" << translation.norm()
-						<< "m, x coor = " << robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
-						<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
-						//<< ", z coor = " << realcoor(1)
-						//<< ", x cam = " << cam_x //((realcoor(0)*cos(pitch)) - (realcoor(2)*sin(pitch)))
-						//<< ", y cam = " << cam_y //((realcoor(0)*sin(pitch)) + (realcoor(2)*cos(pitch)))
-						//<< ", robot x = " << robot_x
-						//<< ", robot y = " << robot_y
-						//<< " x rel = " << translation(1)
-						//<< " y rel = " << translation(0)
-						//<< " z rel = " << translation(2)
-						//<< " x norm = " << (translation.norm() * (sin (pitch)))
-						//<< " y norm = " << (translation.norm() * (cos (pitch)))
-						//<< ", w=" << fcol(1) //yaw
-						<< ", Robot Bearing = " << (robot_bearing * 180/PI);
+			cout << name << " distance=" << translation.norm() << "m, x coor = "
+					<< robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
+					//<< ", z coor = " << realcoor(1)
+					//<< ", x cam = " << cam_x //((realcoor(0)*cos(pitch)) - (realcoor(2)*sin(pitch)))
+					//<< ", y cam = " << cam_y //((realcoor(0)*sin(pitch)) + (realcoor(2)*cos(pitch)))
+					//<< ", robot x = " << robot_x
+					//<< ", robot y = " << robot_y
+					//<< " x rel = " << translation(1)
+					//<< " y rel = " << translation(0)
+					//<< " z rel = " << translation(2)
+					//<< " x norm = " << (translation.norm() * (sin (pitch)))
+					//<< " y norm = " << (translation.norm() * (cos (pitch)))
+					//<< ", w=" << fcol(1) //yaw
+					<< ", Robot Bearing = " << (robot_bearing * 180 / PI);
 
 			free(msg_buff);
+		}
+
+		if (cam_num == 1) { //yellow camera
+			double robot_bearing = lookie - cam_bearing - PI; //TODO: make sure these works with negative angles and whatnot
+			cout << "Bearing " << lookie << ", Camera Bearing " << cam_bearing
+					<< cout;
+			robot_x = cam_x - (greenToCenter * cos(robot_bearing)); //TODO: use appropriate distance to center: ie - or + depending on which camera, etc
+			robot_y = cam_y - (greenToCenter * sin(robot_bearing));
+
+			//robot_bearing=-0.15;
+
+			//TODO: make sure the angle is the correct sign, i think they are flipped here as oppose to what autonomy wants
+			//also, try to move the exchange creation/declaration so we only do it once
+			//if ((name.compare("Blue Cam")) != 0) {
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			//
+			com::cwrubotix::glennifer::LocalizationPosition msg;
+			msg.set_x_position((float) robot_x);
+			msg.set_y_position((float) robot_y);
+			msg.set_bearing_angle((float) robot_bearing);//((float) ((-1 * pitch) + PI)); //THIS ANGLE MIGHT NOT CORRECTLY ADAPTED TO AUTONOMY STANDARDS
+
+			int msg_size = msg.ByteSize();
+			void *msg_buff = malloc(msg_size);
+			msg.SerializeToArray(msg_buff, msg_size);
+
+			ex->Publish((char*) msg_buff, msg_size, "loc.post");
+
+			cout << name << " distance=" << translation.norm() << "m, x coor = "
+					<< robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
+					//<< ", z coor = " << realcoor(1)
+					//<< ", x cam = " << cam_x //((realcoor(0)*cos(pitch)) - (realcoor(2)*sin(pitch)))
+					//<< ", y cam = " << cam_y //((realcoor(0)*sin(pitch)) + (realcoor(2)*cos(pitch)))
+					//<< ", robot x = " << robot_x
+					//<< ", robot y = " << robot_y
+					//<< " x rel = " << translation(1)
+					//<< " y rel = " << translation(0)
+					//<< " z rel = " << translation(2)
+					//<< " x norm = " << (translation.norm() * (sin (pitch)))
+					//<< " y norm = " << (translation.norm() * (cos (pitch)))
+					//<< ", w=" << fcol(1) //yaw
+					<< ", Robot Bearing = " << (robot_bearing * 180 / PI);
+
+			free(msg_buff);
+		}
+
+
 		//}
 		//<< ", roll=" << roll
 		//<< endl;
@@ -474,7 +522,7 @@ public:
 		// for suitable factors.
 	}
 
-	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name, double angle, bool send) {
+	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera, string name, double angle, bool send, int cam_num) {
 		// alternative way is to grab, then retrieve; allows for
 		// multiple grab when processing below frame rate - v4l keeps a
 		// number of frames buffered, which can lead to significant lag
@@ -501,7 +549,7 @@ public:
 		// print out each detection
 		cout << detections.size() << " tags detected:" << endl;
 		for (int i=0; i<detections.size(); i++) {
-			print_detection(detections[i], camera, name, angle, send);
+			print_detection(detections[i], camera, name, angle, send, cam_num);
 		}
 
 		// show the current image including any detections
@@ -602,6 +650,9 @@ public:
 		bool restart_green = true;
 		bool restart_yellow = true;
 
+		handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+		handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
+
 		double sleep_time = 0.10;
 
 		int frame = 0;
@@ -616,16 +667,16 @@ public:
 			blue_cap >> blue_image;
 			cout << "communicating blue data..." << endl;
 
-			green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, false);
-			yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, false);
-			blue_detect = processImage(blue_image, blue_image_gray, blueCam, windowBlueCam, 0, false);
+			green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, false, 0);
+			yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, false, 1);
+			blue_detect = processImage(blue_image, blue_image_gray, blueCam, windowBlueCam, 0, false, 3);
 
 			if(!green_detect) {
 				if(green_lookie >= 250.0) {
 					//go to 90 - 1
 					sleep_time = 0.20;
 					restart_green = false;
-					green_lookie = 90.0;
+					//green_lookie = 90.0;
 					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
@@ -633,7 +684,7 @@ public:
 				if(green_lookie < 250.0 && !restart_green ) {
 					sleep_time = 0.10;
 					//decrement by one
-					green_lookie-=1;
+					green_lookie-=2;
 					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
@@ -641,7 +692,7 @@ public:
 				if(green_lookie < 250.0 && restart_green ) {
 					sleep_time = 0.10;
 					//increment by one
-					green_lookie+=1;
+					green_lookie+=2;
 					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					sleep(sleep_time);
@@ -649,7 +700,7 @@ public:
 				if(green_lookie <= -70.0) {
 					sleep_time = 0.10;
 					restart_green = true;
-					green_lookie+=1;
+					green_lookie+=2;
 					//printf("At 0!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					//cout << "/n" << green_lookie << "/n" << cout;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
@@ -658,44 +709,49 @@ public:
 			}
 
 			if(green_detect) {
-				green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, true);
+				green_detect = processImage(green_image, green_image_gray, greenCam, windowGreenCam, green_lookie, true, 0);
 			}
 
 			if(!yellow_detect) {
-				if(yellow_detect <= 110.0) {
+				if(yellow_lookie <= 110.0) {
 					//go to 270 + 1
 					sleep_time = 0.20;
 					restart_yellow = false;
-					yellow_lookie = 270.0;
+					//yellow_lookie = 270.0;
+					yellow_lookie+=2;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
-				if(yellow_detect < 360.0 && !restart_yellow ) {
+				if(yellow_lookie < 360.0 && !restart_yellow) { //!
 					sleep_time = 0.10;
 					//increment by one
-					yellow_lookie+=1;
+					yellow_lookie+=2;
+					printf("Incrementing Yellow Cam");
+					cout << "Incrementing by " << yellow_lookie << " " << cout;
+					cout << "Yellow looky " << restart_yellow << " " << cout;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
-				if(yellow_detect < 360.0 && restart_yellow ) {
+				if(yellow_lookie < 360.0 && restart_yellow) { //
 					sleep_time = 0.10;
 					//decrement by one
-					yellow_lookie-=1;
+					yellow_lookie-=2;
+					printf("Decrementing Yellow Cam");
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
-				if(yellow_detect >= 430.0) {
+				if(yellow_lookie >= 430.0) {
 					sleep_time = 0.10;
 					restart_yellow = true;
 					//printf("At 360!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					yellow_lookie-=1;
+					yellow_lookie-=2;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					sleep(sleep_time);
 				}
 			}
 
 			if(yellow_detect) {
-				yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, true);
+				yellow_detect = processImage(yellow_image, yellow_image_gray, greenCam, windowYellowCam, yellow_lookie, true, 1);
 			}
 
 			// print out the frame rate at which image frames are being processed
