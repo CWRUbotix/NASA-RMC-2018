@@ -13,6 +13,21 @@ int16_t low_pass(SensorInfo* sensor, int16_t raw_val){
 	return retval;
 }
 
+int16_t low_pass_aggressive(SensorInfo* sensor, int16_t raw_val, int len){
+	int sum = raw_val;
+	int multiplier = 1;
+	for(int i = 0; i<len; i++){
+		multiplier = multiplier << 1; // increase to next power of 2
+		sum += multiplier*sensor->prev_values[i]; // first multimplier is 2
+		if(i>0){
+			sensor->prev_values[i] = sensor->prev_values[i-1];
+		}else{
+			sensor->prev_values[i] = sensor->storedVal;   }
+	}
+	int div = (2^(len+2))-1; // equiv. to the sum of all multipliers so far
+	return (int16_t)(sum/div);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // @param 	limit 	: a pointer to the SensorInfo struct for a limit switch
 // @return 	true	: if limit switch is triggered
@@ -52,8 +67,12 @@ uint16_t read_load_cell(SensorInfo* loadyBoi){
 	int32_t bigData;
 	bool is_ready = false;
 
+	long start = millis();
 	do{
 		is_ready = (digitalRead(dat) == LOW);
+		if((millis()-start) > HX711_TIMEOUT){
+			return -1;
+		}
 	}while(!is_ready);
 
 	uint8_t data[3] = { 0 };
@@ -78,9 +97,9 @@ uint16_t read_load_cell(SensorInfo* loadyBoi){
 			| static_cast<unsigned long>(data[2]) << 16
 			| static_cast<unsigned long>(data[1]) << 8
 			| static_cast<unsigned long>(data[0]) );
-	Serial3.print("LOADY BOI: ");
-	Serial3.println(bigData, DEC);
-	delay(5);
+	// Serial3.print("LOADY BOI: ");
+	// Serial3.println(bigData, DEC);
+	// delay(5);
 
 	// float raw_val = (float)((loadyBoi->responsiveness*bigData)-loadyBoi->baseline);
 	return (int16_t) ((loadyBoi->responsiveness*bigData)+loadyBoi->baseline);// (raw_val*loadyBoi->responsiveness);
@@ -118,7 +137,17 @@ int32_t read_enc(MotorInfo* motor){
 			// delay(10);
 			break;}
 		case SH_QUAD_VEL:
-			retval = encoder_values[enc->array_index];
+			int8_t temp 	= encoder_values[enc->array_index];
+			uint8_t filler 	= 0;
+			if(temp & 0x80){
+				filler = 0xFF;
+			}else{filler = 0x00;}
+			retval = (	((int32_t)filler << 24) | 
+						((int32_t)filler << 16) | 
+						((int32_t)filler << 8) | 
+						temp);
+
+			retval = (motor->is_reversed ? retval*(-1) : retval);
 			break;
 	}
 	return retval;
@@ -126,6 +155,20 @@ int32_t read_enc(MotorInfo* motor){
 
 int32_t read_enc(MotorInfo* motor, uint8_t* status, bool* valid){
 	return read_enc(motor);
+}
+
+int16_t read_current_sensor(SensorInfo* sensor){
+	int raw 	= analogRead(sensor->whichPin);
+	int ref 	= analogRead(A4); 	// just gotta remember;
+	// float volts = (3.3/4095.0) * raw;
+	float amps 	= (raw - ref - 1.6)/0.018; 	// i did some math
+	// float amps  = (raw*3.3*100.0)/(0.028*4095.0);
+	// 0.028 V/A
+	// 5V/4095
+	// float amps 	= volts/0.028;
+	int16_t ret = ((int16_t) amps) - sensor->baseline;
+	sensor->storedVal = ret;
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,13 +186,19 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 
 	switch (sensor->hardware) {
 
-		case SH_PIN_LIMIT:
+		case SH_PIN_LIMIT:{
 			*val = is_limit_triggered(sensor);
-			break;
+			break;}
 
-		case SH_PIN_POT:
-			*val = read_pot(sensor);
-			break;
+		case SH_PIN_POT:{
+			int16_t temp = read_pot(sensor);
+			if(sensor->whichMotor > 0){
+				*val = map(temp, sensor->val_at_min, sensor->val_at_max, motor->minpos, motor->maxpos);
+			}else{
+				*val = temp;
+			}
+			
+			break;}
 
 		case SH_RC_ENC_VEL:{
 			uint8_t status;
@@ -164,22 +213,15 @@ FAULT_T read_sensor(uint8_t ID, int16_t* val){
 			break;}
 
 		case SH_LD_CELL: {
-			*val = read_load_cell(sensor);
+			// *val = read_load_cell(sensor);
+			*val = low_pass(sensor, read_load_cell(sensor));
 			break;}
 
 		case SH_QUAD_VEL:{
 			*val = read_enc(motor);
 			break;}
 		case SH_BL_CUR:{
-			int raw 	= analogRead(sensor->whichPin);
-			// float volts = (3.3/4095.0) * raw;
-			float amps  = (raw*3.3*100.0)/(0.028*4095.0);
-			// 0.028 V/A
-			// 5V/4095
-			// float amps 	= volts/0.028;
-			int16_t ret = ((int16_t) amps) - sensor->baseline;
-			sensor->storedVal = ret;
-			*val 		= ret;
+			*val 		= read_current_sensor(sensor);
 			break;
 		}
 
@@ -298,7 +340,7 @@ bool write_to_yep(MotorInfo* motor, int16_t val){
 	}
 	
 	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
-	val 		= map(val, 0, 1000, motor->center + motor->deadband, 2000);
+	val 		= map(val, 0, 1000, motor->center + motor->deadband, motor->center+motor->max_pwr);
 	esc->speed(val);
 	motor->lastUpdateTime = millis();
 	return true;
@@ -322,7 +364,7 @@ bool is_dir_legal(MotorInfo* motor, SensorInfo* limit){
 	//int16_t pos 	= read_enc(motor);
 	int16_t dir 	= 0;
 	if(motor->hardware == MH_ST_POS){
-		dir 		= motor->setPt - motor->lastSet;
+		dir 		= motor->setPt - read_enc(motor);
 	}else{//} if(motor->hardware == MH_ST_PWM || motor->hardware == MH_BL_VEL){
 		dir 		= motor->setPt;
 	}
@@ -331,9 +373,10 @@ bool is_dir_legal(MotorInfo* motor, SensorInfo* limit){
 
 ////////////////////////////////////////////////////////////////////////////////
 void update_quad_encoders(int8_t* arr){
-	Wire.beginTransmission(QUAD_ENC_READER_ADDR); 	// begin comms w/ the slave device
-	Wire.write(0x01); 								// command to get some data
-	Wire.endTransmission();							// 
+	Wire.requestFrom(QUAD_ENC_READER_ADDR, 8);
+	// Wire.beginTransmission(QUAD_ENC_READER_ADDR); 	// begin comms w/ the slave device
+	// Wire.write(0x01); 								// command to get some data
+	// Wire.endTransmission();							// 
 	for(int i = 0; i<6; i++){
 		arr[i] = Wire.read();
 	}
@@ -343,11 +386,26 @@ void update_quad_encoders(int8_t* arr){
 void init_actuators(){
 	MotorInfo* port = &(motor_infos[PORT_LIN_ACT_ID]);
 	MotorInfo* stbd = &(motor_infos[STARBOARD_LIN_ACT_ID]);
-	int pos = read_enc(port);
-	port->setPt = pos;
-	stbd->setPt = pos;
+	MotorInfo* tran = &(motor_infos[8]);
+	int pos  		= read_enc(port);
+	int pos2 		= read_enc(tran);
+	port->setPt 	= pos;
+	stbd->setPt 	= pos;
+	tran->is_stopped = true;
+	tran->hardware   = MH_ST_PWM;
+	bool temp = write_to_sabertooth(tran, 0);
 }
-
+////////////////////////////////////////////////////////////////////////////////
+void update_loady_bois(){
+	SensorInfo* loadyBoi_1 	= &(sensor_infos[22]);
+	SensorInfo* loadyBoi_2 	= &(sensor_infos[23]);
+	int16_t temp 			= low_pass(loadyBoi_1, read_load_cell(loadyBoi_1));
+	temp 					= low_pass(loadyBoi_2, read_load_cell(loadyBoi_2));
+}
+////////////////////////////////////////////////////////////////////////////////
+void update_current_sensor(){
+	int16_t temp = low_pass(&(sensor_infos[33]), read_current_sensor(&(sensor_infos[33])));
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -362,7 +420,15 @@ void init_actuators(){
 void maintain_motors(byte* cmd, bool success){
 
 	uint8_t type 	= cmd_type(cmd);
-	update_quad_encoders(encoder_values);
+	// so we don't sample the encoder-reader too awfully fast
+	if(loops % 2 == 0){
+		update_quad_encoders(encoder_values);
+	}
+
+	if(loops % 10 == 0){
+		update_loady_bois();
+		update_current_sensor();
+	}
 	
 	if(success && (type == CMD_SET_OUTPUTS) ){	// here we only care if it's set outputs
 		int body_len = cmd_body_len(cmd);
@@ -383,6 +449,15 @@ void maintain_motors(byte* cmd, bool success){
 				(&(motor_infos[STARBOARD_LIN_ACT_ID]))->setPt = val;
 			}else if (id == STARBOARD_LIN_ACT_ID){
 				(&(motor_infos[PORT_LIN_ACT_ID]))->setPt  	= val;
+			}
+
+			// if 11, we change 8's hardware type to PWM, and pass on the new value
+			if(id == 11){
+				motor_infos[8].hardware = MH_ST_PWM;
+				motor_infos[8].setPt 	= motor->setPt;
+			}else if(id == 8){
+				// but if 8, set hardware type back to what it was
+				motor_infos[8].hardware = MH_ST_POS;
 			}
 		}
 	}
@@ -423,9 +498,9 @@ void maintain_motors(byte* cmd, bool success){
 				}
 				break;
 			case MH_ST_POS:{
-				
 				int32_t pos 	= read_enc(motor);
 				int32_t err 	= motor->setPt - pos; // for this, setPt should be a POSITION
+				
 				if(i == PORT_LIN_ACT_ID){
 					MotorInfo* stbd 	= &(motor_infos[STARBOARD_LIN_ACT_ID]);
 					int32_t other_pos 	= read_enc(stbd);
@@ -460,9 +535,21 @@ void maintain_motors(byte* cmd, bool success){
 				
 				break;}
 			case MH_BL_VEL:
+				
 				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
+					// int16_t vel 	= read_enc(motor);
+					// int32_t err 	= motor->setPt - vel;
+					// if(abs(err) > motor->margin){
+					// 	int32_t dt = (time - motor->lastUpdateTime);
+					// 	float new_integ = motor->integral + (err * dt);
+					// 	motor->integral = 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
+					// 						new_integ : 
+					// 						(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
+
+					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
+					// }
 					// if client is requesting a direction change
 					if(sign(motor->setPt) + sign(motor->lastSet) == 0){
 						// set to 0
@@ -480,9 +567,20 @@ void maintain_motors(byte* cmd, bool success){
 						// DO NOTHING
 					}
 				}
-			case MH_LOOKY:
-				Herkulex.moveOneAngle(motor->looky_id, constrain(motor->setPt, -159, 159), 500, 2);
 				break;
+			case MH_LOOKY:
+				Herkulex.moveOneAngle(motor->looky_id, constrain(motor->setPt, -159, 159), 200, 2);
+				break;
+			// case MH_ALL:{
+			// 	if(motor->setPt > 0){ 		// if steven has set this, time to set up the bc 
+			// 		MotorInfo* translate = & motor_infos[8];
+			// 		writeSuccess = write_to_sabertooth(translate, 150);
+			// 		delay(2000);
+			// 		writeSuccess = write_to_sabertooth(translate, 0);
+			// 		motor->is_stopped = true; // this is checked to see if we can do position control for bc
+			// 		motor->setPt = 0;
+			// 	}
+			// 	break;}
 
 		}
 		// if(writeSuccess){
