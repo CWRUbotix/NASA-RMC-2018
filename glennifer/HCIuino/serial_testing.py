@@ -89,8 +89,15 @@ def setOutputs(cmdType, inputs):
 	return byteArr
 
 #===============================================================================
+# def runFullSystemCheck():
+# 	# all sensors first
+# 	num = 19
+# 	inputs = [1,num,1,3,5,7,10,11,12,13,14,15,16,17,18,19,20,21,22,23,33]
+# 	response = readSensors(1,inputs)
+
+#===============================================================================
 def main():
-	BAUD_RATE 	= 9600
+	BAUD_RATE 	= 115200
 	PORT 		= ''
 	try:
 		if len(sys.argv[1])>1:

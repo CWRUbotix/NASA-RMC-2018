@@ -12,36 +12,38 @@ void setup_sensors(){
 
 	sensor_infos[3].hardware 		= SH_QUAD_VEL;
 	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[3].is_reversed 	= true;
 	sensor_infos[3].array_index 	= 1;
 
 	sensor_infos[5].hardware 		= SH_QUAD_VEL;
 	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
-	sensor_infos[5].array_index 	= 2;
+	sensor_infos[5].array_index 	= 4;
 
 	sensor_infos[7].hardware 		= SH_QUAD_VEL;
 	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
+	sensor_infos[7].is_reversed 	= true;
 	sensor_infos[7].array_index 	= 3;
 
-	int16_t port_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
-	int16_t stbd_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
-	int16_t translate_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
 
 	// port side linear actuator
 	sensor_infos[10].hardware 		= SH_PIN_POT;
+	sensor_infos[10].whichMotor 	= STARBOARD_LIN_ACT_ID;
 	sensor_infos[10].val_at_min 	= 85; 		// avg = 84
 	sensor_infos[10].val_at_max 	= 4042; 	// avg = 4060
 	sensor_infos[10].whichPin 		= A0;
 	sensor_infos[10].prev_values 	= port_side_low_pass_arr;
 	// starboard side linear actuator
 	sensor_infos[11].hardware 		= SH_PIN_POT;
+	sensor_infos[11].whichMotor 	= STARBOARD_LIN_ACT_ID;
 	sensor_infos[11].val_at_min 	= 50; 		// avg = 50
 	sensor_infos[11].val_at_max 	= 4027; 	// avg = 4030
 	sensor_infos[11].whichPin 		= A1;
 	sensor_infos[11].prev_values 	= stbd_side_low_pass_arr;
 	// Excavation Translation Linear Pot
 	sensor_infos[12].hardware 		= SH_PIN_POT;
-	sensor_infos[12].val_at_min 	= 890; 	// not conclusive or definite
-	sensor_infos[12].val_at_max 	= 2100; 	// not conclusive or definite
+	sensor_infos[12].whichMotor 	= 8;
+	sensor_infos[12].val_at_min 	= 2950; 	// not conclusive or definite
+	sensor_infos[12].val_at_max 	= 4050; 	// not conclusive or definite
 	sensor_infos[12].whichPin 		= A2;
 	sensor_infos[12].prev_values 	= translate_low_pass_arr;
 
@@ -52,7 +54,7 @@ void setup_sensors(){
 	sensor_infos[13].whichPin 		= 24;
 	pinMode(24, INPUT_PULLUP);
 	sensor_infos[13].whichMotor 	= 8;
-	sensor_infos[13].mtr_dir_if_triggered = -1; 	
+	sensor_infos[13].mtr_dir_if_triggered = 1; 	
 	limit_switches[0] 				= &(sensor_infos[13]);
 	exc_limits[0] 					= &(sensor_infos[13]);
 	// Exc translation; upper, starboard
@@ -60,7 +62,7 @@ void setup_sensors(){
 	sensor_infos[14].whichPin 		= 25;
 	pinMode(25, INPUT_PULLUP);
 	sensor_infos[14].whichMotor 	= 8;
-	sensor_infos[14].mtr_dir_if_triggered = 1; 
+	sensor_infos[14].mtr_dir_if_triggered = -1; 
 	limit_switches[1] 				= &(sensor_infos[14]);
 	exc_limits[1] 					= &(sensor_infos[14]);
 	// Exc translation; upper, port
@@ -68,7 +70,7 @@ void setup_sensors(){
 	sensor_infos[15].whichPin 		= 26;
 	pinMode(26, INPUT_PULLUP);
 	sensor_infos[15].whichMotor 	= 8;
-	sensor_infos[15].mtr_dir_if_triggered = 1; 
+	sensor_infos[15].mtr_dir_if_triggered = -1; 
 	limit_switches[2] 				= &(sensor_infos[15]);
 	exc_limits[2] 					= &(sensor_infos[15]);
 	// Exc rotation; port
@@ -124,18 +126,20 @@ void setup_sensors(){
 	sensor_infos[22].whichPin 		= 34; 		// this is a clk pin
 	sensor_infos[22].baseline 		= -553;
 	sensor_infos[22].responsiveness = -0.0255; 	// using this as our slope
+	sensor_infos[22].prev_values 	= loady_boi_1_lo_pass_arr;
 
 	sensor_infos[23].hardware 		= SH_LD_CELL;
 	sensor_infos[23].whichPin 		= 36; 		// this is a clk pin
 	sensor_infos[23].baseline 		= -2325;
 	sensor_infos[23].responsiveness = -0.0222; 	// using this as our slope
+	sensor_infos[23].prev_values 	= loady_boi_2_lo_pass_arr;
 
 	pinMode(34, OUTPUT); // configure clock pins as output
 	pinMode(36, OUTPUT);
 
 	sensor_infos[33].hardware 		= SH_BL_CUR;
 	sensor_infos[33].whichPin  		= A3;
-	sensor_infos[33].baseline 		= 5800;
+	sensor_infos[33].baseline 		= 800;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void setup_motors(){
@@ -212,16 +216,15 @@ void setup_motors(){
 	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[FRONT_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
-	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[3]);
+	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[5]);
 	
 	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
 	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[0]);
 	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
-	motor_infos[REAR_PORT_MTR_ID].safe_dt 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].subsys 			= LOCO_SYS;
-	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[7]);
+	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[3]);
 
 	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[6]);
@@ -229,7 +232,7 @@ void setup_motors(){
 	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[REAR_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
-	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[5]);
+	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[7]);
 
 	// EXCAVATION MOTORS
 	// main digging
@@ -288,11 +291,12 @@ void setup_motors(){
 	motor_infos[8].whichMotor 						= 0;
 	motor_infos[8].board 							= &(board_infos[4]);
 	motor_infos[8].encoder 							= &(sensor_infos[12]);
-	motor_infos[8].is_reversed 						= false;
+	motor_infos[8].is_reversed 						= true;
 	motor_infos[8].whichPin 						= SABERTOOTH_TRANS_M1;
 	motor_infos[8].deadband 						= 60;
 	motor_infos[8].center 							= 1500;
-	motor_infos[8].hardware 						= MH_ST_PWM;
+	motor_infos[8].hardware 						= MH_ST_POS;
+	motor_infos[8].max_pwr 							= 300;
 	motor_infos[8].minpos 							= 0;
 	motor_infos[8].maxpos 							= 1000;
 	motor_infos[8].subsys 							= EXC_SYS;
@@ -306,6 +310,13 @@ void setup_motors(){
 
 	motor_infos[10].hardware 						= MH_LOOKY;
 	motor_infos[10].looky_id 						= 2;
+
+	// translation
+	motor_infos[11].whichMotor 						= 0;
+	motor_infos[11].hardware 						= MH_NONE;
+
+	motor_infos[100].hardware 						= MH_ALL;
+	motor_infos[100].is_stopped 					= true;
 
 	pinMode(SABERTOOTH_ROT_M1 ,OUTPUT);
 	pinMode(SABERTOOTH_ROT_M2 ,OUTPUT);

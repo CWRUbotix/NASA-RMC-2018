@@ -26,12 +26,12 @@
 // Sizes & Number of things
 #define DEFAULT_BUF_LEN 		(256)
 #define NUM_SENSORS 			(256)
-#define NUM_MOTORS 				(11)
+#define NUM_MOTORS 				(12)
 #define NUM_LIM_SWITCHES 		(9)
 #define NUM_EXC_LIMS 			(3)
 #define NUM_EXC_ROT_LIMS 		(2)
 #define NUM_DEP_LIMS 			(4)
-#define HCI_BAUD 				(9600)
+#define HCI_BAUD 				(115200)
 #define SABERTOOTH_BAUD 		(38400)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)
@@ -45,6 +45,7 @@
 #define DFLT_MAX_DELTA 			(200)
 #define DGTL_WRITE_DELAY 		(2)
 #define LOW_PASS_ARRAY_SIZE 	(2)
+#define HX711_TIMEOUT 			(10)
 
 //ODrive Stuff
 #define PARAM_ENC_POS 			PARAM_FLOAT_ENCODER_PLL_POS
@@ -82,10 +83,12 @@
 #define STARBOARD_LIN_ACT_ID 	(7)
 #define LIN_ACT_KP 				(1.5)
 #define LIN_ACT_KI 				(0.000000001)
-#define EXC_TRANSLATION_KP 		(1.0)
-#define EXC_TRANSLATION_KI 		(0.00000)
+#define EXC_TRANSLATION_KP 		(1.2)
+#define EXC_TRANSLATION_KI 		(0.000000002)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
+#define DRIVE_KP 				(0.1)
+#define DRIVE_KI 				(0.0)
 
 // ESC MOTOR CONTROL VALUES
 #define RELAY_RISE_FALL_TIME 	(10)
@@ -143,7 +146,7 @@ enum SensorHardware {
 typedef struct SensorInfo{
 	SensorHardware hardware = SH_NONE;
 	uint8_t  addr; 				// When hardware = SH_I2C_* or ...
-	uint8_t  whichMotor; 		// Holds the ID of the motor if applicable
+	uint8_t  whichMotor = 0; 	// Holds the ID of the motor if applicable
 	int      whichPin; 			// 
 	bool     is_reversed = false;// When hardware = SH_PIN_LIMIT
 	float    responsiveness = 1;// 1 = responsiveness
@@ -211,7 +214,7 @@ typedef struct MotorInfo{
 	uint32_t deadband; 			// When hardware = MH_RC_POS
 	uint32_t center = 1500; 	// center from which to add/sub deadband
 	int16_t  max_pwr = 500; 	// for stopping out-of-sync actuation
-	uint16_t margin; 			// how far from set-point is acceptable?
+	uint16_t margin = 10; 			// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
@@ -252,10 +255,16 @@ uint8_t sensor_lastLimitVals[DEFAULT_BUF_LEN]	= {}; 	// All initialized to 0
 int16_t sensor_storedVals	[DEFAULT_BUF_LEN] 	= {}; 	// All initialized to 0
 float 	motor_integrals		[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
 int16_t motor_lastUpdateTime[DEFAULT_BUF_LEN] 	= {}; 	//All initialized to 0
-int8_t  encoder_values      [5] 				= {}; 	// for values from encoder board
+int8_t  encoder_values      [8] 				= {}; 	// for values from encoder board
 SensorInfo* exc_limits      [NUM_EXC_LIMS] 		= {};
 SensorInfo* exc_rot_limits  [NUM_EXC_ROT_LIMS] 	= {};
 SensorInfo* dep_limits 		[NUM_DEP_LIMS] 		= {};
+
+int16_t port_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
+int16_t stbd_side_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
+int16_t translate_low_pass_arr[LOW_PASS_ARRAY_SIZE] = {};
+int16_t loady_boi_1_lo_pass_arr[LOW_PASS_ARRAY_SIZE]= {};
+int16_t loady_boi_2_lo_pass_arr[LOW_PASS_ARRAY_SIZE]= {};
 bool 	stopped 								= true;	// default status is stopped
 uint8_t e_stop_state 							= LOW;
 uint8_t e_stop_state_last 						= LOW;
