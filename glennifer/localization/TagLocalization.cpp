@@ -107,8 +107,8 @@ const char* user = "guest";
 const char* pass = "guest";
 const char* address = "localhost";
 
-const double greenToCenter = 0.33;
-const double yellowToCenter = -0.33;
+const double greenToCenter = 0.34;
+const double yellowToCenter = -0.34;
 
 /**
  * Normalize angle to be within the interval [-pi,pi].
@@ -182,7 +182,7 @@ class Localization {
 
 	int m_width; // image size in pixels
 	int m_height;
-	double m_tagSize; // April tag side length in meters of square black frame
+	double m_largeTagSize; // April tag side length in meters of square black frame
 	double m_fx; // camera focal length in pixels
 	double m_fy;
 	double m_px; // camera principal point
@@ -213,7 +213,7 @@ public:
 
 			m_draw(true), m_arduino(false), m_timing(false),
 
-			m_width(640), m_height(480), m_tagSize(0.165), m_fx(644.12), m_fy(
+			m_width(640), m_height(480), m_largeTagSize(0.165), m_fx(644.12), m_fy(
 					644.12), m_px(319.5), m_py(239.5),
 
 			m_exposure(-1), m_gain(-1), m_brightness(-1),
@@ -402,12 +402,12 @@ public:
 
 		// NOTE: for this to be accurate, it is necessary to use the
 		// actual camera parameters here as well as the actual tag size
-		// (m_fx, m_fy, m_px, m_py, m_tagSize)
+		// (m_fx, m_fy, m_px, m_py, m_largeTagSize)
 
 		Eigen::Vector3d translation;
 		Eigen::Matrix3d rotation;
 		Eigen::Vector4d realcoor;
-		detection.getRelativeTranslationRotation(m_tagSize, camera.c_fx,
+		detection.getRelativeTranslationRotation(m_largeTagSize, camera.c_fx,
 				camera.c_fy, camera.c_px, camera.c_py, translation, rotation,
 				realcoor);
 
@@ -437,11 +437,11 @@ public:
 				lookie += (2*PI);
 			}
 			if (lookie < 0) {
-				robot_bearing = (lookie - cam_bearing + PI);// % (2 * PI);
+				robot_bearing = (double) fmod((float)(lookie - cam_bearing + PI), (float)(2 * PI));
 			}
 
 			else {
-				robot_bearing = (lookie - cam_bearing + PI);// % (2 * PI);
+				robot_bearing = (double) fmod((float)(lookie - cam_bearing + PI), (float)(2 * PI));
 			}
 
 			//cout << "Bearing " << lookie << ", Camera Bearing " << " " << cam_bearing << cout;
@@ -466,6 +466,7 @@ public:
 				cout << name << " distance = " << translation.norm()
 						<< "m, x coor = " << robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
 						<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
+						//<< ", matrix x = " << realcoor(0)
 						<< ", Robot Bearing = " << (robot_bearing * 180 / PI) << cout ;
 
 				free(msg_buff);
@@ -573,7 +574,7 @@ public:
 				Eigen::Vector3d translation;
 				Eigen::Matrix3d rotation;
 				Eigen::Vector4d realcoor;
-				detections[0].getRelativeTranslationRotation(m_tagSize,
+				detections[0].getRelativeTranslationRotation(m_largeTagSize,
 						camera.c_fx, camera.c_fy, camera.c_px, camera.c_py,
 						translation, rotation, realcoor);
 				m_serial.print(detections[0].id);
