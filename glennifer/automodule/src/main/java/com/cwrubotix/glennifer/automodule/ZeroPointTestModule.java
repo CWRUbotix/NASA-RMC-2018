@@ -90,7 +90,7 @@ public class ZeroPointTestModule extends Module{
 	    double heading = currentPos.getHeadingTo(finder.getPath().getPoint(progress));
 	    if(direction == Direction.BACKWARD)
 		heading = (heading + Math.PI) % (Math.PI * 2);
-	    if(Math.abs(heading - currentPos.getHeading()) > 0.02)
+	    if(Math.abs(heading - currentPos.getHeading()) > Math.PI/6)
 		turn(heading);
 	    else{
 	    	if(direction == Direction.FORWARD)
@@ -242,8 +242,12 @@ public class ZeroPointTestModule extends Module{
 	    if(!pos.equals(new Position(0, 0, 0))){
 		tagFound = true;
 		currentPos = pos;
+		if(!launched)
+			System.out.println("ready to launch");
+		else
+			System.out.println("current position: " + currentPos);
 	    }
-	    if(tagFound)
+	    if(tagFound && launched)
 		    checkProgress();
 	   
 	    

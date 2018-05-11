@@ -53,10 +53,11 @@ public class LocalizationObstacleState {
         // TODO: detect impossibly sudden changes
 
     public void addObstacle(ObstaclePosition obstaclePosition) throws RobotFaultException {
-        float obstacleDistance = Math.sqrt(obstaclePosition.getXPosition() ^ 2 + obstaclePosition.getYPosition() ^ 2)
+        float obstacleDistance = (float) Math.sqrt(Math.pow(obstaclePosition.getXPosition(), 2) + Math.pow(obstaclePosition.getYPosition(), 2));
+        float obstacleAngle = (float) Math.atan(obstaclePosition.getYPosition() / obstaclePosition.getXPosition());
         ObstaclePosition newObstacle = ObstaclePosition.newBuilder()
-                                                        .setXPosition(robotPosition.getXPosition() + obstacleDistance * Math.cos(robotPosition.getBearingAngle()))
-                                                        .setYPosition(robotPosition.getYPosition() + obstacleDistance * Math.sin(robotPosition.getBearingAngle()))
+                                                        .setXPosition((float)(robotPosition.getXPosition() + obstacleDistance * Math.cos(robotPosition.getBearingAngle() + obstacleAngle)))
+                                                        .setYPosition((float)(robotPosition.getYPosition() + obstacleDistance * Math.sin(robotPosition.getBearingAngle() + obstacleAngle)))
                                                         .setZPosition(obstaclePosition.getZPosition())
                                                         .setDiameter(obstaclePosition.getDiameter())
                                                         .build();

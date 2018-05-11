@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
 
 public class ModuleMain {
 	
-    private static final int baud = 9600;
+    private static final int baud = 115200;
 	/* Listen for Topics */
 	//Motor Controls
 	private static final String motorTopic = "motorcontrol.#";
@@ -435,7 +435,7 @@ public class ModuleMain {
         } else if (keys[2].equals("conveyor_translation_speed")) {
             Messages.SpeedControlCommand pcc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 11;
-            double targetValue = pcc.getPosition() * 5;
+            double targetValue = pcc.getRpm() * 5;
             queueActuation(id, targetValue);
         }else if (keys[2].equals("arm_pos")) {
             Messages.PositionControlCommand pcc = Messages.PositionControlCommand.parseFrom(body);

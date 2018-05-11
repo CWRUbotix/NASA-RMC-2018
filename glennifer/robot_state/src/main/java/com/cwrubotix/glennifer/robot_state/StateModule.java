@@ -282,18 +282,9 @@ public class StateModule {
                 } else {
                     System.out.println("Bad sensor string in routing key: " + sensorString);
                 }
-            } else if(typeOfSensor.equals("loc")){
-            	if (keys.length < 3) {
-                    System.out.println("Localization update routing key requires 3 elements");
-                    return;
-                }
-                String sensorString = keys[2];
-
-                if(sensorString.equals("post")){
-                    handleLocalizationUpdate(body);
-                } else {
-                    System.out.println("Bad sensor string in routing key: " + sensorString);
-                }
+            } else if(typeOfSensor.equals("post")){
+            	System.out.println("localization data sent");
+                handleLocalizationUpdate(body);
             } else if(typeOfSensor.equals("obstacle")){
                 if (keys.length < 3) {
                     System.out.println("Obstacle update routing key requires 3 elements");
@@ -631,6 +622,11 @@ public class StateModule {
         // Subscribe to sensor updates
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, exchangeName, "sensor.#");
+        this.channel.basicConsume(queueName, true, new UpdateConsumer(channel));
+
+        // Subscribe to sensor updates
+        queueName = channel.queueDeclare().getQueue();
+        channel.queueBind(queueName, exchangeName, "loc.#");
         this.channel.basicConsume(queueName, true, new UpdateConsumer(channel));
 
         // Listen for requests to subscribe to state updates

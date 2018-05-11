@@ -15,7 +15,7 @@ import jssc.SerialPortList;
 import jssc.SerialPortTimeoutException;
 
 public class HardwareControlInterface implements Runnable {
-	public static final int baud = 9600;
+	public static final int baud = 115200;
 	public static final byte COMMAND_READ_SENSORS = 0x01;
 	public static final byte COMMAND_SET_OUTPUTS = 0x02;
 	private static final int SERIAL_TIMEOUT_MS = 2000;
