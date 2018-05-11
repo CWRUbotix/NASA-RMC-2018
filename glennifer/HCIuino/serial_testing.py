@@ -97,7 +97,7 @@ def setOutputs(cmdType, inputs):
 
 #===============================================================================
 def main():
-	BAUD_RATE 	= 9600
+	BAUD_RATE 	= 115200
 	PORT 		= ''
 	try:
 		if len(sys.argv[1])>1:

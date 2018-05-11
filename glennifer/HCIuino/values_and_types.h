@@ -31,7 +31,7 @@
 #define NUM_EXC_LIMS 			(3)
 #define NUM_EXC_ROT_LIMS 		(2)
 #define NUM_DEP_LIMS 			(4)
-#define HCI_BAUD 				(9600)
+#define HCI_BAUD 				(115200)
 #define SABERTOOTH_BAUD 		(38400)
 #define CMD_HEADER_SIZE			(2)
 #define RPY_HEADER_SIZE			(2)

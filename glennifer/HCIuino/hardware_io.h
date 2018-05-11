@@ -392,6 +392,8 @@ void init_actuators(){
 	port->setPt 	= pos;
 	stbd->setPt 	= pos;
 	tran->is_stopped = true;
+	tran->hardware   = MH_ST_PWM;
+	bool temp = write_to_sabertooth(tran, 0);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void update_loady_bois(){
@@ -450,13 +452,13 @@ void maintain_motors(byte* cmd, bool success){
 			}
 
 			// if 11, we change 8's hardware type to PWM, and pass on the new value
-			// if(i == 11){
-			// 	motor_infos[8].hardware = MH_ST_PWM;
-			// 	motor_infos[8].setPt 	= motor->setPt;
-			// }else if(i == 8){
-			// 	// but if 8, set hardware type back to what it was
-			// 	motor->hardware = MH_ST_POS;
-			// }
+			if(id == 11){
+				motor_infos[8].hardware = MH_ST_PWM;
+				motor_infos[8].setPt 	= motor->setPt;
+			}else if(id == 8){
+				// but if 8, set hardware type back to what it was
+				motor_infos[8].hardware = MH_ST_POS;
+			}
 		}
 	}
 
@@ -533,7 +535,7 @@ void maintain_motors(byte* cmd, bool success){
 				
 				break;}
 			case MH_BL_VEL:
-				motor->is_stopped = false;
+				
 				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
