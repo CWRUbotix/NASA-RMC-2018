@@ -25,10 +25,10 @@
 #include <SabertoothSimplified.h>
 #include <ESC.h>
 #include <Encoder.h>
-#include <Herkulex.h>
 #include <Wire.h>
 #include <math.h>
 
+#include "Herkulex.h"
 #include "values_and_types.h"
 #include "motor_and_sensor_setup.h"
 #include "hciRead.h"
