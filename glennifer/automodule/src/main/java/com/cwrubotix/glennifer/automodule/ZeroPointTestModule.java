@@ -17,8 +17,6 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
@@ -31,14 +29,15 @@ public class ZeroPointTestModule extends Module{
     private Position currentPos;
     private Position destination;
     private PathFinder finder;
-    private final float DRIVE_SPEED = 100F;
-    private final float TURNING_SPEED = 100F;
+    private final float DRIVE_SPEED = 30F;
+    private final float TURNING_SPEED = 30F;
     public enum Direction {FORWARD, BACKWARD};
     private Direction direction;
     private Position[] scheme = {new Position(1.0, 6.0), new Position(-1.0, 1.0), new Position(0.0, 6.0), new Position(1.0, 1.0), 
 		new Position(-1.0, 6.0), new Position(0.0, 1.0), new Position(1.0,6.0)};
     private int currentScheme = 0;
     private int progress = 1;
+    private int lastProgress = 0;
     
     public ZeroPointTestModule(){
 	this.exchangeName = "amq.topic";
@@ -90,14 +89,25 @@ public class ZeroPointTestModule extends Module{
 	    double heading = currentPos.getHeadingTo(finder.getPath().getPoint(progress));
 	    if(direction == Direction.BACKWARD)
 		heading = (heading + Math.PI) % (Math.PI * 2);
-	    if(Math.abs(heading - currentPos.getHeading()) > 0.02)
+	    if(Math.abs(heading - currentPos.getHeading()) > 0.02){
 		turn(heading);
+		if(lastProgress != progress){
+		    Messages.AutonomyNextHeading anh = Messages.AutonomyNextHeading.newBuilder().setHeading((float)heading).build();
+		    try {
+			this.channel.basicPublish(exchangeName, "autonomy.next_heading", null, anh.toByteArray());
+		    } catch (IOException e) {
+			System.err.println("Failed to send next heading information.");
+			e.printStackTrace();
+		    }
+		}
+	    }
 	    else{
 	    	if(direction == Direction.FORWARD)
 				motorControl(DRIVE_SPEED);
 			else
 				motorControl(-DRIVE_SPEED);
 	    }
+	    lastProgress = progress;
 	}
     }
     

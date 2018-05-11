@@ -331,3 +331,9 @@ message TransitNewObstacle {
     required float diameter = 3;
 	required UnixTime timestamp = 4;
 }
+
+// autonomy.next_heading
+message AutonomyNextHeading {
+	required float heading = 1;
+	optional UnixTime timestamp = 2;
+}
