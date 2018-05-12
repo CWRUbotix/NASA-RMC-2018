@@ -53,11 +53,11 @@ public class AutoDrillModule extends Module {
 	    case DEEP:
 		if (isStalled) {
 		    System.out.println("stalled");
-		    excavationConveyorRPM(200);
+		    excavationConveyorRPM(100);
 		    excavationTranslationControl(stallSpeed);
 		} else {
 		    System.out.println("not stalled");
-		    excavationConveyorRPM(200);
+		    excavationConveyorRPM(100);
 		    excavationTranslationControl(transSpeed);
 		}
 		break;
