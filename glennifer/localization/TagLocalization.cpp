@@ -164,11 +164,20 @@ const char* topic = "locs";
 AMQPQueue *queue = amqp.createQueue(topic);
 
 //Initializes AMQP queue etc
+double future_heading = 0.0;
 void init_Queue() {
 	queue->Declare();
 	queue->Bind("amq.topic", topic);
 	//queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
 	queue->Consume(AMQP_NOACK);
+}
+
+void handleReceivedMessage(AMQPMessage * message) {
+	uint32_t len = 0;
+	char *data = message->getMessage(&len);
+
+	//data->getHeader();
+
 }
 
 class Localization {
@@ -434,14 +443,16 @@ public:
 
 		if (cam_num == greenCam.c_id) { //green camera
 			if (lookie < 0.0) {
-				lookie += (2*PI);
+				lookie += (2 * PI);
 			}
 			if (lookie < 0) {
-				robot_bearing = (double) fmod((float)(lookie - cam_bearing + PI), (float)(2 * PI));
+				robot_bearing = (double) fmod(
+						(float) (lookie - cam_bearing + PI), (float) (2 * PI));
 			}
 
 			else {
-				robot_bearing = (double) fmod((float)(lookie - cam_bearing + PI), (float)(2 * PI));
+				robot_bearing = (double) fmod(
+						(float) (lookie - cam_bearing + PI), (float) (2 * PI));
 			}
 
 			//cout << "Bearing " << lookie << ", Camera Bearing " << " " << cam_bearing << cout;
@@ -449,37 +460,40 @@ public:
 			robot_y = cam_y - (greenToCenter * sin(robot_bearing));
 
 			//if (send) {
-				AMQPExchange * ex = amqp.createExchange("amq.topic");
-				ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
 
-				com::cwrubotix::glennifer::LocalizationPosition msg;
-				msg.set_x_position((float) robot_x);
-				msg.set_y_position((float) robot_y);
-				msg.set_bearing_angle((float) robot_bearing);
+			com::cwrubotix::glennifer::LocalizationPosition msg;
+			msg.set_x_position((float) robot_x);
+			msg.set_y_position((float) robot_y);
+			msg.set_bearing_angle((float) robot_bearing);
 
-				int msg_size = msg.ByteSize();
-				void *msg_buff = malloc(msg_size);
-				msg.SerializeToArray(msg_buff, msg_size);
+			int msg_size = msg.ByteSize();
+			void *msg_buff = malloc(msg_size);
+			msg.SerializeToArray(msg_buff, msg_size);
 
-				ex->Publish((char*) msg_buff, msg_size, "loc.post");
+			ex->Publish((char*) msg_buff, msg_size, "loc.post");
 
-				cout << name << " distance = " << translation.norm()
-						<< "m, x coor = " << robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
-						<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
-						//<< ", matrix x = " << realcoor(0)
-						<< ", Robot Bearing = " << (robot_bearing * 180 / PI) << cout ;
+			cout << name << " distance = " << translation.norm()
+					<< "m, x coor = " << robot_x
+					//realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y coor = " << robot_y
+					//realcoor(2)//(translation.norm() * (cos (pitch)))
+					//<< ", matrix x = " << realcoor(0)
+					<< ", Robot Bearing = " << (robot_bearing * 180 / PI)
+					<< cout;
 
-				free(msg_buff);
+			free(msg_buff);
 			//}
 		}
 
 		if (cam_num == 0) { //yellow camera it is wrong
 			if (cam_bearing < 0) {
-				robot_bearing = (lookie - cam_bearing + PI);// % (2 * PI);
+				robot_bearing = (lookie - cam_bearing + PI); // % (2 * PI);
 			}
 
 			else {
-				robot_bearing = (lookie - cam_bearing - PI);// % (2 * PI);
+				robot_bearing = (lookie - cam_bearing - PI); // % (2 * PI);
 			}
 			//cout << "Bearing " << lookie << ", Camera Bearing " << cam_bearing
 			//		<< cout;
@@ -487,26 +501,29 @@ public:
 			robot_y = cam_y + (greenToCenter * sin(robot_bearing));
 
 			//if (send) {
-				AMQPExchange * ex = amqp.createExchange("amq.topic");
-				ex->Declare("amq.topic", "topic", AMQP_DURABLE);
+			AMQPExchange * ex = amqp.createExchange("amq.topic");
+			ex->Declare("amq.topic", "topic", AMQP_DURABLE);
 
-				com::cwrubotix::glennifer::LocalizationPosition msg;
-				msg.set_x_position((float) robot_x);
-				msg.set_y_position((float) robot_y);
-				msg.set_bearing_angle((float) robot_bearing);
+			com::cwrubotix::glennifer::LocalizationPosition msg;
+			msg.set_x_position((float) robot_x);
+			msg.set_y_position((float) robot_y);
+			msg.set_bearing_angle((float) robot_bearing);
 
-				int msg_size = msg.ByteSize();
-				void *msg_buff = malloc(msg_size);
-				msg.SerializeToArray(msg_buff, msg_size);
+			int msg_size = msg.ByteSize();
+			void *msg_buff = malloc(msg_size);
+			msg.SerializeToArray(msg_buff, msg_size);
 
-				ex->Publish((char*) msg_buff, msg_size, "loc.post");
+			ex->Publish((char*) msg_buff, msg_size, "loc.post");
 
-				cout << name << " distance=" << translation.norm()
-						<< "m, x coor = " << robot_x //realcoor(0) //(translation.norm() * (sin (pitch)))
-						<< ", y coor = " << robot_y //realcoor(2)//(translation.norm() * (cos (pitch)))
-						<< ", Robot Bearing = " << (robot_bearing * (180 / PI)) << cout ;
+			cout << name << " distance=" << translation.norm() << "m, x coor = "
+					<< robot_x
+					//realcoor(0) //(translation.norm() * (sin (pitch)))
+					<< ", y coor = " << robot_y
+					//realcoor(2)//(translation.norm() * (cos (pitch)))
+					<< ", Robot Bearing = " << (robot_bearing * (180 / PI))
+					<< cout;
 
-				free(msg_buff);
+			free(msg_buff);
 			//}
 		}
 
@@ -657,10 +674,15 @@ public:
 		handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 		handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 
-		double sleep_time = 0.1;
+		double sleep_time = 2.0;
 
 		int frame = 0;
 		double last_t = tic();
+
+		//queue->Declare();
+		//queue->Bind("amq.topic", topic);
+		//queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
+		//queue->Consume(AMQP_NOACK);
 		while (true) {
 
 			// capture frame
@@ -684,7 +706,7 @@ public:
 			if (!green_detect) {
 				if (green_lookie < 250.0 && green_sweep_right) {
 					//sleep_time = 0.10;
-					green_lookie += 2;
+					green_lookie += 40;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
 				}
@@ -692,13 +714,13 @@ public:
 					//sleep_time = 0.10;
 					green_sweep_right = false;
 					printf("green sweep false");
-					green_lookie -= 2;
+					green_lookie -= 40;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
 				}
 				if (green_lookie > -70.0 && !green_sweep_right) {
 					//sleep_time = 0.10;
-					green_lookie -= 2;
+					green_lookie -= 40;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
 				}
@@ -706,7 +728,7 @@ public:
 					//sleep_time = 0.10;
 					//printf("green sweep true");
 					green_sweep_right = true;
-					green_lookie += 2;
+					green_lookie += 40;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
 				}
@@ -715,51 +737,30 @@ public:
 
 			if (green_detect) {
 				green_detect = processImage(green_image, green_image_gray,
-										greenCam, windowGreenCam, green_lookie, true,
-										greenCam.c_id);
+						greenCam, windowGreenCam, green_lookie, true,
+						greenCam.c_id);
 				//printf("Green Camera Tag Detected");
 			}
-			//second measurement in case we see the tag if we need to move to track the tag
-			/*if (green_detect && last_green < greenCam.c_bearing + 10
-					&& last_green > greenCam.c_bearing - 10) {
-				last_green = greenCam.c_bearing;
-				green_detect = processImage(green_image, green_image_gray,
-						greenCam, windowGreenCam, green_lookie, true,
-						greenCam.c_id);
-			}
-			if (green_detect && last_green < greenCam.c_bearing + 10
-					&& last_green > greenCam.c_bearing - 10) {
-				if (last_green > greenCam.c_bearing + 10) {
-					green_lookie -= (last_green - greenCam.c_bearing);
-					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
-				} else {
-					green_lookie += (greenCam.c_bearing - last_green);
-					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
-				}
-				last_green = greenCam.c_bearing;
-				green_detect = processImage(green_image, green_image_gray,
-						greenCam, windowGreenCam, green_lookie, true,
-						greenCam.c_id);
-			}*/
+
 
 			if (!yellow_detect) {
 				if (yellow_lookie > 110.0 && yellow_sweep_right) {
 					//sleep_time = 0.10;
-					yellow_lookie -= 2;
+					yellow_lookie -= 40;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
 				if (yellow_lookie <= 110.0) {
 					//sleep_time = 0.10;
 					yellow_sweep_right = false;
-					yellow_lookie += 2;
+					yellow_lookie += 40;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
 				if (yellow_lookie < 430.0 && !yellow_sweep_right) {
 					//sleep_time = 0.10;
 					//increment by one
-					yellow_lookie += 2;
+					yellow_lookie += 40;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
@@ -767,7 +768,7 @@ public:
 					//sleep_time = 0.10;
 					//printf("green sweep true");
 					yellow_sweep_right = true;
-					yellow_lookie -= 2;
+					yellow_lookie -= 40;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}

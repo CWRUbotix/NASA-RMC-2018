@@ -442,12 +442,15 @@ public class ModuleMain {
             int id1 = 6;
             int id2 = 7;
             double targetValue = pcc.getPosition() * 10;
+            if(targetValue == 1000){
+                targetValue = 2000;
+            }
             queueActuation(id1, targetValue);
             queueActuation(id2, targetValue);
         } else if (keys[2].equals("bucket_conveyor_rpm")) {
             Messages.SpeedControlCommand scc = Messages.SpeedControlCommand.parseFrom(body);
             int id = 4;
-            double targetValue = scc.getRpm() * 2;
+            double targetValue = scc.getRpm() * 4;
             queueActuation(id, targetValue);
         } else {
             System.out.println("Excavation motor control routing key has unrecognized motor");
