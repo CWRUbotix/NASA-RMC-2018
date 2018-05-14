@@ -8,6 +8,7 @@ void setup_sensors(){
 	//ENCODERS
 	sensor_infos[1].hardware 		= SH_QUAD_VEL;
 	sensor_infos[1].whichMotor 		= FRONT_PORT_MTR_ID;
+	sensor_infos[1].is_reversed 	= true;
 	sensor_infos[1].array_index 	= 0;
 
 	sensor_infos[3].hardware 		= SH_QUAD_VEL;
@@ -17,6 +18,7 @@ void setup_sensors(){
 
 	sensor_infos[5].hardware 		= SH_QUAD_VEL;
 	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
+	sensor_infos[5].is_reversed 	= true;
 	sensor_infos[5].array_index 	= 4;
 
 	sensor_infos[7].hardware 		= SH_QUAD_VEL;
@@ -204,33 +206,41 @@ void setup_motors(){
 	// DRIVE MOTORS
 	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_BL_VEL;
 	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[1]);
-	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 500;
 	motor_infos[FRONT_PORT_MTR_ID].center 			= 1000;
 	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 250;
+	motor_infos[FRONT_PORT_MTR_ID].kp 				= DRIVE_KP;
+	motor_infos[FRONT_PORT_MTR_ID].margin 			= 2;
 	motor_infos[FRONT_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[FRONT_PORT_MTR_ID].encoder 			= & (sensor_infos[1]);
 
 	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[7]);
-	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 1000;
+	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 500;
 	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[FRONT_STARBOARD_MTR_ID].kp 			= DRIVE_KP;
+	motor_infos[FRONT_STARBOARD_MTR_ID].margin 		= 2;
 	motor_infos[FRONT_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[5]);
 	
 	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
 	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[0]);
-	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 500;
 	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
+	motor_infos[REAR_PORT_MTR_ID].kp 				= DRIVE_KP;
+	motor_infos[REAR_PORT_MTR_ID].margin 			= 2;
 	motor_infos[REAR_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[3]);
 
 	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[6]);
-	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 1000;
+	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 500;
 	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[REAR_STARBOARD_MTR_ID].kp 			= DRIVE_KP;
+	motor_infos[REAR_STARBOARD_MTR_ID].margin 		= 2;
 	motor_infos[REAR_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[7]);
 

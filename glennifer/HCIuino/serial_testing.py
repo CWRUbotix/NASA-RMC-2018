@@ -175,7 +175,7 @@ def main():
 					val = int(resp[ind+1])*256
 					val += int(resp[ind+2])
 					if val > 32767:
-						val = 32767-val
+						val = 65536-val
 					printval += str(int(resp[ind])) + '\t: ' + str(val) + '\n'
 				print(printval)
 

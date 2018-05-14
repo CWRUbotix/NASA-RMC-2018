@@ -87,7 +87,7 @@
 #define EXC_TRANSLATION_KI 		(0.000000002)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
-#define DRIVE_KP 				(0.1)
+#define DRIVE_KP 				(0.05)
 #define DRIVE_KI 				(0.0)
 
 // ESC MOTOR CONTROL VALUES
@@ -214,7 +214,9 @@ typedef struct MotorInfo{
 	uint32_t deadband; 			// When hardware = MH_RC_POS
 	uint32_t center = 1500; 	// center from which to add/sub deadband
 	int16_t  max_pwr = 500; 	// for stopping out-of-sync actuation
-	uint16_t margin = 10; 			// how far from set-point is acceptable?
+	float    current_pwr 	= 0;// 
+	float    last_pwr 		= 0;// 
+	uint16_t margin = 10; 		// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
