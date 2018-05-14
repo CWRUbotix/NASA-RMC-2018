@@ -51,7 +51,7 @@ public class ModuleMain {
                 
         // Initialize actuators
         initializeActuators();
-                	
+
 		// Start HCI
 		Thread hciThread = new Thread(hci);
 		hciThread.start();
@@ -100,6 +100,9 @@ public class ModuleMain {
 
                 if (!hciThread.isAlive()) {
                     break;
+                }
+                if (hciThread.isInterrupted()) {
+                    System.exit(0);
                 }
             }
         } catch (InterruptedException e) {}
