@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeoutException;
 
 import com.cwrubotix.glennifer.Messages;
@@ -22,6 +23,8 @@ import com.rabbitmq.client.Envelope;
  * @author Seohyun Jung
  */
 public class LogModule extends Module {
+
+    enum LogType {PATH, DRIVE}
 
     /// Robot-specific fields
     PathFinder pathFinder;
@@ -42,11 +45,10 @@ public class LogModule extends Module {
     @Override
     protected void runWithExceptions() throws IOException, TimeoutException {
         Runtime runtime = Runtime.getRuntime();
-        runtime.addShutdownHook(new Thread() {
-            public void run() {
-                LogModule.this.stop();
-            }
-        });
+        runtime.addShutdownHook(new Thread(() -> {
+            System.out.println("Stopping gracefully...");
+            LogModule.this.stop();
+        }));
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -55,14 +57,12 @@ public class LogModule extends Module {
 
         // Create log files and writers
         LocalDateTime openTime = LocalDateTime.now();
-        pathLogFile = new File(String.format("%d-%d-%d-%d:%d_Path.txt",
-                openTime.getYear(), openTime.getMonthValue(), openTime.getDayOfMonth(),
-                openTime.getHour(), openTime.getMinute()));
-        pathLogWriter = new BufferedWriter(new FileWriter(pathLogFile));
-        driveLogFile = new File(String.format("%d-%d-%d-%d:%d_Drive.txt",
-                openTime.getYear(), openTime.getMonthValue(), openTime.getDayOfMonth(),
-                openTime.getHour(), openTime.getMinute()));
-        driveLogWriter = new BufferedWriter(new FileWriter(driveLogFile));
+        String openTimeString = openTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm"));
+
+        pathLogFile     = new File(String.format("%s_Path.txt", openTimeString));
+        pathLogWriter   = new BufferedWriter(new FileWriter(pathLogFile));
+        driveLogFile    = new File(String.format("%d-%d-%d-%d:%d_Drive.txt", openTimeString));
+        driveLogWriter  = new BufferedWriter(new FileWriter(driveLogFile));
 
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, exchangeName, "motor.#");
@@ -113,6 +113,24 @@ public class LogModule extends Module {
         } catch (IOException e) {
             System.err.println("Something went wrong while trying to close file write streams");
             e.printStackTrace();
+        }
+    }
+
+    private void log(LogType type, String message) {
+        LocalDateTime logTime = LocalDateTime.now();
+        String time = logTime.format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
+        message = String.format("[%s] %s", time, message);
+        try {
+            switch (type) {
+                case PATH:
+                    pathLogWriter.write(message);
+                    break;
+                case DRIVE:
+                    driveLogWriter.write(message);
+                    break;
+            }
+        } catch (IOException e) {
+            System.out.println("Something went wrong when trying to log data.");
         }
     }
 
