@@ -39,15 +39,19 @@ public class LogModule extends Module {
     private File pathLogFile, driveLogFile;
     private Writer pathLogWriter, driveLogWriter;
 
-    /*Fields for consumers*/
-    private enum Drive {STRAIGHT, TURN};
-    private enum Wheel{FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT};
+    /// Consumer fields
+    private enum Drive {
+        STRAIGHT, TURN
+    }
+
+    private enum Wheel {FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT}
+
     private Drive currentDrive;
     private EnumMap<Wheel, Float> motorValues = new EnumMap<>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
     private Instant lastStamp;
     private Position currentPos;
     private Position lastStartPos;
-    
+
     public LogModule() {
         this("amq.topic");
     }
@@ -77,10 +81,10 @@ public class LogModule extends Module {
         LocalDateTime openTime = LocalDateTime.now();
         String openTimeString = openTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-        pathLogFile     = new File(String.format("%s_Path.txt", openTimeString));
-        pathLogWriter   = new BufferedWriter(new FileWriter(pathLogFile));
-        driveLogFile    = new File(String.format("%s_Drive.txt", openTimeString));
-        driveLogWriter  = new BufferedWriter(new FileWriter(driveLogFile));
+        pathLogFile = new File(String.format("%s_Path.txt", openTimeString));
+        pathLogWriter = new BufferedWriter(new FileWriter(pathLogFile));
+        driveLogFile = new File(String.format("%s_Drive.txt", openTimeString));
+        driveLogWriter = new BufferedWriter(new FileWriter(driveLogFile));
 
         // Subscribing to StateModule
         Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("logModule")
@@ -135,7 +139,8 @@ public class LogModule extends Module {
 
     /**
      * Log a message to the appropriate file.
-     * @param type The type of message to log
+     *
+     * @param type    The type of message to log
      * @param message Content of the message
      */
     private void log(LogType type, String message) {
@@ -155,11 +160,12 @@ public class LogModule extends Module {
             System.out.println("Something went wrong when trying to log data.");
         }
     }
-    private Drive findDriveType(){
-	float fl = motorValues.get(Wheel.FRONT_LEFT);
-	float fr = motorValues.get(Wheel.FRONT_RIGHT);
-	float bl = motorValues.get(Wheel.BACK_LEFT);
-	float br = motorValues.get(Wheel.BACK_RIGHT);
+
+    private Drive findDriveType() {
+        float fl = motorValues.get(Wheel.FRONT_LEFT);
+        float fr = motorValues.get(Wheel.FRONT_RIGHT);
+        float bl = motorValues.get(Wheel.BACK_LEFT);
+        float br = motorValues.get(Wheel.BACK_RIGHT);
     }
 
     public static void main(String[] args) {
@@ -177,31 +183,30 @@ public class LogModule extends Module {
             Messages.State msg = Messages.State.parseFrom(body);
             Messages.LocomotionStateDetailed lsd = msg.getLocDetailed();
             Messages.LocObsStateDetailed lod = msg.getLocObsDetailed();
-            
-            /*Dealing with Localization Obstacle data first*/
+
+            // Dealing with Localization Obstacle data first
             Position pos = new Position(lod.getLocPosition().getXPosition(), lod.getLocPosition().getYPosition(), lod.getLocPosition().getBearingAngle());
-            if(!pos.equals(new Position(0,0,0))){ //when position info is not dummy info
-        	if(currentPos == null){
-        	    currentDes = LogModule.this.pos.pop();
-        	    finder = new PathFinder(currentPos, currentDes);
-        	    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
-        	}else if(currentPos.equals(currentDes)){
-        	    currentDes = LogModule.this.pos.pop();
-        	    finder.recalculatePath(currentPos, currentDes);
-        	    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\nNow heading to : " + 
-        		    currentDes.toString() + "\n" + finder.getPath());
-        	}else{
-        	    currentPos = pos;
-        	}
+            if (!pos.equals(new Position(0, 0, 0))) { //when position info is not dummy info
+                if (currentPos == null) {
+                    currentDes = LogModule.this.pos.pop();
+                    finder = new PathFinder(currentPos, currentDes);
+                    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
+                } else if (currentPos.equals(currentDes)) {
+                    currentDes = LogModule.this.pos.pop();
+                    finder.recalculatePath(currentPos, currentDes);
+                    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\nNow heading to : " +
+                            currentDes.toString() + "\n" + finder.getPath());
+                } else {
+                    currentPos = pos;
+                }
             }
-            
-            /*Updating motor values*/
+
+            // Update motor values
             motorValues.put(Wheel.FRONT_LEFT, lsd.getFrontLeftRpm());
             motorValues.put(Wheel.FRONT_RIGHT, lsd.getFrontRightRpm());
             motorValues.put(Wheel.BACK_LEFT, lsd.getBackLeftRpm());
             motorValues.put(Wheel.BACK_RIGHT, lsd.getBackRightRpm());
-            
-            
+
         }
     }
 }
