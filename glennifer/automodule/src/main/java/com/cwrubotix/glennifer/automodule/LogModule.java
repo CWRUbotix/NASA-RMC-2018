@@ -17,6 +17,7 @@ import com.rabbitmq.client.Envelope;
 
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.Stack;
 
 /**
  * Module to collect data and write it to a file
@@ -29,7 +30,10 @@ public class LogModule extends Module {
     enum LogType {PATH, DRIVE}
 
     /// Robot-specific fields
-    PathFinder pathFinder;
+    private PathFinder finder;
+    /*Assuming we are doing two runs*/
+    private Stack<Position> pos = new Stack<>();
+    private Position currentDes;
 
     /// Logging fields
     private File pathLogFile, driveLogFile;
@@ -41,7 +45,8 @@ public class LogModule extends Module {
     private Drive currentDrive;
     private EnumMap<Wheel, Float> motorValues = new EnumMap<Wheel, Float>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
     private Instant lastStamp;
-    
+    private Position currentPos;
+    private Position lastStartPos;
     
     public LogModule() {
         this("amq.topic");
@@ -49,6 +54,10 @@ public class LogModule extends Module {
 
     public LogModule(String exchangeName) {
         this.exchangeName = exchangeName;
+        pos.push(new Position(0.0, 1.0));
+        pos.push(new Position(1.0, 6.0));
+        pos.push(new Position(0.0, 1.0));
+        pos.push(new Position(1.0, 6.0));
     }
 
     @Override
@@ -73,10 +82,6 @@ public class LogModule extends Module {
         driveLogFile    = new File(String.format("%s_Drive.txt", openTimeString));
         driveLogWriter  = new BufferedWriter(new FileWriter(driveLogFile));
 
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, exchangeName, "motor.#");
-        channel.basicConsume(queueName, true, new MotorConsumer());
-
         // Subscribing to StateModule
         Messages.StateSubscribe msg = Messages.StateSubscribe.newBuilder().setReplyKey("logModule")
                 .setInterval(0.1F)
@@ -90,7 +95,7 @@ public class LogModule extends Module {
                 .build();
         this.channel.basicPublish(exchangeName, "state.subscribe", null, msg.toByteArray());
 
-        queueName = channel.queueDeclare().getQueue();
+        String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, exchangeName, "logModule");
         channel.basicConsume(queueName, true, new SensorConsumer());
     }
@@ -142,21 +147,16 @@ public class LogModule extends Module {
             System.out.println("Something went wrong when trying to log data.");
         }
     }
+    private Drive findDriveType(){
+	float fl = motorValues.get(Wheel.FRONT_LEFT);
+	float fr = motorValues.get(Wheel.FRONT_RIGHT);
+	float bl = motorValues.get(Wheel.BACK_LEFT);
+	float br = motorValues.get(Wheel.BACK_RIGHT);
+    }
 
     public static void main(String[] args) {
         LogModule logModule = new LogModule();
         logModule.start();
-    }
-
-    private class MotorConsumer extends DefaultConsumer {
-        public MotorConsumer() {
-            super(channel);
-        }
-
-        @Override
-        public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-
-        }
     }
 
     private class SensorConsumer extends DefaultConsumer {
@@ -166,7 +166,34 @@ public class LogModule extends Module {
 
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-
+            Messages.State msg = Messages.State.parseFrom(body);
+            Messages.LocomotionStateDetailed lsd = msg.getLocDetailed();
+            Messages.LocObsStateDetailed lod = msg.getLocObsDetailed();
+            
+            /*Dealing with Localization Obstacle data first*/
+            Position pos = new Position(lod.getLocPosition().getXPosition(), lod.getLocPosition().getYPosition(), lod.getLocPosition().getBearingAngle());
+            if(!pos.equals(new Position(0,0,0))){ //when position info is not dummy info
+        	if(currentPos == null){
+        	    currentDes = LogModule.this.pos.pop();
+        	    finder = new PathFinder(currentPos, currentDes);
+        	    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
+        	}else if(currentPos.equals(currentDes)){
+        	    currentDes = LogModule.this.pos.pop();
+        	    finder.recalculatePath(currentPos, currentDes);
+        	    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\nNow heading to : " + 
+        		    currentDes.toString() + "\n" + finder.getPath());
+        	}else{
+        	    currentPos = pos;
+        	}
+            }
+            
+            /*Updating motor values*/
+            motorValues.put(Wheel.FRONT_LEFT, lsd.getFrontLeftRpm());
+            motorValues.put(Wheel.FRONT_RIGHT, lsd.getFrontRightRpm());
+            motorValues.put(Wheel.BACK_LEFT, lsd.getBackLeftRpm());
+            motorValues.put(Wheel.BACK_RIGHT, lsd.getBackRightRpm());
+            
+            
         }
     }
 }
