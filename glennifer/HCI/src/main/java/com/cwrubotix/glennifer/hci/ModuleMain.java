@@ -350,6 +350,8 @@ public class ModuleMain {
             routeWheelRPMMessage(keys, body);
         } else if(keys[3].equals("turn")) {
             routeTurnMessage(keys, body);
+        } else if(keys[3].equals("all_wheels")) {
+            routeAllWheelsMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -414,6 +416,23 @@ public class ModuleMain {
             targetValue1 = tc.getSpeed();
             targetValue3 = tc.getSpeed();
         }
+
+        queueActuation(id0, targetValue0);
+        queueActuation(id1, targetValue1);
+        queueActuation(id2, targetValue2);
+        queueActuation(id3, targetValue3);
+    }
+
+    private static void routeAllWheelsMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
+        Messages.AllWheelsCommand awc = Messages.AllWheelsCommand.parseFrom(body);
+        int id0 = 0;
+        int id1 = 1;
+        int id2 = 2;
+        int id3 = 3;
+        double targetValue0 = awc.getFrontLeft();
+        double targetValue1 = awc.getFrontRight();
+        double targetValue2 = awc.getBackLeft();
+        double targetValue3 = awc.getBackRight();
 
         queueActuation(id0, targetValue0);
         queueActuation(id1, targetValue1);

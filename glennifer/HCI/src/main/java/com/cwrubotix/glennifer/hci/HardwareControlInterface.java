@@ -219,9 +219,9 @@ public class HardwareControlInterface implements Runnable {
 			data[3*i] = actuatorIdShort;
 			data[3*i+1] = (byte)(currentOutputShort >>> 8);
 			data[3*i+2] = (byte)(currentOutputShort);
-			System.out.println(data[0]);
-			System.out.println(data[1]);
-			System.out.println(data[2]);
+			System.out.println(data[3*i]);
+			System.out.println(data[3*i+1]);
+			System.out.println(data[3*i+2]);
 			//System.out.println("Setting output: " + currentOutputShort + " actuator ID: " + actuatorIdShort);
 		}
 		activeActuations.clear();
