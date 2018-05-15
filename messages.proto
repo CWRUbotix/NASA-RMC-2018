@@ -100,6 +100,13 @@ message SpeedControlCommand {
 	required float timeout = 2;
 }
 
+message AllWheelsCommand {
+	required float front_left = 1;
+	required float front_right = 2;
+	required float back_left = 3;
+	required float back_right = 4;
+}
+
 // motorcontrol.excavation.arm_pos
 // motorcontrol.excavation.conveyor_translation_displacement
 // motorcontrol.deposition.dump_pos
