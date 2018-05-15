@@ -15,6 +15,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import java.time.Instant;
+import java.util.EnumMap;
 
 /**
  * Module to collect data and write it to a file
@@ -33,6 +35,14 @@ public class LogModule extends Module {
     private File pathLogFile, driveLogFile;
     private Writer pathLogWriter, driveLogWriter;
 
+    /*Fields for consumers*/
+    private enum Drive {STRAIGHT, TURN};
+    private enum Wheel{FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT};
+    private Drive currentDrive;
+    private EnumMap<Wheel, Float> motorValues = new EnumMap<Wheel, Float>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
+    private Instant lastStamp;
+    
+    
     public LogModule() {
         this("amq.topic");
     }
@@ -40,7 +50,6 @@ public class LogModule extends Module {
     public LogModule(String exchangeName) {
         this.exchangeName = exchangeName;
     }
-
 
     @Override
     protected void runWithExceptions() throws IOException, TimeoutException {
