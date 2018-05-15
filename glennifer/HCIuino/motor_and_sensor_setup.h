@@ -206,7 +206,7 @@ void setup_motors(){
 	// DRIVE MOTORS
 	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_BL_VEL;
 	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[1]);
-	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 500;
+	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 200;
 	motor_infos[FRONT_PORT_MTR_ID].center 			= 1000;
 	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 250;
 	motor_infos[FRONT_PORT_MTR_ID].kp 				= DRIVE_KP;
@@ -216,7 +216,7 @@ void setup_motors(){
 
 	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[7]);
-	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 500;
+	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 200;
 	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[FRONT_STARBOARD_MTR_ID].kp 			= DRIVE_KP;
@@ -226,7 +226,7 @@ void setup_motors(){
 	
 	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
 	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[0]);
-	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 500;
+	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 200;
 	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
 	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
 	motor_infos[REAR_PORT_MTR_ID].kp 				= DRIVE_KP;
@@ -236,7 +236,7 @@ void setup_motors(){
 
 	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[6]);
-	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 500;
+	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 200;
 	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
 	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
 	motor_infos[REAR_STARBOARD_MTR_ID].kp 			= DRIVE_KP;

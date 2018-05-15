@@ -340,7 +340,7 @@ bool write_to_yep(MotorInfo* motor, int16_t val){
 	}
 	
 	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
-	val 		= map(val, 0, 1000, motor->center + motor->deadband, motor->center + motor->deadband + motor->max_pwr);
+	val 		= map(val, 0, motor->max_pwr, motor->center + motor->deadband, motor->center + motor->deadband + motor->max_pwr);
 	esc->speed(val);
 	motor->lastUpdateTime = millis();
 	return true;
@@ -558,7 +558,10 @@ void maintain_motors(byte* cmd, bool success){
 
 					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
 					// }
-					if(abs(err) > motor->margin){
+					if(motor->setPt == 0){
+						writeSuccess 	= write_to_yep(motor, 0);
+						motor->last_pwr = 0;
+					}else if(abs(err) > motor->margin){
 						motor->current_pwr = (motor->last_pwr + motor->kp*err );
 					}
 					if(abs(motor->current_pwr) > motor->max_pwr){
