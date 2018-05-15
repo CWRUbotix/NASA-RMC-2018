@@ -15,7 +15,7 @@ import jssc.SerialPortList;
 import jssc.SerialPortTimeoutException;
 
 public class HardwareControlInterface implements Runnable {
-	public static final int baud = 9600;
+	public static final int baud = 115200;
 	public static final byte COMMAND_READ_SENSORS = 0x01;
 	public static final byte COMMAND_SET_OUTPUTS = 0x02;
 	private static final int SERIAL_TIMEOUT_MS = 2000;
@@ -253,42 +253,37 @@ public class HardwareControlInterface implements Runnable {
 		byte[] data = new byte[ids.length];
 		// Generate data array for request
 		// Each sensor ID is 2 bytes
-		/*for(int i = 0; i < ids.length; i++) {
+		for(int i = 0; i < ids.length; i++) {
 			data[i] = (byte)(ids[i].intValue());
-		}*/
-		data[0] = (byte)33;
+		}
 		// Send message, prepares it as per the interface
 		sendMessage(new SerialPacket(COMMAND_READ_SENSORS,data));
 		// Get the response
 		SerialPacket response = readMessage();
 		long t = System.currentTimeMillis();
 		if(response.command != COMMAND_READ_SENSORS) {
-			System.out.println("Invalid read sensors response - lifely failed to read sensors");
+			System.out.println("Invalid read sensors response - likely failed to read sensors");
 			return false;
 		}
 		// Parse the response
 		for(int i = 0; i < response.data.length/3; i++) {
-			System.out.println((int)response.data[3*i+0]);
-			System.out.println((int)response.data[3*i+1]);
-			System.out.println((int)response.data[3*i+2]);
 			// Parse the sensor IDs
 			int sens = (int)response.data[3*i+0];
 			// Parse the sensor values
 			int dat = ((int)response.data[3*i+1]) << 8 | (0xFF & response.data[3*i+2]);
 			if (dat != -32768) {
 				// If the sensor is not in the hashmap, ignore it
-				/*if(!sensors.containsKey(sens)) {
+				if(!sensors.containsKey(sens)) {
 					System.out.println("Sensor not loaded (ID = " + sens + ")");
 					continue;
-				}*/
+				}
 				// Get the sensor
-				//Sensor s = sensors.get(sens);
+				Sensor s = sensors.get(sens);
 				// Update it with the data
-				/*boolean different = s.updateRaw(dat);
+				boolean different = s.updateRaw(dat);
 				if (different) {
 					sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
-				}*/
-				sensorUpdateQueue.add(new SensorData(sens, dat, t)); // TODO: transform to sensor-specific physical units here
+				}
 			}
 		}
 		return true;
@@ -309,22 +304,59 @@ public class HardwareControlInterface implements Runnable {
 		port.writeBytes(p.asPacket());
 	}
 	
-	public HardwareControlInterface(String spName) {
+	public HardwareControlInterface() {
 
-		// Open the found arduino port
-		port = new SerialPort(spName);
-		// Try open port
-		try {
-			port.openPort();
-			Thread.sleep(1000);
-			port.setParams(baud, 8, 1, 0);
-			port.setDTR(false);
-		} catch (SerialPortException e) {
-			e.printStackTrace();
-			return;
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		// Find arduino port
+		findArduinoPort();
 	}
+
+	private void findArduinoPort(){
+
+        // For each attached serial port
+        for(String s: SerialPortList.getPortNames()) {
+            SerialPort sp = new SerialPort(s);
+            try {
+                // Open the port
+                sp.openPort();
+                Thread.sleep(7000);
+                sp.setParams(baud, 8, 1, 0);
+                sp.setDTR(false);
+                // Create test packet
+                byte[] bt = {0x03,0x01,0x5A};
+                // Write test byte 0x5A
+                sp.writeBytes(bt);
+                System.out.println(bt[2]);
+                Thread.sleep(1000);
+                // Read response bytes
+                byte[] b = sp.readBytes(3,2000);
+                System.out.println(b[2]);
+                // If response is 0xA5, it is the arduino
+                if(b[2] == (byte)0xA5) {
+                	System.out.println("Found the arduino at " + s);
+                    // Capture the string of correct port
+                    port = sp;
+                    // Close the port
+                    //sp.closePort();
+                    return;
+                }
+                sp.closePort();
+            } catch(SerialPortException e) {
+                e.printStackTrace();
+                continue;
+            } catch(SerialPortTimeoutException e) {
+                try {
+                        sp.closePort();
+                } catch(Exception e1) {
+                        e1.printStackTrace();
+                }
+                continue;
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        if(port == null) {
+        	System.out.println("Couldn't find attached arduino, please try again");
+        }
+    }
 }
