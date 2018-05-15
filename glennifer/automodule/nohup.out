@@ -1,0 +1,21 @@
+Exception in thread "main" java.lang.UnsupportedOperationException: Unable to open DISPLAY
+	at com.sun.glass.ui.gtk.GtkApplication.<init>(GtkApplication.java:68)
+	at com.sun.glass.ui.gtk.GtkPlatformFactory.createApplication(GtkPlatformFactory.java:41)
+	at com.sun.glass.ui.Application.run(Application.java:146)
+	at com.sun.javafx.tk.quantum.QuantumToolkit.startup(QuantumToolkit.java:257)
+	at com.sun.javafx.application.PlatformImpl.startup(PlatformImpl.java:211)
+	at com.sun.javafx.application.LauncherImpl.startToolkit(LauncherImpl.java:675)
+	at com.sun.javafx.application.LauncherImpl.launchApplication1(LauncherImpl.java:695)
+	at com.sun.javafx.application.LauncherImpl.lambda$launchApplication$99(LauncherImpl.java:182)
+	at java.lang.Thread.run(Thread.java:748)
+Exception in thread "main" java.lang.UnsupportedOperationException: Unable to open DISPLAY
+	at com.sun.glass.ui.gtk.GtkApplication.<init>(GtkApplication.java:68)
+	at com.sun.glass.ui.gtk.GtkPlatformFactory.createApplication(GtkPlatformFactory.java:41)
+	at com.sun.glass.ui.Application.run(Application.java:146)
+	at com.sun.javafx.tk.quantum.QuantumToolkit.startup(QuantumToolkit.java:257)
+	at com.sun.javafx.application.PlatformImpl.startup(PlatformImpl.java:211)
+	at com.sun.javafx.application.LauncherImpl.startToolkit(LauncherImpl.java:675)
+	at com.sun.javafx.application.LauncherImpl.launchApplication1(LauncherImpl.java:695)
+	at com.sun.javafx.application.LauncherImpl.lambda$launchApplication$99(LauncherImpl.java:182)
+	at java.lang.Thread.run(Thread.java:748)
+Waitng commands...
