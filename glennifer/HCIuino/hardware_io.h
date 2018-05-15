@@ -547,42 +547,57 @@ void maintain_motors(byte* cmd, bool success){
 				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
-					int16_t vel 	= (int16_t) read_enc(motor);
-					int16_t err 	= motor->setPt - vel;
-					// if(abs(err) > motor->margin){
-					// 	int32_t dt = (time - motor->lastUpdateTime);
-					// 	float new_integ = motor->integral + (err * dt);
-					// 	motor->integral = 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
-					// 						new_integ : 
-					// 						(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
-
-					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
-					// }
-					if(abs(err) > motor->margin){
-						motor->current_pwr = (motor->last_pwr + motor->kp*err );
-					}
-					if(abs(motor->current_pwr) > motor->max_pwr){
-						motor->current_pwr = sign(motor->current_pwr) * motor->max_pwr;
-					}
-
-					// if client is requesting a direction change
-					if(sign(motor->current_pwr) + sign(motor->last_pwr) == 0){
+					if(sign(motor->setPt) + sign(motor->lastSet) == 0){
 						// set to 0
-						writeSuccess 	= write_to_yep(motor, 0); 	// also updates lastUpdateTime
-						motor->last_pwr = 0;
-					}else if(motor->last_pwr == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
+						writeSuccess = write_to_yep(motor, 0); 	// also updates lastUpdateTime
+						motor->lastSet = 0;
+					}else if(motor->lastSet == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
 						// write to controller (it's now safe to make a direction change)
-						writeSuccess 	= write_to_yep(motor, motor->current_pwr);
-						motor->last_pwr = motor->current_pwr;
-					}else if(sign(motor->last_pwr) == sign(motor->current_pwr) ){ //sign(motor->setPt)){
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else if(sign(motor->lastSet) == sign(motor->setPt)){
 						// write to controller (no direction change, so no worries)
-						writeSuccess 	= write_to_yep(motor, motor->current_pwr); // motor->setPt);
-						motor->last_pwr = motor->current_pwr;
-					}else{ // if(motor->setPt == 0){
-						writeSuccess 	= write_to_yep(motor, 0);
-						motor->last_pwr = 0;
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else if(motor->setPt == 0){
+						writeSuccess = write_to_yep(motor, 0);
+						motor->lastSet = 0;
 						// DO NOTHING
 					}
+					// int16_t vel 	= (int16_t) read_enc(motor);
+					// int16_t err 	= motor->setPt - vel;
+					// // if(abs(err) > motor->margin){
+					// // 	int32_t dt = (time - motor->lastUpdateTime);
+					// // 	float new_integ = motor->integral + (err * dt);
+					// // 	motor->integral = 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
+					// // 						new_integ : 
+					// // 						(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
+
+					// // 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
+					// // }
+					// if(abs(err) > motor->margin){
+					// 	motor->current_pwr = (motor->last_pwr + motor->kp*err );
+					// }
+					// if(abs(motor->current_pwr) > motor->max_pwr){
+					// 	motor->current_pwr = sign(motor->current_pwr) * motor->max_pwr;
+					// }
+
+					// // if client is requesting a direction change
+					// if(sign(motor->current_pwr) + sign(motor->last_pwr) == 0){
+					// 	// set to 0
+					// 	writeSuccess 	= write_to_yep(motor, 0); 	// also updates lastUpdateTime
+					// 	motor->last_pwr = 0;
+					// }else if(motor->last_pwr == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
+					// 	// write to controller (it's now safe to make a direction change)
+					// 	writeSuccess 	= write_to_yep(motor, motor->current_pwr);
+					// 	motor->last_pwr = motor->current_pwr;
+					// }else if(sign(motor->last_pwr) == sign(motor->current_pwr) ){ //sign(motor->setPt)){
+					// 	// write to controller (no direction change, so no worries)
+					// 	writeSuccess 	= write_to_yep(motor, motor->current_pwr); // motor->setPt);
+					// 	motor->last_pwr = motor->current_pwr;
+					// }else{ // if(motor->setPt == 0){
+					// 	writeSuccess 	= write_to_yep(motor, 0);
+					// 	motor->last_pwr = 0;
+					// 	// DO NOTHING
+					// }
 				}
 				break;
 			case MH_LOOKY:
