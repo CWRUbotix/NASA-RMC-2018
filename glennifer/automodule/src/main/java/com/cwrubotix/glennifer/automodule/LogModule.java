@@ -218,7 +218,8 @@ public class LogModule extends Module {
                 case STOP:
                     // Log drive values
                     Duration driveTime = Duration.between(lastStamp, Instant.now());
-                    log(LogType.DRIVE, String.format("Drove from %s at %f rad to %s at %f rad in %d second(s)",
+                    log(LogType.DRIVE, String.format("%s from %s at %f rad to %s at %f rad in %d second(s)",
+                            currentDrive == Drive.STRAIGHT ? "Drove" : "Turned",
                             lastStartPos, lastStartPos.getHeading(), currentPos, currentPos.getHeading(),
                             driveTime.getSeconds()));
                     lastStamp = Instant.now();
