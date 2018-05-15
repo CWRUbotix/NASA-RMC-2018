@@ -138,7 +138,7 @@ int32_t read_enc(MotorInfo* motor){
 			break;}
 		case SH_QUAD_VEL:
 			int8_t temp 	= encoder_values[enc->array_index];
-			uint8_t filler 	= 0;
+			int8_t filler 	= 0;
 			if(temp & 0x80){
 				filler = 0xFF;
 			}else{filler = 0x00;}
@@ -147,7 +147,7 @@ int32_t read_enc(MotorInfo* motor){
 						((int32_t)filler << 8) | 
 						temp);
 
-			retval = (motor->is_reversed ? retval*(-1) : retval);
+			retval = (enc->is_reversed ? retval*(-1) : retval);
 			break;
 	}
 	return retval;
@@ -340,7 +340,7 @@ bool write_to_yep(MotorInfo* motor, int16_t val){
 	}
 	
 	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
-	val 		= map(val, 0, 1000, motor->center + motor->deadband, motor->center+motor->max_pwr);
+	val 		= map(val, 0, 1000, motor->center + motor->deadband, motor->center + motor->deadband + motor->max_pwr);
 	esc->speed(val);
 	motor->lastUpdateTime = millis();
 	return true;
@@ -373,13 +373,21 @@ bool is_dir_legal(MotorInfo* motor, SensorInfo* limit){
 
 ////////////////////////////////////////////////////////////////////////////////
 void update_quad_encoders(int8_t* arr){
-	Wire.requestFrom(QUAD_ENC_READER_ADDR, 8);
+	int tmp;
+	if((tmp=Wire.requestFrom(QUAD_ENC_READER_ADDR, 8)) == 8){
+		for(int i = 0; i<8; i++){
+			arr[i] = Wire.read();
+		}
+	} else {
+		for(int i = 0; i<8; i++){
+			arr[i] = 65+tmp;
+		}
+		
+	}
 	// Wire.beginTransmission(QUAD_ENC_READER_ADDR); 	// begin comms w/ the slave device
 	// Wire.write(0x01); 								// command to get some data
 	// Wire.endTransmission();							// 
-	for(int i = 0; i<6; i++){
-		arr[i] = Wire.read();
-	}
+	
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -539,8 +547,8 @@ void maintain_motors(byte* cmd, bool success){
 				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
-					// int16_t vel 	= read_enc(motor);
-					// int32_t err 	= motor->setPt - vel;
+					int16_t vel 	= (int16_t) read_enc(motor);
+					int16_t err 	= motor->setPt - vel;
 					// if(abs(err) > motor->margin){
 					// 	int32_t dt = (time - motor->lastUpdateTime);
 					// 	float new_integ = motor->integral + (err * dt);
@@ -550,20 +558,29 @@ void maintain_motors(byte* cmd, bool success){
 
 					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
 					// }
+					if(abs(err) > motor->margin){
+						motor->current_pwr = (motor->last_pwr + motor->kp*err );
+					}
+					if(abs(motor->current_pwr) > motor->max_pwr){
+						motor->current_pwr = sign(motor->current_pwr) * motor->max_pwr;
+					}
+
 					// if client is requesting a direction change
-					if(sign(motor->setPt) + sign(motor->lastSet) == 0){
+					if(sign(motor->current_pwr) + sign(motor->last_pwr) == 0){
 						// set to 0
-						writeSuccess = write_to_yep(motor, 0); 	// also updates lastUpdateTime
-						motor->lastSet = 0;
-					}else if(motor->lastSet == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
+						writeSuccess 	= write_to_yep(motor, 0); 	// also updates lastUpdateTime
+						motor->last_pwr = 0;
+					}else if(motor->last_pwr == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
 						// write to controller (it's now safe to make a direction change)
-						writeSuccess = write_to_yep(motor, motor->setPt);
-					}else if(sign(motor->lastSet) == sign(motor->setPt)){
+						writeSuccess 	= write_to_yep(motor, motor->current_pwr);
+						motor->last_pwr = motor->current_pwr;
+					}else if(sign(motor->last_pwr) == sign(motor->current_pwr) ){ //sign(motor->setPt)){
 						// write to controller (no direction change, so no worries)
-						writeSuccess = write_to_yep(motor, motor->setPt);
-					}else if(motor->setPt == 0){
-						writeSuccess = write_to_yep(motor, 0);
-						motor->lastSet = 0;
+						writeSuccess 	= write_to_yep(motor, motor->current_pwr); // motor->setPt);
+						motor->last_pwr = motor->current_pwr;
+					}else{ // if(motor->setPt == 0){
+						writeSuccess 	= write_to_yep(motor, 0);
+						motor->last_pwr = 0;
 						// DO NOTHING
 					}
 				}
