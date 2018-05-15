@@ -578,7 +578,7 @@ void maintain_motors(byte* cmd, bool success){
 						// write to controller (no direction change, so no worries)
 						writeSuccess 	= write_to_yep(motor, motor->current_pwr); // motor->setPt);
 						motor->last_pwr = motor->current_pwr;
-					}else if(motor->setPt == 0){
+					}else{ //} if(motor->setPt == 0){
 						writeSuccess 	= write_to_yep(motor, 0);
 						motor->last_pwr = 0;
 						// DO NOTHING
