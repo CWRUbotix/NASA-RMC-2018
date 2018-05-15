@@ -340,7 +340,7 @@ bool write_to_yep(MotorInfo* motor, int16_t val){
 	}
 	
 	val 		= abs(constrain(val, -(motor->max_pwr), motor->max_pwr));
-	val 		= map(val, 0, 1000, motor->center + motor->deadband, motor->center + motor->deadband + motor->max_pwr);
+	val 		= map(val, 0, motor->max_pwr, motor->center + motor->deadband, motor->center + motor->deadband + motor->max_pwr);
 	esc->speed(val);
 	motor->lastUpdateTime = millis();
 	return true;
