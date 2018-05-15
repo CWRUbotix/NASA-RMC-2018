@@ -3,6 +3,7 @@ package com.cwrubotix.glennifer.automodule;
 import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.*;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -41,7 +42,7 @@ public class LogModule extends Module {
 
     /// Consumer fields
     private enum Drive {
-        STRAIGHT, TURN
+        STRAIGHT, TURN, STOP
     }
 
     private enum Wheel {FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT}
@@ -164,8 +165,13 @@ public class LogModule extends Module {
     private Drive findDriveType() {
         float fl = motorValues.get(Wheel.FRONT_LEFT);
         float fr = motorValues.get(Wheel.FRONT_RIGHT);
-        float bl = motorValues.get(Wheel.BACK_LEFT);
-        float br = motorValues.get(Wheel.BACK_RIGHT);
+
+        if (fl * fr > 0)
+            return Drive.STRAIGHT;
+        else if (fl * fr < 0)
+            return Drive.TURN;
+        else
+            return Drive.STOP;
     }
 
     public static void main(String[] args) {
@@ -190,12 +196,12 @@ public class LogModule extends Module {
                 if (currentPos == null) {
                     currentDes = LogModule.this.pos.pop();
                     finder = new PathFinder(currentPos, currentDes);
-                    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
+                    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n\t" + finder.getPath().toString());
                 } else if (currentPos.equals(currentDes)) {
                     currentDes = LogModule.this.pos.pop();
                     finder.recalculatePath(currentPos, currentDes);
-                    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\nNow heading to : " +
-                            currentDes.toString() + "\n" + finder.getPath());
+                    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\n\tNow heading to : " +
+                            currentDes.toString() + "\n\t" + finder.getPath());
                 } else {
                     currentPos = pos;
                 }
@@ -207,6 +213,22 @@ public class LogModule extends Module {
             motorValues.put(Wheel.BACK_LEFT, lsd.getBackLeftRpm());
             motorValues.put(Wheel.BACK_RIGHT, lsd.getBackRightRpm());
 
+            // Log or update drive type if necessary
+            switch (findDriveType()) {
+                case STOP:
+                    // Log drive values
+                    Duration driveTime = Duration.between(lastStamp, Instant.now());
+                    log(LogType.DRIVE, String.format("Drove from %s at %f rad to %s at %f rad in %d second(s)",
+                            lastStartPos, lastStartPos.getHeading(), currentPos, currentPos.getHeading(),
+                            driveTime.getSeconds()));
+                    lastStamp = Instant.now();
+                    lastStartPos = currentPos;
+                    break;
+                case STRAIGHT:
+                case TURN:
+                    currentDrive = findDriveType();
+                    break;
+            }
         }
     }
 }
