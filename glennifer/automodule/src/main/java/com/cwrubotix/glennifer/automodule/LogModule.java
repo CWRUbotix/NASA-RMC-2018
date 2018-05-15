@@ -43,7 +43,7 @@ public class LogModule extends Module {
     private enum Drive {STRAIGHT, TURN};
     private enum Wheel{FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT};
     private Drive currentDrive;
-    private EnumMap<Wheel, Float> motorValues = new EnumMap<Wheel, Float>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
+    private EnumMap<Wheel, Float> motorValues = new EnumMap<>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
     private Instant lastStamp;
     private Position currentPos;
     private Position lastStartPos;
@@ -75,7 +75,7 @@ public class LogModule extends Module {
 
         // Create log files and writers
         LocalDateTime openTime = LocalDateTime.now();
-        String openTimeString = openTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm"));
+        String openTimeString = openTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
         pathLogFile     = new File(String.format("%s_Path.txt", openTimeString));
         pathLogWriter   = new BufferedWriter(new FileWriter(pathLogFile));
@@ -100,6 +100,9 @@ public class LogModule extends Module {
         channel.basicConsume(queueName, true, new SensorConsumer());
     }
 
+    /**
+     * Stop the module gracefully, letting AMQ connections close and file writers flush to their files.
+     */
     @Override
     public void stop() {
         // Subscribing to StateModule
@@ -130,6 +133,11 @@ public class LogModule extends Module {
         }
     }
 
+    /**
+     * Log a message to the appropriate file.
+     * @param type The type of message to log
+     * @param message Content of the message
+     */
     private void log(LogType type, String message) {
         LocalDateTime logTime = LocalDateTime.now();
         String time = logTime.format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
