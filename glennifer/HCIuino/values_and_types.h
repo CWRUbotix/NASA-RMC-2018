@@ -87,7 +87,7 @@
 #define EXC_TRANSLATION_KI 		(0.000000002)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
-#define DRIVE_KP 				(0.05)
+#define DRIVE_KP 				(0.02)
 #define DRIVE_KI 				(0.0)
 
 // ESC MOTOR CONTROL VALUES

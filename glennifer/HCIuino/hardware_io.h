@@ -431,6 +431,12 @@ void maintain_motors(byte* cmd, bool success){
 	// so we don't sample the encoder-reader too awfully fast
 	if(loops % 2 == 0){
 		update_quad_encoders(encoder_values);
+		// for(int i = 0; i<8; i++){
+		// 	Serial3.print(encoder_values[i]);
+		// 	Serial3.print('\t');
+		// }
+		// Serial3.println();
+		// delay(25);
 	}
 
 	if(loops % 10 == 0){
@@ -549,6 +555,11 @@ void maintain_motors(byte* cmd, bool success){
 				}else{
 					int16_t vel 	= (int16_t) read_enc(motor);
 					int16_t err 	= motor->setPt - vel;
+					// Serial3.print("MTR: ");
+					// Serial3.print(i);
+					// Serial3.print("\tErr: ");
+					// Serial3.print(err);
+					// delay(20);
 					// if(abs(err) > motor->margin){
 					// 	int32_t dt = (time - motor->lastUpdateTime);
 					// 	float new_integ = motor->integral + (err * dt);
@@ -559,10 +570,10 @@ void maintain_motors(byte* cmd, bool success){
 					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
 					// }
 					if(motor->setPt == 0){
-						writeSuccess 	= write_to_yep(motor, 0);
-						motor->last_pwr = 0;
+						// writeSuccess 		= write_to_yep(motor, 0);
+						motor->current_pwr 	= 0;
 					}else if(abs(err) > motor->margin){
-						motor->current_pwr = (motor->last_pwr + motor->kp*err );
+						motor->current_pwr = (motor->current_pwr + motor->kp*err );
 					}
 					if(abs(motor->current_pwr) > motor->max_pwr){
 						motor->current_pwr = sign(motor->current_pwr) * motor->max_pwr;

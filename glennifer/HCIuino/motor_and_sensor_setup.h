@@ -12,18 +12,18 @@ void setup_sensors(){
 	sensor_infos[1].array_index 	= 0;
 
 	sensor_infos[3].hardware 		= SH_QUAD_VEL;
-	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[3].whichMotor 		= REAR_PORT_MTR_ID;
 	sensor_infos[3].is_reversed 	= true;
 	sensor_infos[3].array_index 	= 1;
 
 	sensor_infos[5].hardware 		= SH_QUAD_VEL;
-	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
-	sensor_infos[5].is_reversed 	= true;
+	sensor_infos[5].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[5].is_reversed 	= false;
 	sensor_infos[5].array_index 	= 4;
 
 	sensor_infos[7].hardware 		= SH_QUAD_VEL;
-	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
-	sensor_infos[7].is_reversed 	= true;
+	sensor_infos[7].whichMotor 		= REAR_STARBOARD_MTR_ID;
+	sensor_infos[7].is_reversed 	= false;
 	sensor_infos[7].array_index 	= 3;
 
 
