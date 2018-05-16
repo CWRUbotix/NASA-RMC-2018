@@ -88,4 +88,16 @@ public class Path implements Iterable<Position> {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder pathBuilder = new StringBuilder("{");
+        Iterator<Position> positionIterator = iterator();
+        while (positionIterator.hasNext()) {
+            pathBuilder.append(positionIterator.next());
+            if (positionIterator.hasNext())
+                pathBuilder.append(", ");
+        }
+        return pathBuilder.append("}").toString();
+    }
 }
