@@ -21,6 +21,7 @@ CC_SRCS += \
 ../messages.pb.cc 
 
 CPP_SRCS += \
+../ConsumerThread.cpp \
 ../Serial.cpp \
 ../TagLocalization.cpp \
 ../imu.cpp 
@@ -43,6 +44,7 @@ CC_DEPS += \
 ./messages.pb.d 
 
 OBJS += \
+./ConsumerThread.o \
 ./Edge.o \
 ./FloatImage.o \
 ./GLine2D.o \
@@ -63,23 +65,24 @@ OBJS += \
 ./messages.pb.o 
 
 CPP_DEPS += \
+./ConsumerThread.d \
 ./Serial.d \
 ./TagLocalization.d \
 ./imu.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-%.o: ../%.cc
-	@echo 'Building file: $<'
-	@echo 'Invoking: Cross G++ Compiler'
-	g++ -I/usr/local/lib -I/usr/include/opencv -I/usr/include/eigen3 -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
-	@echo 'Finished building: $<'
-	@echo ' '
-
 %.o: ../%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -I/usr/local/lib -I/usr/include/opencv -I/usr/include/eigen3 -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -I/usr/local/lib -I/usr/include/opencv -I/usr/include/eigen3 -O2 -g -Wall -c -fmessage-length=0 -std=c++11 -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+%.o: ../%.cc
+	@echo 'Building file: $<'
+	@echo 'Invoking: Cross G++ Compiler'
+	g++ -I/usr/local/lib -I/usr/include/opencv -I/usr/include/eigen3 -O2 -g -Wall -c -fmessage-length=0 -std=c++11 -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

@@ -42,6 +42,12 @@ using namespace std;
 #include <list>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <cmath>
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdlib.h>
 
 //#include "amqpcpp/AMQPcpp.h"
 #include <amqpcpp/AMQPcpp.h>
@@ -172,13 +178,19 @@ void init_Queue() {
 	queue->Consume(AMQP_NOACK);
 }
 
-void handleReceivedMessage(AMQPMessage * message) {
-	uint32_t len = 0;
-	char *data = message->getMessage(&len);
+struct condition {
+	//sem_t mutex;
+	int count;
+	bool received;
+	double next_heading;
+};
 
-	//data->getHeader();
+//variables needed to lock when the consumer thread can change the condition
+//for message received
+condition message_received = { 0, false, 7.0 };
 
-}
+int handleReceivedMessage(AMQPMessage *message);
+void* consumerThread(void* arg);
 
 class Localization {
 
@@ -480,8 +492,7 @@ public:
 					<< ", y coor = " << robot_y
 					//realcoor(2)//(translation.norm() * (cos (pitch)))
 					//<< ", matrix x = " << realcoor(0)
-					<< ", Robot Bearing = " << (robot_bearing * 180 / PI)
-					<< cout;
+					<< ", Robot Bearing = " << (robot_bearing * 180 / PI);
 
 			free(msg_buff);
 			//}
@@ -520,8 +531,7 @@ public:
 					//realcoor(0) //(translation.norm() * (sin (pitch)))
 					<< ", y coor = " << robot_y
 					//realcoor(2)//(translation.norm() * (cos (pitch)))
-					<< ", Robot Bearing = " << (robot_bearing * (180 / PI))
-					<< cout;
+					<< ", Robot Bearing = " << (robot_bearing * (180 / PI));
 
 			free(msg_buff);
 			//}
@@ -679,10 +689,6 @@ public:
 		int frame = 0;
 		double last_t = tic();
 
-		//queue->Declare();
-		//queue->Bind("amq.topic", topic);
-		//queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
-		//queue->Consume(AMQP_NOACK);
 		while (true) {
 
 			// capture frame
@@ -692,6 +698,14 @@ public:
 			cout << "communicating yellow cam data..." << endl;
 			blue_cap >> blue_image;
 			cout << "communicating blue data..." << endl;
+
+			//check for future autonomy heading
+			if (message_received.received) {
+				cout << "Next Heading: " << message_received.next_heading
+						<< " ";
+				printf("Received Data");
+				message_received.received = false;
+			}
 
 			//first measurement to see if we see a tag at all
 
@@ -741,7 +755,6 @@ public:
 						greenCam.c_id);
 				//printf("Green Camera Tag Detected");
 			}
-
 
 			if (!yellow_detect) {
 				if (yellow_lookie > 110.0 && yellow_sweep_right) {
@@ -804,8 +817,8 @@ public:
 int main(int argc, char* argv[]) {
 	Localization localization;
 
-	// process command line options
-	//demo.parseOptions(argc, argv);
+	pthread_t tid;
+	pthread_create(&tid, NULL, consumerThread, NULL);
 
 	localization.setup();
 
@@ -826,5 +839,51 @@ int main(int argc, char* argv[]) {
 	}
 
 	return 0;
+}
+
+int handleReceivedMessage(AMQPMessage *message) {
+	string topic = message->getQueue()->getName();
+	//TODO: add checkforinstances
+	string key = message->getRoutingKey();
+	uint32_t len = 0;
+	char *data = message->getMessage(&len);
+
+	com::cwrubotix::glennifer::AutonomyNextHeading msg;
+	msg.ParsePartialFromArray(data, sizeof(data));
+	//string s = data;
+
+	//uint8_t buffer[] = {0x08, 0x00, 0x10, 0x64, 0x18, 0xF5, 0x2D};
+	//ParseFromArray(buffer, 7)
+
+	//vector<char> data_vec;
+	//data_vec.insert(data_vec.end(), data, data + strlen(data));
+	//msg.ParseFromCodedStream(data*);
+	//msg.ParseFromString(data_vec, data_vec.size());
+
+	cout << "Fresh message is " << msg.heading() << " ";
+	//sem_wait(&message_received.mutex);
+
+	message_received.next_heading = (double) msg.heading();
+	message_received.received = true;
+
+	//sem_post(&message_received.mutex);
+	return 0;
+}
+
+void* consumerThread(void* arg) {
+	printf(" inside thread ");
+	//printf("AMQP *m_amqp; ");
+	string m_topic;
+	//printf("string m_topic; ");
+	m_topic = "heading";
+	printf(" m_topic = heading; ");
+	AMQPQueue *queue = amqp.createQueue(m_topic);
+	printf("AMQPQueue *queue = m_amqp->createQueue(m_topic); ");
+	queue->Declare();
+	printf("queue->Declare();");
+	queue->Bind("amq.topic", m_topic);
+	queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
+	//qu2->addEvent(AMQP_CANCEL, onCancel );
+	queue->Consume(AMQP_NOACK);
 }
 
