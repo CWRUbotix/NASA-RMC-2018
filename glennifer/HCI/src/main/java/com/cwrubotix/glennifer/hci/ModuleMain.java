@@ -450,10 +450,10 @@ public class ModuleMain {
         int id = 12;
         double targetValue = 0;
         if(clc.getClosed()){
-            targetValue = 1;
+            targetValue = 0;
         }
         else{
-            targetValue = 0;
+            targetValue = 1;
         }
                 
         queueActuation(id, targetValue);
