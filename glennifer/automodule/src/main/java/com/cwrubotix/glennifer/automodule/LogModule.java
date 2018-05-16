@@ -235,6 +235,13 @@ public class LogModule extends Module {
         	    log(LogType.PATH, "Obstacle registered at" + currentPos.toString() + "\nModified path:\n" + finder.getPath().toString());
         	}
             }
+            
+            if(Math.abs(currentPos.getHeading() - currentPos.getHeadingTo(finder.getPath().getPoint(0))) > Math.PI/7){
+        	Messages.AutonomyNextHeading anh = Messages.AutonomyNextHeading.newBuilder()
+        								       .setHeading((float) currentPos.getHeadingTo(finder.getPath().getPoint(0)))
+        								       .build();
+        	channel.basicPublish(exchangeName, "autonomy.next_heading", null, anh.toByteArray());
+            }
 
             // Update motor values
             motorValues.put(Wheel.FRONT_LEFT, lsd.getFrontLeftRpm());
