@@ -12,12 +12,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeoutException;
 
 import com.cwrubotix.glennifer.Messages;
+import com.cwrubotix.glennifer.Messages.ObstaclePosition;
+import com.cwrubotix.glennifer.automodule.PathFinder.DestinationModified;
+import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm.AlgorithmFailureException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Stack;
 
 /**
@@ -48,10 +53,11 @@ public class LogModule extends Module {
     private enum Wheel {FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT}
 
     private Drive currentDrive;
-    private EnumMap<Wheel, Float> motorValues = new EnumMap<>((Class<Wheel>) Wheel.FRONT_LEFT.getClass());
+    private EnumMap<Wheel, Float> motorValues = new EnumMap<>(Wheel.class);
     private Instant lastStamp;
     private Position currentPos;
     private Position lastStartPos;
+    private ArrayList<Obstacle> obstacles;
 
     public LogModule() {
         this("amq.topic");
@@ -192,19 +198,42 @@ public class LogModule extends Module {
 
             // Dealing with Localization Obstacle data first
             Position pos = new Position(lod.getLocPosition().getXPosition(), lod.getLocPosition().getYPosition(), lod.getLocPosition().getBearingAngle());
-            if (!pos.equals(new Position(0, 0, 0))) { //when position info is not dummy info
-                if (currentPos == null) {
-                    currentDes = LogModule.this.pos.pop();
-                    finder = new PathFinder(currentPos, currentDes);
-                    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n\t" + finder.getPath().toString());
-                } else if (currentPos.equals(currentDes)) {
-                    currentDes = LogModule.this.pos.pop();
-                    finder.recalculatePath(currentPos, currentDes);
-                    log(LogType.PATH, "Modified position at " + currentPos.toString() + "\n\tNow heading to : " +
-                            currentDes.toString() + "\n\t" + finder.getPath());
-                } else {
-                    currentPos = pos;
-                }
+
+            if(!pos.equals(new Position(0,0,0))){ //when position info is not dummy info
+        	if(currentPos == null){
+        	    currentPos = pos;
+        	    currentDes = LogModule.this.pos.pop();
+        	    finder = new PathFinder(currentPos, currentDes);
+        	    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
+        	}else if(currentPos.equals(currentDes)){
+        	    currentPos = pos;
+        	    currentDes = LogModule.this.pos.pop();
+        	    finder.recalculatePath(currentPos, currentDes);
+        	    log(LogType.PATH, "Modified path at " + currentPos.toString() + "\nNow heading to : " + 
+        		    currentDes.toString() + "\n" + finder.getPath());
+        	}else if(currentPos.equals(finder.getPath().getPath().peekFirst())){
+        	    currentPos = pos;
+        	    finder.getPath().getPath().pop();
+        	}else if(Math.abs(currentPos.getHeading() - finder.getPath().getPoint(0).getHeadingTo(finder.getPath().getPoint(0))) > 0.07){
+        	    currentPos = pos;
+        	    finder.recalculatePath(currentPos, currentDes);
+        	}else{
+        	    currentPos = pos;
+        	}
+            }
+            
+            /*Obstacle*/
+            List<ObstaclePosition> obs = lod.getObstaclesList();
+            for(ObstaclePosition op : obs){
+        	Obstacle temp = new Obstacle(op.getXPosition(), op.getYPosition(), 0.15);
+        	if(!obstacles.contains(temp)){
+        	    obstacles.add(temp);
+        	    try {
+			finder.registerObstacle(temp);
+		    } catch (AlgorithmFailureException | DestinationModified e) {
+		    }
+        	    log(LogType.PATH, "Obstacle registered at" + currentPos.toString() + "\nModified path:\n" + finder.getPath().toString());
+        	}
             }
 
             // Update motor values
