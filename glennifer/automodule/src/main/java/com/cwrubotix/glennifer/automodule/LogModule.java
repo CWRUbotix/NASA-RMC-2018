@@ -83,9 +83,9 @@ public class LogModule extends Module {
         LocalDateTime openTime = LocalDateTime.now();
         String openTimeString = openTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm"));
 
-        pathLogFile = new File("../test/" + String.format("%s_Path.txt", openTimeString));
+        pathLogFile = new File(String.format("../test/%s_Path.txt", openTimeString));
         pathLogWriter = new BufferedWriter(new FileWriter(pathLogFile));
-        driveLogFile = new File(String.format("%s_Drive.txt", openTimeString));
+        driveLogFile = new File(String.format("../test/%s_Drive.txt", openTimeString));
         driveLogWriter = new BufferedWriter(new FileWriter(driveLogFile));
 
         // Subscribing to StateModule
