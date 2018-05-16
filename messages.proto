@@ -107,6 +107,10 @@ message AllWheelsCommand {
 	required float back_right = 4;
 }
 
+message ClosedLoopCommand {
+	required bool closed = 1;
+}
+
 // motorcontrol.excavation.arm_pos
 // motorcontrol.excavation.conveyor_translation_displacement
 // motorcontrol.deposition.dump_pos

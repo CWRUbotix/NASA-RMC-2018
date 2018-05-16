@@ -20,8 +20,7 @@ O_SRCS += \
 ../Debug/TagFamily.o \
 ../Debug/TagLocalization.o \
 ../Debug/UnionFindSimple.o \
-../Debug/imu.o \
-../Debug/messages.pb.o 
+../Debug/imu.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

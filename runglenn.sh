@@ -17,9 +17,18 @@ cd ../..
 cd glennifer/automodule
 #nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoModule
 #nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoTransit
-java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDrillModule
+nohup java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDrillModule &
 #nohup /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.AutoDump
+nohup java -cp target/automodule-0.0.1-SNAPSHOT.jar com.cwrubotix.glennifer.automodule.LogModule &
 cd ../
+
+cd localization/Default
+./localization &
+cd ../..
+
+cd obstacle_detection/examples
+python obstacle_detection.py test & 
+cd ../..
 
 sleep 2
 

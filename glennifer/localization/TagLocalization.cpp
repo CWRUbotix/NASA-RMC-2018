@@ -187,7 +187,7 @@ struct condition {
 
 //variables needed to lock when the consumer thread can change the condition
 //for message received
-condition message_received = { 0, false, 7.0 };
+condition message_received = { 0, false, 0.0 };
 
 int handleReceivedMessage(AMQPMessage *message);
 void* consumerThread(void* arg);
@@ -415,7 +415,8 @@ public:
 	}
 
 	void print_detection(AprilTags::TagDetection& detection, camera camera,
-			string name, double lookie_angle, bool send, int cam_num) const {
+			string name, double lookie_angle, bool send, int cam_num,
+			double set_bearing_cam, double set_bearing_rob) const {
 		cout << "  Id: " << detection.id << " (Hamming: "
 				<< detection.hammingDistance << ")";
 
@@ -444,6 +445,7 @@ public:
 		//using x,y camera coords to find coordinates of robot center/wheel center
 		double cam_bearing = pitch;
 		camera.c_bearing = cam_bearing;
+		set_bearing_cam = cam_bearing;
 		double cam_x = ((realcoor(0) * cos(cam_bearing))
 				- (realcoor(2) * sin(cam_bearing)));
 		double cam_y = ((realcoor(0) * sin(cam_bearing))
@@ -452,6 +454,7 @@ public:
 		double robot_y = cam_y;
 
 		double robot_bearing = 0;
+		set_bearing_rob = robot_bearing; //robot bearing
 
 		if (cam_num == greenCam.c_id) { //green camera
 			if (lookie < 0.0) {
@@ -460,11 +463,13 @@ public:
 			if (lookie < 0) {
 				robot_bearing = (double) fmod(
 						(float) (lookie - cam_bearing + PI), (float) (2 * PI));
+				set_bearing_rob = robot_bearing; //robot bearing
 			}
 
-			else {
+			if (lookie > 0) { //TODO: might need to revert this to else in case the if messes the sweep or something else
 				robot_bearing = (double) fmod(
 						(float) (lookie - cam_bearing + PI), (float) (2 * PI));
+				set_bearing_rob = robot_bearing; //robot bearing
 			}
 
 			//cout << "Bearing " << lookie << ", Camera Bearing " << " " << cam_bearing << cout;
@@ -544,7 +549,8 @@ public:
 	}
 
 	bool processImage(cv::Mat& image, cv::Mat& image_gray, camera camera,
-			string name, double angle, bool send, int cam_num) {
+			string name, double angle, bool send, int cam_num,
+			double set_bearing_cam, double set_bearing_rob) {
 		// alternative way is to grab, then retrieve; allows for
 		// multiple grab when processing below frame rate - v4l keeps a
 		// number of frames buffered, which can lead to significant lag
@@ -572,7 +578,7 @@ public:
 		// print out each detection
 		cout << detections.size() << " tags detected:" << endl;
 		for (int i = 0; i < detections.size(); i++) {
-			print_detection(detections[i], camera, name, angle, send, cam_num);
+			print_detection(detections[i], camera, name, angle, send, cam_num, set_bearing_cam, set_bearing_rob);
 		}
 
 		// show the current image including any detections
@@ -656,6 +662,7 @@ public:
 	// The processing loop where images are retrieved, tags detected,
 	// and information about detections generated
 	void loop() {
+		cout << " Initialing loop()" ;
 
 		cv::Mat green_image;
 		cv::Mat green_image_gray;
@@ -678,13 +685,20 @@ public:
 		bool yellow_sweep_right = true;
 
 		//last camera bearing
-		double last_green = 0.0;
-		double last_yellow = 0.0;
+		double green_bearing = 0.0;
+		double yellow_bearing = 0.0;
+
+		//last robot bearing
+		double robot_bearing = 0.0;
+		//double robot_bearing = 0.0;
+
+		double bearing_threashold = 5.0;
 
 		handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 		handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 
-		double sleep_time = 2.0;
+		double sleep_time = 0.1; //2.0
+		int servo_increment = 10;
 
 		int frame = 0;
 		double last_t = tic();
@@ -696,55 +710,68 @@ public:
 			cout << "communicating green cam data..." << endl;
 			yellow_cap >> yellow_image;
 			cout << "communicating yellow cam data..." << endl;
-			blue_cap >> blue_image;
-			cout << "communicating blue data..." << endl;
+			//blue_cap >> blue_image;
+			//cout << "communicating blue data..." << endl;
 
 			//check for future autonomy heading
 			if (message_received.received) {
 				cout << "Next Heading: " << message_received.next_heading
 						<< " ";
-				printf("Received Data");
+				//printf("Received Data");
 				message_received.received = false;
+				if (message_received.next_heading
+						> (bearing_threashold + robot_bearing)) {
+					green_lookie = ((180/PI) * (robot_bearing + (message_received.next_heading - robot_bearing) - PI)) - green_lookie;
+				}
+
+				if (message_received.next_heading
+						< (bearing_threashold + robot_bearing)) {
+					green_lookie = ((180/PI) * (robot_bearing - (robot_bearing - message_received.next_heading) - PI)) - green_lookie;
+				}
 			}
 
 			//first measurement to see if we see a tag at all
 
 			green_detect = processImage(green_image, green_image_gray, greenCam,
-					windowGreenCam, green_lookie, false, greenCam.c_id);
+					windowGreenCam, green_lookie, false, greenCam.c_id, green_bearing, robot_bearing);
 			yellow_detect = processImage(yellow_image, yellow_image_gray,
 					yellowCam, windowYellowCam, yellow_lookie, false,
-					yellowCam.c_id);
-			blue_detect = processImage(blue_image, blue_image_gray, blueCam,
-					windowBlueCam, 0, false, blueCam.c_id);
+					yellowCam.c_id, yellow_bearing, robot_bearing);
+			/*blue_detect = processImage(blue_image, blue_image_gray, blueCam,
+					windowBlueCam, 0, false, blueCam.c_id, blue_bearing, robot_bearing);*/
+			cout << "Iterating in Main Loop " ;
 
 			if (!green_detect) {
 				if (green_lookie < 250.0 && green_sweep_right) {
 					//sleep_time = 0.10;
-					green_lookie += 40;
+					green_lookie += servo_increment;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
+					cout << "sweeping " ;
 					//sleep(sleep_time);
 				}
 				if (green_lookie >= 250.0) {
 					//sleep_time = 0.10;
 					green_sweep_right = false;
-					printf("green sweep false");
-					green_lookie -= 40;
+					cout << "green sweep false ";
+					green_lookie -= servo_increment;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
 				}
 				if (green_lookie > -70.0 && !green_sweep_right) {
 					//sleep_time = 0.10;
-					green_lookie -= 40;
+					green_lookie -= servo_increment;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
+					cout << "sweeping " ;
 				}
 				if (green_lookie <= -70.0) {
 					//sleep_time = 0.10;
 					//printf("green sweep true");
 					green_sweep_right = true;
-					green_lookie += 40;
+					green_lookie += servo_increment;
 					handleLookie(green_lookie, "motorcontrol.looky.turn.right");
 					//sleep(sleep_time);
+					cout << "green sweep true ";
 				}
 
 			}
@@ -752,28 +779,28 @@ public:
 			if (green_detect) {
 				green_detect = processImage(green_image, green_image_gray,
 						greenCam, windowGreenCam, green_lookie, true,
-						greenCam.c_id);
+						greenCam.c_id, green_bearing, robot_bearing);
 				//printf("Green Camera Tag Detected");
 			}
 
 			if (!yellow_detect) {
 				if (yellow_lookie > 110.0 && yellow_sweep_right) {
 					//sleep_time = 0.10;
-					yellow_lookie -= 40;
+					yellow_lookie -= servo_increment;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
 				if (yellow_lookie <= 110.0) {
 					//sleep_time = 0.10;
 					yellow_sweep_right = false;
-					yellow_lookie += 40;
+					yellow_lookie += servo_increment;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
 				if (yellow_lookie < 430.0 && !yellow_sweep_right) {
 					//sleep_time = 0.10;
 					//increment by one
-					yellow_lookie += 40;
+					yellow_lookie += servo_increment;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
@@ -781,7 +808,7 @@ public:
 					//sleep_time = 0.10;
 					//printf("green sweep true");
 					yellow_sweep_right = true;
-					yellow_lookie -= 40;
+					yellow_lookie -= servo_increment;
 					handleLookie(yellow_lookie, "motorcontrol.looky.turn.left");
 					//sleep(sleep_time);
 				}
@@ -790,7 +817,7 @@ public:
 			if (yellow_detect) {
 				yellow_detect = processImage(yellow_image, yellow_image_gray,
 						yellowCam, windowYellowCam, yellow_lookie, true,
-						yellowCam.c_id);
+						yellowCam.c_id, yellow_bearing, robot_bearing);
 				///printf("Yellow Camera Tag Detected");
 			}
 
@@ -819,6 +846,7 @@ int main(int argc, char* argv[]) {
 
 	pthread_t tid;
 	pthread_create(&tid, NULL, consumerThread, NULL);
+	//TODO: terminate threads
 
 	localization.setup();
 
@@ -842,7 +870,8 @@ int main(int argc, char* argv[]) {
 }
 
 int handleReceivedMessage(AMQPMessage *message) {
-	string topic = message->getQueue()->getName();
+	cout << "handling message";
+	/*string topic = message->getQueue()->getName();
 	//TODO: add checkforinstances
 	string key = message->getRoutingKey();
 	uint32_t len = 0;
@@ -867,23 +896,24 @@ int handleReceivedMessage(AMQPMessage *message) {
 	message_received.received = true;
 
 	//sem_post(&message_received.mutex);
-	return 0;
+	return 0;*/
 }
 
 void* consumerThread(void* arg) {
-	printf(" inside thread ");
+	cout << "inside thread " ;
 	//printf("AMQP *m_amqp; ");
 	string m_topic;
 	//printf("string m_topic; ");
 	m_topic = "heading";
-	printf(" m_topic = heading; ");
+	//printf(" m_topic = heading; ");
 	AMQPQueue *queue = amqp.createQueue(m_topic);
-	printf("AMQPQueue *queue = m_amqp->createQueue(m_topic); ");
+	//printf("AMQPQueue *queue = m_amqp->createQueue(m_topic); ");
 	queue->Declare();
-	printf("queue->Declare();");
+	//printf("queue->Declare();");
 	queue->Bind("amq.topic", m_topic);
 	queue->addEvent(AMQP_MESSAGE, handleReceivedMessage);
 	//qu2->addEvent(AMQP_CANCEL, onCancel );
+	cout << " finished thread before consume " ;
 	queue->Consume(AMQP_NOACK);
 }
 

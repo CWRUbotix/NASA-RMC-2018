@@ -326,7 +326,7 @@ public class ModuleMain {
         actuatorList.add(new ActuatorConfig("Left Looky Servo", 9));
         actuatorList.add(new ActuatorConfig("Right Looky Servo", 10));
         actuatorList.add(new ActuatorConfig("Bucket Conveyor Translation Motor Speed", 11));
-
+        actuatorList.add(new ActuatorConfig("Locomotion Closed Loop", 12));
          // Add sensors
         for (ActuatorConfig config : actuatorList){
             hci.addActuator(config);
@@ -355,6 +355,8 @@ public class ModuleMain {
             routeTurnMessage(keys, body);
         } else if(keys[3].equals("all_wheels")) {
             routeAllWheelsMessage(keys, body);
+        } else if(keys[3].equals("closed_loop")) {
+            routeClosedLoopMessage(keys, body);
         } else {
             System.out.println("Locomotion motor control routing key has unrecognized motor");
             return;
@@ -441,6 +443,24 @@ public class ModuleMain {
         queueActuation(id1, targetValue1);
         queueActuation(id2, targetValue2);
         queueActuation(id3, targetValue3);
+    }
+
+    private static void routeClosedLoopMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
+        Messages.ClosedLoopCommand clc = Messages.ClosedLoopCommand.parseFrom(body);
+        int id = 12;
+        double targetValue = 0;
+        if(clc.getClosed()){
+            targetValue = 1;
+        }
+        else{
+            targetValue = 0;
+        }
+                
+        queueActuation(id, targetValue);
+        queueActuation(0, 0);
+        queueActuation(1, 0);
+        queueActuation(2, 0);
+        queueActuation(3, 0);
     }
 
     private static void routeExcavationMessage(String[] keys, byte[] body) throws InvalidProtocolBufferException{
