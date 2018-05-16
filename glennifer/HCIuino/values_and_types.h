@@ -87,8 +87,8 @@
 #define EXC_TRANSLATION_KI 		(0.000000002)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
-#define DRIVE_KP 				(0.02)
-#define DRIVE_KI 				(0.0)
+#define DRIVE_KP 				(0.036)
+#define DRIVE_KI 				(0.0000000065)
 
 // ESC MOTOR CONTROL VALUES
 #define RELAY_RISE_FALL_TIME 	(10)
@@ -175,6 +175,7 @@ enum MotorHardware {
 	MH_RC_POS, 		//
 	MH_RC_BOTH, 	//
 	MH_LOOKY,
+	MH_BL_OPEN_LOOP,
 	MH_ALL			// if All?
 };
 

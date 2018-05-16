@@ -473,6 +473,21 @@ void maintain_motors(byte* cmd, bool success){
 				// but if 8, set hardware type back to what it was
 				motor_infos[8].hardware = MH_ST_POS;
 			}
+
+			if(id == 12){
+				if(motor->setPt == 1){
+					motor_infos[0].hardware = MH_BL_OPEN_LOOP;
+					motor_infos[1].hardware = MH_BL_OPEN_LOOP;
+					motor_infos[2].hardware = MH_BL_OPEN_LOOP;
+					motor_infos[3].hardware = MH_BL_OPEN_LOOP;
+				}else{
+					motor_infos[0].hardware = MH_BL_VEL;
+					motor_infos[1].hardware = MH_BL_VEL;
+					motor_infos[2].hardware = MH_BL_VEL;
+					motor_infos[3].hardware = MH_BL_VEL;
+				}
+				
+			}
 		}
 	}
 
@@ -548,33 +563,26 @@ void maintain_motors(byte* cmd, bool success){
 				
 				
 				break;}
-			case MH_BL_VEL:
+			case MH_BL_VEL:{
 				
 				if(motor->is_stopped){
 					writeSuccess 		= write_to_yep(motor, 0);
 				}else{
 					int16_t vel 	= (int16_t) read_enc(motor);
 					int16_t err 	= motor->setPt - vel;
-					// Serial3.print("MTR: ");
-					// Serial3.print(i);
-					// Serial3.print("\tErr: ");
-					// Serial3.print(err);
-					// delay(20);
-					// if(abs(err) > motor->margin){
-					// 	int32_t dt = (time - motor->lastUpdateTime);
-					// 	float new_integ = motor->integral + (err * dt);
-					// 	motor->integral = 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
-					// 						new_integ : 
-					// 						(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
 
-					// 	pwr				= (int32_t) ((motor->kp*err) + (motor->ki*motor->integral));
-					// }
 					if(motor->setPt == 0){
-						// writeSuccess 		= write_to_yep(motor, 0);
 						motor->current_pwr 	= 0;
 					}else if(abs(err) > motor->margin){
-						motor->current_pwr = (motor->current_pwr + motor->kp*err );
+						int32_t dt 			= (time - motor->lastUpdateTime);
+						float new_integ 	= motor->integral + (err * dt);
+						motor->integral 	= 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
+												new_integ : 
+												(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
+						motor->current_pwr 	= (motor->current_pwr + motor->kp*err + motor->ki*motor->integral);
 					}
+
+
 					if(abs(motor->current_pwr) > motor->max_pwr){
 						motor->current_pwr = sign(motor->current_pwr) * motor->max_pwr;
 					}
@@ -598,10 +606,31 @@ void maintain_motors(byte* cmd, bool success){
 						// DO NOTHING
 					}
 				}
-				break;
+				break;}
 			case MH_LOOKY:
 				Herkulex.moveOneAngle(motor->looky_id, constrain(motor->setPt, -159, 159), 200, 2);
 				break;
+			case MH_BL_OPEN_LOOP:{
+				if(motor->is_stopped){
+					writeSuccess 		= write_to_yep(motor, 0);
+				}else{
+					if(sign(motor->setPt) + sign(motor->lastSet) == 0){
+						// set to 0
+						writeSuccess = write_to_yep(motor, 0); 	// also updates lastUpdateTime
+						motor->lastSet = 0;
+					}else if(motor->lastSet == 0  && (time - motor->lastUpdateTime) >= motor->safe_dt){
+						// write to controller (it's now safe to make a direction change)
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else if(sign(motor->lastSet) == sign(motor->setPt)){
+						// write to controller (no direction change, so no worries)
+						writeSuccess = write_to_yep(motor, motor->setPt);
+					}else if(motor->setPt == 0){
+						writeSuccess = write_to_yep(motor, 0);
+						motor->lastSet = 0;
+						// DO NOTHING
+					}
+				}
+				break;}
 			// case MH_ALL:{
 			// 	if(motor->setPt > 0){ 		// if steven has set this, time to set up the bc 
 			// 		MotorInfo* translate = & motor_infos[8];
