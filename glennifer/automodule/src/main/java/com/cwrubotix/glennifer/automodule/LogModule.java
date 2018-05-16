@@ -1,29 +1,24 @@
 package com.cwrubotix.glennifer.automodule;
 
-import com.rabbitmq.client.ConnectionFactory;
-
-import java.io.*;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeoutException;
-
 import com.cwrubotix.glennifer.Messages;
 import com.cwrubotix.glennifer.Messages.ObstaclePosition;
 import com.cwrubotix.glennifer.automodule.PathFinder.DestinationModified;
 import com.cwrubotix.glennifer.automodule.PathFindingAlgorithm.AlgorithmFailureException;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
+import java.io.*;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Module to collect data and write it to a file
@@ -88,7 +83,7 @@ public class LogModule extends Module {
         LocalDateTime openTime = LocalDateTime.now();
         String openTimeString = openTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm"));
 
-        pathLogFile = new File("../test/"+String.format("%s_Path.txt", openTimeString));
+        pathLogFile = new File("../test/" + String.format("%s_Path.txt", openTimeString));
         pathLogWriter = new BufferedWriter(new FileWriter(pathLogFile));
         driveLogFile = new File(String.format("%s_Drive.txt", openTimeString));
         driveLogWriter = new BufferedWriter(new FileWriter(driveLogFile));
@@ -199,48 +194,48 @@ public class LogModule extends Module {
             // Dealing with Localization Obstacle data first
             Position pos = new Position(lod.getLocPosition().getXPosition(), lod.getLocPosition().getYPosition(), lod.getLocPosition().getBearingAngle());
 
-            if(!pos.equals(new Position(0,0,0))){ //when position info is not dummy info
-        	if(currentPos == null){
-        	    currentPos = pos;
-        	    currentDes = LogModule.this.pos.pop();
-        	    finder = new PathFinder(currentPos, currentDes);
-        	    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
-        	}else if(currentPos.equals(currentDes)){
-        	    currentPos = pos;
-        	    currentDes = LogModule.this.pos.pop();
-        	    finder.recalculatePath(currentPos, currentDes);
-        	    log(LogType.PATH, "Modified path at " + currentPos.toString() + "\nNow heading to : " + 
-        		    currentDes.toString() + "\n" + finder.getPath());
-        	}else if(currentPos.equals(finder.getPath().getPath().peekFirst())){
-        	    currentPos = pos;
-        	    finder.getPath().getPath().pop();
-        	}else if(Math.abs(currentPos.getHeading() - finder.getPath().getPoint(0).getHeadingTo(finder.getPath().getPoint(0))) > 0.07){
-        	    currentPos = pos;
-        	    finder.recalculatePath(currentPos, currentDes);
-        	}else{
-        	    currentPos = pos;
-        	}
+            if (!pos.equals(new Position(0, 0, 0))) { //when position info is not dummy info
+                if (currentPos == null) {
+                    currentPos = pos;
+                    currentDes = LogModule.this.pos.pop();
+                    finder = new PathFinder(currentPos, currentDes);
+                    log(LogType.PATH, "Heading to position:" + currentDes.toString() + "\n" + finder.getPath().toString());
+                } else if (currentPos.equals(currentDes)) {
+                    currentPos = pos;
+                    currentDes = LogModule.this.pos.pop();
+                    finder.recalculatePath(currentPos, currentDes);
+                    log(LogType.PATH, "Modified path at " + currentPos.toString() + "\nNow heading to : " +
+                            currentDes.toString() + "\n" + finder.getPath());
+                } else if (currentPos.equals(finder.getPath().getPath().peekFirst())) {
+                    currentPos = pos;
+                    finder.getPath().getPath().pop();
+                } else if (Math.abs(currentPos.getHeading() - finder.getPath().getPoint(0).getHeadingTo(finder.getPath().getPoint(0))) > 0.07) {
+                    currentPos = pos;
+                    finder.recalculatePath(currentPos, currentDes);
+                } else {
+                    currentPos = pos;
+                }
             }
-            
+
             /*Obstacle*/
             List<ObstaclePosition> obs = lod.getObstaclesList();
-            for(ObstaclePosition op : obs){
-        	Obstacle temp = new Obstacle(op.getXPosition(), op.getYPosition(), 0.15);
-        	if(!obstacles.contains(temp)){
-        	    obstacles.add(temp);
-        	    try {
-			finder.registerObstacle(temp);
-		    } catch (AlgorithmFailureException | DestinationModified e) {
-		    }
-        	    log(LogType.PATH, "Obstacle registered at" + currentPos.toString() + "\nModified path:\n" + finder.getPath().toString());
-        	}
+            for (ObstaclePosition op : obs) {
+                Obstacle temp = new Obstacle(op.getXPosition(), op.getYPosition(), 0.15);
+                if (!obstacles.contains(temp)) {
+                    obstacles.add(temp);
+                    try {
+                        finder.registerObstacle(temp);
+                    } catch (AlgorithmFailureException | DestinationModified e) {
+                    }
+                    log(LogType.PATH, "Obstacle registered at" + currentPos.toString() + "\nModified path:\n" + finder.getPath().toString());
+                }
             }
-            
-            if(Math.abs(currentPos.getHeading() - currentPos.getHeadingTo(finder.getPath().getPoint(0))) > Math.PI/7){
-        	Messages.AutonomyNextHeading anh = Messages.AutonomyNextHeading.newBuilder()
-        								       .setHeading((float) currentPos.getHeadingTo(finder.getPath().getPoint(0)))
-        								       .build();
-        	channel.basicPublish(exchangeName, "autonomy.next_heading", null, anh.toByteArray());
+
+            if (Math.abs(currentPos.getHeading() - currentPos.getHeadingTo(finder.getPath().getPoint(0))) > Math.PI / 7) {
+                Messages.AutonomyNextHeading anh = Messages.AutonomyNextHeading.newBuilder()
+                        .setHeading((float) currentPos.getHeadingTo(finder.getPath().getPoint(0)))
+                        .build();
+                channel.basicPublish(exchangeName, "autonomy.next_heading", null, anh.toByteArray());
             }
 
             // Update motor values
