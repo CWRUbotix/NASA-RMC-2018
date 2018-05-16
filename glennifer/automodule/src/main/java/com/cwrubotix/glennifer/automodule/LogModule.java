@@ -86,7 +86,7 @@ public class LogModule extends Module {
 
         // Create log files and writers
         LocalDateTime openTime = LocalDateTime.now();
-        String openTimeString = openTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        String openTimeString = openTime.format(DateTimeFormatter.ofPattern("yyyy-MM-ddTHH-mm"));
 
         pathLogFile = new File(String.format("%s_Path.txt", openTimeString));
         pathLogWriter = new BufferedWriter(new FileWriter(pathLogFile));
