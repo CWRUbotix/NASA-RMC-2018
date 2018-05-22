@@ -576,7 +576,7 @@ void maintain_motors(byte* cmd, bool success){
 					}else if(abs(err) > motor->margin){
 						int32_t dt 			= (time - motor->lastUpdateTime);
 						float new_integ 	= motor->integral + (err * dt);
-						motor->integral 	= 	( (fabs(new_integ)*motor->ki ) < motor->max_pwr ? 
+						motor->integral 	= 	( (fabs(new_integ)*motor->ki ) < (motor->max_pwr) ? 
 												new_integ : 
 												(sign((int)new_integ)*motor->max_pwr)/(motor->ki)   );
 						motor->current_pwr 	= (motor->current_pwr + motor->kp*err + motor->ki*motor->integral);
