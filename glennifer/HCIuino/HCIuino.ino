@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 //					HCIuino.ino
+// 		2018-05-14 ~1020 Z
 //
 // 		This is the main source file for the HCI microcontroller board. 
 // 		It is designed for use on an Arduino Due.

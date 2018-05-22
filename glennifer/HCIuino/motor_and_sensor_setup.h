@@ -8,20 +8,22 @@ void setup_sensors(){
 	//ENCODERS
 	sensor_infos[1].hardware 		= SH_QUAD_VEL;
 	sensor_infos[1].whichMotor 		= FRONT_PORT_MTR_ID;
+	sensor_infos[1].is_reversed 	= true;
 	sensor_infos[1].array_index 	= 0;
 
 	sensor_infos[3].hardware 		= SH_QUAD_VEL;
-	sensor_infos[3].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[3].whichMotor 		= REAR_PORT_MTR_ID;
 	sensor_infos[3].is_reversed 	= true;
 	sensor_infos[3].array_index 	= 1;
 
 	sensor_infos[5].hardware 		= SH_QUAD_VEL;
-	sensor_infos[5].whichMotor 		= REAR_STARBOARD_MTR_ID;
+	sensor_infos[5].whichMotor 		= FRONT_STARBOARD_MTR_ID;
+	sensor_infos[5].is_reversed 	= false;
 	sensor_infos[5].array_index 	= 4;
 
 	sensor_infos[7].hardware 		= SH_QUAD_VEL;
-	sensor_infos[7].whichMotor 		= REAR_PORT_MTR_ID;
-	sensor_infos[7].is_reversed 	= true;
+	sensor_infos[7].whichMotor 		= REAR_STARBOARD_MTR_ID;
+	sensor_infos[7].is_reversed 	= false;
 	sensor_infos[7].array_index 	= 3;
 
 
@@ -204,39 +206,51 @@ void setup_motors(){
 	// DRIVE MOTORS
 	motor_infos[FRONT_PORT_MTR_ID].hardware 		= MH_BL_VEL;
 	motor_infos[FRONT_PORT_MTR_ID].board 			= & (board_infos[1]);
-	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[FRONT_PORT_MTR_ID].max_pwr 			= 180;
 	motor_infos[FRONT_PORT_MTR_ID].center 			= 1000;
-	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 250;
+	motor_infos[FRONT_PORT_MTR_ID].deadband 		= 265;
+	motor_infos[FRONT_PORT_MTR_ID].kp 				= DRIVE_KP;
+	motor_infos[FRONT_PORT_MTR_ID].ki 				= DRIVE_KI;
+	motor_infos[FRONT_PORT_MTR_ID].margin 			= 2;
 	motor_infos[FRONT_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[FRONT_PORT_MTR_ID].encoder 			= & (sensor_infos[1]);
 
 	motor_infos[FRONT_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[FRONT_STARBOARD_MTR_ID].board 		= & (board_infos[7]);
-	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 1000;
+	motor_infos[FRONT_STARBOARD_MTR_ID].max_pwr 	= 180;
 	motor_infos[FRONT_STARBOARD_MTR_ID].center 		= 1000;
-	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[FRONT_STARBOARD_MTR_ID].deadband 	= 265;
+	motor_infos[FRONT_STARBOARD_MTR_ID].kp 			= DRIVE_KP;
+	motor_infos[FRONT_STARBOARD_MTR_ID].ki 			= DRIVE_KI;
+	motor_infos[FRONT_STARBOARD_MTR_ID].margin 		= 2;
 	motor_infos[FRONT_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[FRONT_STARBOARD_MTR_ID].encoder 	= & (sensor_infos[5]);
 	
 	motor_infos[REAR_PORT_MTR_ID].hardware 			= MH_BL_VEL;
 	motor_infos[REAR_PORT_MTR_ID].board 			= & (board_infos[0]);
-	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 1000;
+	motor_infos[REAR_PORT_MTR_ID].max_pwr 			= 180;
 	motor_infos[REAR_PORT_MTR_ID].center 			= 1000;
-	motor_infos[REAR_PORT_MTR_ID].deadband 			= 250;
+	motor_infos[REAR_PORT_MTR_ID].deadband 			= 265;
+	motor_infos[REAR_PORT_MTR_ID].kp 				= DRIVE_KP;
+	motor_infos[REAR_PORT_MTR_ID].ki 				= DRIVE_KI;
+	motor_infos[REAR_PORT_MTR_ID].margin 			= 2;
 	motor_infos[REAR_PORT_MTR_ID].subsys 			= LOCO_SYS;
 	motor_infos[REAR_PORT_MTR_ID].encoder 			= & (sensor_infos[3]);
 
 	motor_infos[REAR_STARBOARD_MTR_ID].hardware 	= MH_BL_VEL;
 	motor_infos[REAR_STARBOARD_MTR_ID].board 		= & (board_infos[6]);
-	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 1000;
+	motor_infos[REAR_STARBOARD_MTR_ID].max_pwr 		= 180;
 	motor_infos[REAR_STARBOARD_MTR_ID].center 		= 1000;
-	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 250;
+	motor_infos[REAR_STARBOARD_MTR_ID].deadband 	= 265;
+	motor_infos[REAR_STARBOARD_MTR_ID].kp 			= DRIVE_KP;
+	motor_infos[REAR_STARBOARD_MTR_ID].ki 			= DRIVE_KI;
+	motor_infos[REAR_STARBOARD_MTR_ID].margin 		= 2;
 	motor_infos[REAR_STARBOARD_MTR_ID].subsys 		= LOCO_SYS;
 	motor_infos[REAR_STARBOARD_MTR_ID].encoder 		= & (sensor_infos[7]);
 
 	// EXCAVATION MOTORS
 	// main digging
-	motor_infos[4].hardware 						= MH_BL_VEL;
+	motor_infos[4].hardware 						= MH_BL_OPEN_LOOP;
 	motor_infos[4].max_pwr 							= 1000;
 	motor_infos[4].center 							= 1000;
 	motor_infos[4].deadband 						= 250;
@@ -244,7 +258,7 @@ void setup_motors(){
 	motor_infos[4].board 							= & (board_infos[2]);
 
 	// Depostion winch
-	motor_infos[5].hardware 						= MH_BL_VEL;
+	motor_infos[5].hardware 						= MH_BL_OPEN_LOOP;
 	motor_infos[5].board 							= & (board_infos[5]);
 	motor_infos[5].max_pwr 							= 1000;
 	motor_infos[5].center 							= 1000;
@@ -314,6 +328,10 @@ void setup_motors(){
 	// translation
 	motor_infos[11].whichMotor 						= 0;
 	motor_infos[11].hardware 						= MH_NONE;
+
+	// toggle drive motor control
+	motor_infos[12].whichMotor 						= 0;
+	motor_infos[12].hardware 						= MH_NONE;
 
 	motor_infos[100].hardware 						= MH_ALL;
 	motor_infos[100].is_stopped 					= true;

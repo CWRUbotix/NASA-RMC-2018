@@ -87,8 +87,8 @@
 #define EXC_TRANSLATION_KI 		(0.000000002)
 #define KP_INC 					(0.1)
 #define KI_INC 					(0.000000001)
-#define DRIVE_KP 				(0.1)
-#define DRIVE_KI 				(0.0)
+#define DRIVE_KP 				(0.036)
+#define DRIVE_KI 				(0.0000000065)
 
 // ESC MOTOR CONTROL VALUES
 #define RELAY_RISE_FALL_TIME 	(10)
@@ -97,13 +97,13 @@
 #define PWM_PIN_ESC_2 			(42)
 #define REV_PIN_ESC_2 			(49)
 #define PWM_PIN_ESC_3 			(44)
-#define REV_PIN_ESC_3 			(47)
+#define REV_PIN_ESC_3 			(43)
 #define PWM_PIN_ESC_4 			(46)
-#define REV_PIN_ESC_4 			(45)
+#define REV_PIN_ESC_4 			(47)
 #define PWM_PIN_ESC_5 			(48)
-#define REV_PIN_ESC_5 			(43)
+#define REV_PIN_ESC_5 			(41)
 #define PWM_PIN_ESC_6     		(50)
-#define REV_PIN_ESC_6     		(41)
+#define REV_PIN_ESC_6     		(45)
 #define ESC_SPEED_MIN 			(1000)
 #define ESC_SPEED_MAX 			(2000)
 
@@ -175,6 +175,7 @@ enum MotorHardware {
 	MH_RC_POS, 		//
 	MH_RC_BOTH, 	//
 	MH_LOOKY,
+	MH_BL_OPEN_LOOP,
 	MH_ALL			// if All?
 };
 
@@ -214,7 +215,9 @@ typedef struct MotorInfo{
 	uint32_t deadband; 			// When hardware = MH_RC_POS
 	uint32_t center = 1500; 	// center from which to add/sub deadband
 	int16_t  max_pwr = 500; 	// for stopping out-of-sync actuation
-	uint16_t margin = 10; 			// how far from set-point is acceptable?
+	float    current_pwr 	= 0;// 
+	float    last_pwr 		= 0;// 
+	uint16_t margin = 10; 		// how far from set-point is acceptable?
 	uint32_t minpos; 			// When hardware = MH_RC_POS
 	uint32_t maxpos; 			// When hardware = MH_RC_POS
 	uint16_t maxDuty = 16384; 	// for limiting output duty cycle
